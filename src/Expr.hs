@@ -68,3 +68,12 @@ infixl 6 .+.
 infixl 7 .*.
 (.*.) :: Type -> Type -> Type
 (.*.) = (Fix .) . Product
+
+lam :: (Term -> Term) -> Term
+lam f = Fix (Abs n body)
+  where body = f (Fix (Var n))
+        n = Name (succ (maxBoundVariable body))
+        maxBoundVariable = cata $ \ term -> case term of
+          App o a -> max o a
+          Abs (Name v) _ -> v
+          _ -> -1
