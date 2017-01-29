@@ -77,3 +77,30 @@ lam f = Fix (Abs n body)
           App o a -> max o a
           Abs (Name v) _ -> v
           _ -> -1
+
+
+infixr 0 #
+(#) :: Term -> Term -> Term
+a # b = Fix (App a b)
+
+
+inL :: Term -> Term
+inL = Fix . InL
+
+inR :: Term -> Term
+inR = Fix . InR
+
+case' :: Term -> (Term -> Term) -> (Term -> Term) -> Term
+case' t f g = Fix (Case t (lam f) (lam g))
+
+pair :: Term -> Term -> Term
+pair = (Fix .) . Pair
+
+fst' :: Term -> Term
+fst' = Fix . Fst
+
+snd' :: Term -> Term
+snd' = Fix . Snd
+
+unit :: Term
+unit = Fix Unit
