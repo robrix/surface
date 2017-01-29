@@ -3,6 +3,7 @@ module Judgement where
 
 import Control.Monad
 import Control.Monad.Free.Freer
+import Data.Functor.Classes
 import Data.Functor.Foldable
 import Expr
 
@@ -82,3 +83,15 @@ decompose judgement = case judgement of
     _ -> pure () -- Is this correct…?
 
   Hole -> pure (Fix (Var (Name (-1))))
+
+
+-- Instances
+
+instance Show1 Judgement where
+  liftShowsPrec _ _ d judgement = case judgement of
+    Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
+    Infer term -> showsUnaryWith showsPrec "Infer" d term
+
+    IsType ty -> showsUnaryWith showsPrec "IsType" d ty
+
+    Hole -> showString "Hole"
