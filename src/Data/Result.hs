@@ -11,3 +11,8 @@ instance Applicative (Result e) where
   pure = Result
   Error s <*> _ = Error s
   Result f <*> a = fmap f a
+
+instance Monad (Result e) where
+  return = pure
+  Error s >>= _ = Error s
+  Result a >>= f = f a
