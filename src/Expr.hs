@@ -2,6 +2,7 @@
 module Expr where
 
 import Data.Functor.Foldable
+import Text.Pretty
 
 data ExprF a where
   Product :: a -> a -> ExprF a
@@ -104,3 +105,25 @@ snd' = Fix . Snd
 
 unit :: Term
 unit = Fix Unit
+
+
+-- Instances
+
+instance Pretty1 ExprF where
+  prettyPrec1 term = case term of
+    App a b -> (0, prettyParen 0 a . showString " # " . prettyParen 0 b)
+    Abs v b -> (10, showString "lam " . showParen True (showChar '\\' . showName v . showString " -> " . snd b))
+    Var v -> (-1, showName v)
+    InL l -> (10, showString "inL" . showChar ' ' . prettyParen 10 l)
+    InR r -> (10, showString "inR" . showChar ' ' . prettyParen 10 r)
+    Case c l r -> (10, showString "case " . prettyParen 10 c . showChar ' ' . prettyParen 10 l . showChar ' ' . prettyParen 10 r)
+    Pair a b -> (10, showString "pair " . prettyParen 10 a . showChar ' ' . prettyParen 10 b)
+    Fst f -> (10, showString "fst' " . prettyParen 10 f)
+    Snd s -> (10, showString "snd'" . prettyParen 10 s)
+    Function a b -> (0, prettyParen 0 a . showString " .->. " . prettyParen 0 b)
+    Sum a b -> (6, prettyParen 6 a . showString " .+. " . prettyParen 7 b)
+    Product a b -> (7, prettyParen 7 a . showString " .*. " . prettyParen 8 b)
+    UnitT -> (-1, showString "unitT")
+    Unit -> (-1, showString "unit")
+    TypeT -> (-1, showString "typeT")
+    where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
