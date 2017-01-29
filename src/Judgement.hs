@@ -6,6 +6,7 @@ import Control.Monad.Free.Freer
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Expr
+import Text.Pretty
 
 data JudgementF a where
   Check :: Term -> Type -> JudgementF ()
@@ -67,7 +68,7 @@ decompose judgement = case judgement of
 
   Check term ty -> do
     ty' <- infer term
-    unless (ty' == ty) (pure ())
+    unless (ty' == ty) $ fail ("expected " ++ pretty ty ++ " but got " ++ pretty ty')
 
   IsType ty -> case unfix ty of
     UnitT -> pure ()
