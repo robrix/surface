@@ -5,3 +5,6 @@ class Pretty t where
 
 class Functor f => Pretty1 f where
   prettyPrec1 :: f (Int, ShowS) -> (Int, ShowS)
+
+pretty :: Pretty a => a -> String
+pretty = ($ "") . snd . prettyPrec
