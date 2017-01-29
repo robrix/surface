@@ -10,3 +10,5 @@ data Judgement a where
   IsType :: Term -> Judgement ()
 
   Hole :: Judgement Type
+
+data JudgementError = Expected Type Type
