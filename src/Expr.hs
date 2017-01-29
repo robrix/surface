@@ -25,6 +25,8 @@ data ExprF a where
   Snd :: a -> ExprF a
 
   Unit :: ExprF a
+
+  Hole :: ExprF a
   deriving (Eq, Foldable, Functor, Show)
 
 type Expr = Fix ExprF
@@ -108,6 +110,10 @@ unit :: Term
 unit = Fix Unit
 
 
+hole :: Expr
+hole = Fix Hole
+
+
 -- Instances
 
 instance Pretty1 ExprF where
@@ -127,6 +133,7 @@ instance Pretty1 ExprF where
     UnitT -> (-1, showString "unitT")
     Unit -> (-1, showString "unit")
     TypeT -> (-1, showString "typeT")
+    Hole -> (-1, showString "hole")
     where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
 
 instance Eq1 ExprF where
@@ -150,6 +157,8 @@ instance Eq1 ExprF where
     (Product a1 b1, Product a2 b2) -> eq a1 a2 && eq b1 b2
     (UnitT, UnitT) -> True
     (TypeT, TypeT) -> True
+
+    (Hole, Hole) -> True
     _ -> False
 
 instance Show1 ExprF where
@@ -169,6 +178,7 @@ instance Show1 ExprF where
     UnitT -> showString "UnitT"
     Unit -> showString "Unit"
     TypeT -> showString "TypeT"
+    Hole -> showString "Hole"
     where
       showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
       showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
