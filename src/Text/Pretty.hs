@@ -1,5 +1,7 @@
 module Text.Pretty where
 
+import Data.Functor.Foldable
+
 class Pretty t where
   prettyPrec :: t -> (Int, ShowS)
 
@@ -14,3 +16,9 @@ prettyParen d (p, s) = showParen (p >= d) s
 
 pretty :: Pretty a => a -> String
 pretty = ($ "") . snd . prettyPrec
+
+
+-- Instances
+
+instance Pretty1 f => Pretty (Fix f) where
+  prettyPrec = cata prettyPrec1
