@@ -59,6 +59,13 @@ decompose judgement = case judgement of
       b <- infer r
       pure (a .+. b)
 
+    Case subject ifL ifR -> do
+      Fix (Sum l r) <- infer subject
+      b <- fresh
+      check (l .->. b) ifL
+      check (r .->. b) ifR
+      pure b
+
     Unit ->
       pure unitT
 
