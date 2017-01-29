@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, GADTs #-}
 module Expr where
 
+import Data.Functor.Classes
 import Data.Functor.Foldable
 import Text.Pretty
 
@@ -127,3 +128,25 @@ instance Pretty1 ExprF where
     Unit -> (-1, showString "unit")
     TypeT -> (-1, showString "typeT")
     where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
+
+instance Show1 ExprF where
+  liftShowsPrec sp _ d t = case t of
+    App a b -> showsBinaryWith sp sp "App" d a b
+    Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b
+    Var v -> showsUnaryWith showsPrec "Var" d v
+    InL l -> showsUnaryWith sp "InL" d l
+    InR r -> showsUnaryWith sp "InR" d r
+    Case c l r -> showsTernaryWith sp sp sp "Case" d c l r
+    Pair a b -> showsBinaryWith sp sp "Pair" d a b
+    Fst f -> showsUnaryWith sp "Fst" d f
+    Snd s -> showsUnaryWith sp "Snd" d s
+    Function a b -> showsBinaryWith sp sp "Function" d a b
+    Sum a b -> showsBinaryWith sp sp "Sum" d a b
+    Product a b -> showsBinaryWith sp sp "Product" d a b
+    UnitT -> showString "UnitT"
+    Unit -> showString "Unit"
+    TypeT -> showString "TypeT"
+    where
+      showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
+      showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
+        showString name . showChar ' ' . sp1 11 x . showChar ' ' . sp2 11 y . showChar ' ' . sp3 11 z
