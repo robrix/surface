@@ -2,6 +2,7 @@
 module Data.Result where
 
 import Control.Applicative
+import Text.Pretty
 
 data Result e a = Result a | Error [e]
   deriving (Eq, Functor, Show)
@@ -24,3 +25,7 @@ instance Alternative (Result e) where
   Error s1 <|> Error s2 = Error (s1 ++ s2)
   Result a <|> _ = Result a
   _ <|> Result b = Result b
+
+instance (Pretty e, Pretty a) => Pretty (Result e a) where
+  prettyPrec (Result a) = prettyPrec a
+  prettyPrec (Error errors) = (0, foldr (.) id (fmap (\ e -> snd (prettyPrec e) . showChar '\n') errors))
