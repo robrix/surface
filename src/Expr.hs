@@ -39,3 +39,32 @@ newtype Name = Name Integer
 
 unName :: Name -> Integer
 unName (Name n) = n
+
+
+unitT :: Type
+unitT = Fix UnitT
+
+typeT :: Type
+typeT = Fix TypeT
+
+boolT :: Type
+boolT = unitT .+. unitT
+
+maybeT :: Type -> Type
+maybeT = (unitT .+.)
+
+eitherT :: Type -> Type -> Type
+eitherT = (.+.)
+
+
+infixr 0 .->.
+(.->.) :: Type -> Type -> Type
+a .->. b = Fix (Function a b)
+
+infixl 6 .+.
+(.+.) :: Type -> Type -> Type
+(.+.) = (Fix .) . Sum
+
+infixl 7 .*.
+(.*.) :: Type -> Type -> Type
+(.*.) = (Fix .) . Product
