@@ -13,7 +13,7 @@ data JudgementF a where
 
   IsType :: Term -> JudgementF ()
 
-  Hole :: JudgementF Type
+  Fresh :: JudgementF Type
 
 data JudgementError = Expected Type Type
 
@@ -28,8 +28,8 @@ check = (liftF .) . Check
 isType :: Term -> Judgement ()
 isType = liftF . IsType
 
-hole :: Judgement Type
-hole = liftF Hole
+fresh :: Judgement Type
+fresh = liftF Fresh
 
 
 decompose :: JudgementF a -> Judgement a
@@ -50,11 +50,11 @@ decompose judgement = case judgement of
 
     InL l -> do
       a <- infer l
-      b <- hole
+      b <- fresh
       pure (a .+. b)
 
     InR r -> do
-      a <- hole
+      a <- fresh
       b <- infer r
       pure (a .+. b)
 
@@ -83,7 +83,7 @@ decompose judgement = case judgement of
       isType b
     _ -> pure () -- Is this correct…?
 
-  Hole -> pure (Fix (Var (Name (-1))))
+  Fresh -> pure (Fix (Var (Name (-1))))
 
 
 -- Instances
@@ -95,4 +95,4 @@ instance Show1 JudgementF where
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
-    Hole -> showString "Hole"
+    Fresh -> showString "Fresh"
