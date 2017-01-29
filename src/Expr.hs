@@ -129,6 +129,29 @@ instance Pretty1 ExprF where
     TypeT -> (-1, showString "typeT")
     where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
 
+instance Eq1 ExprF where
+  liftEq eq a b = case (a, b) of
+    (App o1 a1, App o2 a2) -> eq o1 o2 && eq a1 a2
+    (Abs v1 r1, Abs v2 r2) -> v1 == v2 && eq r1 r2
+    (Var v1, Var v2) -> v1 == v2
+
+    (InL l1, InL l2) -> eq l1 l2
+    (InR r1, InR r2) -> eq r1 r2
+    (Case c1 l1 r1, Case c2 l2 r2) -> eq c1 c2 && eq l1 l2 && eq r1 r2
+
+    (Pair a1 b1, Pair a2 b2) -> eq a1 a2 && eq b1 b2
+    (Fst p1, Fst p2) -> eq p1 p2
+    (Snd p1, Snd p2) -> eq p1 p2
+
+    (Unit, Unit) -> True
+
+    (Function a1 b1, Function a2 b2) -> eq a1 a2 && eq b1 b2
+    (Sum a1 b1, Sum a2 b2) -> eq a1 a2 && eq b1 b2
+    (Product a1 b1, Product a2 b2) -> eq a1 a2 && eq b1 b2
+    (UnitT, UnitT) -> True
+    (TypeT, TypeT) -> True
+    _ -> False
+
 instance Show1 ExprF where
   liftShowsPrec sp _ d t = case t of
     App a b -> showsBinaryWith sp sp "App" d a b
