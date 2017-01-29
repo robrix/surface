@@ -37,6 +37,19 @@ resolver: lts-7.18
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- location:
+    git: https://github.com/robrix/leancheck.git
+    commit: 2581ec98f55b640188163170b812a1d600827888
+  extra-dep: true
+- location:
+    git: https://github.com/robrix/freer-cofreer.git
+    commit: 0e097b456ec1197e773e87c0bf56af37cf588033
+  extra-dep: true
+
+# Dependency packages to be pulled from upstream that are not in the resolver
+# (e.g., acme-missiles-0.3)
+extra-deps:
+- recursion-schemes-5.0.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}
