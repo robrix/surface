@@ -22,7 +22,6 @@ data Goal f a where
   Then :: f x -> (x -> Goal f a) -> Goal f a
 
 
-
 infer :: Term -> Goal Judgement Type
 infer term = Infer term `Then` Return
 
