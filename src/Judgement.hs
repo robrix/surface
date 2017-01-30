@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, RankNTypes #-}
 module Judgement where
 
 import Control.Monad
@@ -105,6 +105,14 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   Fresh -> return (Fix (Var (Name (-1))))
+
+
+iterGoal :: (forall x. f x -> (x -> Either [String] a) -> Either [String] a) -> Goal f a -> Either [String] a
+iterGoal algebra = go
+  where go goal = case goal of
+          Failure s -> Left s
+          Return a -> Right a
+          Then instruction cont -> algebra instruction (go . cont)
 
 
 -- Instances
