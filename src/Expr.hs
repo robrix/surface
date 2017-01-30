@@ -73,7 +73,7 @@ infixl 7 .*.
 
 lam :: (Term -> Term) -> Term
 lam f = Fix (Abs n body)
-  where body = f (Fix (Var n))
+  where body = f (var n)
         n = Name (succ (maxBoundVariable body))
         maxBoundVariable = cata $ \ term -> case term of
           App o a -> max o a
