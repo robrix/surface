@@ -105,7 +105,7 @@ decompose judgement = case judgement of
       isType b
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
-  Fresh -> return (Fix (Var (Name (-1))))
+  Fresh -> return (Fix (Var (Name 0)))
 
 
 iterGoal :: (forall x. f x -> (x -> Result a) -> Result a) -> Goal f a -> Result a
