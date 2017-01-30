@@ -44,12 +44,16 @@ decompose judgement = case judgement of
       return (a .*. b)
 
     Fst p -> do
-      Fix (Product a _) <- infer p
-      return a
+      ty <- infer p
+      case unfix ty of
+        Product a _ -> return a
+        _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     Snd p -> do
-      Fix (Product _ b) <- infer p
-      return b
+      ty <- infer p
+      case unfix ty of
+        Product _ b -> return b
+        _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     InL l -> do
       a <- infer l
