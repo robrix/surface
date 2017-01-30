@@ -2,7 +2,7 @@
 module Judgement where
 
 import Control.Monad
-import Control.Monad.Free.Freer
+import qualified Control.Monad.Fail as Fail
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Expr
@@ -18,20 +18,27 @@ data Judgement a where
 
 data JudgementError = Expected Type Type
 
-infer :: Term -> Freer Judgement Type
-infer = liftF . Infer
-
-check :: Term -> Type -> Freer Judgement ()
-check = (liftF .) . Check
-
-isType :: Term -> Freer Judgement ()
-isType = liftF . IsType
-
-fresh :: Freer Judgement Type
-fresh = liftF Fresh
+data Goal f a where
+  Failure :: [String] -> Goal f a
+  Return :: a -> Goal f a
+  Then :: f x -> (x -> Goal f a) -> Goal f a
 
 
-decompose :: Judgement a -> Freer Judgement a
+
+infer :: Term -> Goal Judgement Type
+infer term = Infer term `Then` Return
+
+check :: Term -> Type -> Goal Judgement ()
+check term ty = Check term ty `Then` Return
+
+isType :: Term -> Goal Judgement ()
+isType term = IsType term `Then` Return
+
+fresh :: Goal Judgement Type
+fresh = Fresh `Then` Return
+
+
+decompose :: Judgement a -> Goal Judgement a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
     Pair x y -> do
@@ -102,3 +109,25 @@ instance Show1 Judgement where
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
     Fresh -> showString "Fresh"
+
+instance Functor (Goal f) where
+  fmap f g = case g of
+    Failure s -> Failure s
+    Return a -> Return (f a)
+    Then r t -> Then r (fmap f . t)
+
+instance Applicative (Goal f) where
+  pure = Return
+  Failure s <*> _ = Failure s
+  Return f <*> a = fmap f a
+  Then instruction cont <*> a = instruction `Then` ((<*> a) . cont)
+
+instance Monad (Goal f) where
+  return = pure
+  fail = Fail.fail
+  Failure s >>= _ = Failure s
+  Return a >>= f = f a
+  Then instruction cont >>= f = instruction `Then` ((>>= f) . cont)
+
+instance Fail.MonadFail (Goal f) where
+  fail = Failure . pure
