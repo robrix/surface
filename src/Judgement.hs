@@ -41,47 +41,47 @@ decompose judgement = case judgement of
     Pair x y -> do
       a <- infer x
       b <- infer y
-      pure (a .*. b)
+      return (a .*. b)
 
     Fst p -> do
       Fix (Product a _) <- infer p
-      pure a
+      return a
 
     Snd p -> do
       Fix (Product _ b) <- infer p
-      pure b
+      return b
 
     InL l -> do
       a <- infer l
       b <- fresh
-      pure (a .+. b)
+      return (a .+. b)
 
     InR r -> do
       a <- fresh
       b <- infer r
-      pure (a .+. b)
+      return (a .+. b)
 
     Case subject ifL ifR -> do
       Fix (Sum l r) <- infer subject
       b <- fresh
       check (l .->. b) ifL
       check (r .->. b) ifR
-      pure b
+      return b
 
     Unit ->
-      pure unitT
+      return unitT
 
     _ -> do
       isType term
-      pure typeT
+      return typeT
 
   Check term ty -> do
     ty' <- infer term
     unless (ty' == ty) $ fail ("expected " ++ pretty ty ++ " but got " ++ pretty ty')
 
   IsType ty -> case unfix ty of
-    UnitT -> pure ()
-    TypeT -> pure ()
+    UnitT -> return ()
+    TypeT -> return ()
     Sum a b -> do
       isType a
       isType b
@@ -93,7 +93,7 @@ decompose judgement = case judgement of
       isType b
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
-  Fresh -> pure (Fix (Var (Name (-1))))
+  Fresh -> return (Fix (Var (Name (-1))))
 
 
 -- Instances
