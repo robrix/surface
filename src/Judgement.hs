@@ -91,7 +91,7 @@ decompose judgement = case judgement of
     Function a b -> do
       isType a
       isType b
-    _ -> pure () -- Is this correct…?
+    _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   Fresh -> pure (Fix (Var (Name (-1))))
 
