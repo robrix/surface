@@ -75,12 +75,16 @@ decompose judgement = case judgement of
           return b
         _ -> fail ("Expected a sum type, but got " ++ pretty ty)
 
-    Unit ->
-      return unitT
+    Unit -> return unitT
 
-    _ -> do
-      isType term
-      return typeT
+    -- Types
+    UnitT -> return typeT
+    TypeT -> return typeT -- Impredicativity.
+    Function{} -> isType term >> return typeT
+    Product{} -> isType term >> return typeT
+    Sum{} -> isType term >> return typeT
+
+    _ -> fail ("No rule to infer type of " ++ pretty term)
 
   Check term ty -> do
     ty' <- infer term
