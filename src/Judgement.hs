@@ -16,8 +16,6 @@ data Judgement a where
 
   Fresh :: Judgement Type
 
-data JudgementError = Expected Type Type
-
 data Goal f a where
   Failure :: [String] -> Goal f a
   Return :: a -> Goal f a
