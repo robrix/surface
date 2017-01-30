@@ -22,6 +22,8 @@ data Goal f a where
   Return :: a -> Goal f a
   Then :: f x -> (x -> Goal f a) -> Goal f a
 
+type Context = [Type]
+
 
 infer :: Term -> Goal Judgement Type
 infer term = Infer term `Then` Return
