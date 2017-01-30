@@ -66,11 +66,14 @@ decompose judgement = case judgement of
       return (a .+. b)
 
     Case subject ifL ifR -> do
-      Fix (Sum l r) <- infer subject
-      b <- fresh
-      check (l .->. b) ifL
-      check (r .->. b) ifR
-      return b
+      ty <- infer subject
+      case unfix ty of
+        Sum l r -> do
+          b <- fresh
+          check (l .->. b) ifL
+          check (r .->. b) ifR
+          return b
+        _ -> fail ("Expected a sum type, but got " ++ pretty ty)
 
     Unit ->
       return unitT
