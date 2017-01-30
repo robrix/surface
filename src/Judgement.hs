@@ -115,6 +115,10 @@ iterGoal algebra = go
           Return a -> Result a
           Then instruction cont -> algebra instruction (go . cont)
 
+interpret :: Goal Judgement a -> Result a
+interpret = iterGoal $ \ judgement cont ->
+  interpret (decompose judgement) >>= cont
+
 
 -- Instances
 
