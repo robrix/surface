@@ -80,6 +80,9 @@ lam f = Fix (Abs n body)
           Abs (Name v) _ -> v
           _ -> -1
 
+var :: Name -> Expr
+var = Fix . Var
+
 
 infixr 0 #
 (#) :: Term -> Term -> Term
