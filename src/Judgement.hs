@@ -8,32 +8,30 @@ import Data.Functor.Foldable
 import Expr
 import Text.Pretty
 
-data JudgementF a where
-  Check :: Term -> Type -> JudgementF ()
-  Infer :: Term -> JudgementF Type
+data Judgement a where
+  Check :: Term -> Type -> Judgement ()
+  Infer :: Term -> Judgement Type
 
-  IsType :: Term -> JudgementF ()
+  IsType :: Term -> Judgement ()
 
-  Fresh :: JudgementF Type
+  Fresh :: Judgement Type
 
 data JudgementError = Expected Type Type
 
-type Judgement = Freer JudgementF
-
-infer :: Term -> Judgement Type
+infer :: Term -> Freer Judgement Type
 infer = liftF . Infer
 
-check :: Term -> Type -> Judgement ()
+check :: Term -> Type -> Freer Judgement ()
 check = (liftF .) . Check
 
-isType :: Term -> Judgement ()
+isType :: Term -> Freer Judgement ()
 isType = liftF . IsType
 
-fresh :: Judgement Type
+fresh :: Freer Judgement Type
 fresh = liftF Fresh
 
 
-decompose :: JudgementF a -> Judgement a
+decompose :: Judgement a -> Freer Judgement a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
     Pair x y -> do
@@ -96,7 +94,7 @@ decompose judgement = case judgement of
 
 -- Instances
 
-instance Show1 JudgementF where
+instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
     Infer term -> showsUnaryWith showsPrec "Infer" d term
