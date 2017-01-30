@@ -148,3 +148,12 @@ instance Monad (Goal f) where
 
 instance Fail.MonadFail (Goal f) where
   fail = Failure . pure
+
+instance Show1 f => Show1 (Goal f) where
+  liftShowsPrec sp sa d goal = case goal of
+    Failure es -> showsUnaryWith showsPrec "Failure" d es
+    Return a -> showsUnaryWith sp "Return" d a
+    Then inst cont -> showsBinaryWith (liftShowsPrec (\ i -> liftShowsPrec sp sa i . cont) (liftShowList sp sa . fmap cont)) (const showString) "Then" d inst "id"
+
+instance (Show1 f, Show a) => Show (Goal f a) where
+  showsPrec = liftShowsPrec showsPrec showList
