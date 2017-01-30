@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Data.Result where
 
+import qualified Control.Monad.Fail as Fail
 import Control.Applicative
 import Text.Pretty
 
@@ -17,8 +18,12 @@ instance Applicative Result where
 
 instance Monad Result where
   return = pure
+  fail = Fail.fail
   Error s >>= _ = Error s
   Result a >>= f = f a
+
+instance Fail.MonadFail Result where
+  fail = Error . pure
 
 instance Alternative Result where
   empty = Error []
