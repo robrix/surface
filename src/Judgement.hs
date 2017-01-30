@@ -5,6 +5,7 @@ import Control.Monad
 import qualified Control.Monad.Fail as Fail
 import Data.Functor.Classes
 import Data.Functor.Foldable
+import Data.Result
 import Expr
 import Text.Pretty
 
@@ -107,11 +108,11 @@ decompose judgement = case judgement of
   Fresh -> return (Fix (Var (Name (-1))))
 
 
-iterGoal :: (forall x. f x -> (x -> Either [String] a) -> Either [String] a) -> Goal f a -> Either [String] a
+iterGoal :: (forall x. f x -> (x -> Result a) -> Result a) -> Goal f a -> Result a
 iterGoal algebra = go
   where go goal = case goal of
-          Failure s -> Left s
-          Return a -> Right a
+          Failure s -> Error s
+          Return a -> Result a
           Then instruction cont -> algebra instruction (go . cont)
 
 
