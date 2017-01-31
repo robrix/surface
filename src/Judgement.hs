@@ -108,7 +108,7 @@ decompose judgement = case judgement of
         Function a b -> do
           check arg a
           return b
-        _ -> fail ("Expectred a function type, but got " ++ pretty ty)
+        _ -> fail ("Expected a function type, but got " ++ pretty ty)
 
     -- Types
     UnitT -> return typeT
