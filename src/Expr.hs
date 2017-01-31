@@ -116,8 +116,8 @@ unit = Fix Unit
 instance Pretty1 ExprF where
   prettyPrec1 term = case term of
     App a b -> (0, prettyParen 0 a . showString " # " . prettyParen 0 b)
-    Abs v b -> (10, showString "lam " . showParen True (showChar '\\' . showName v . showString " -> " . snd b))
-    Var v -> (-1, showName v)
+    Abs v b -> (10, showString "lam " . showParen True (showChar '\\' . snd (prettyPrec v) . showString " -> " . snd b))
+    Var v -> prettyPrec v
     InL l -> (10, showString "inL" . showChar ' ' . prettyParen 10 l)
     InR r -> (10, showString "inR" . showChar ' ' . prettyParen 10 r)
     Case c l r -> (10, showString "case " . prettyParen 10 c . showChar ' ' . prettyParen 10 l . showChar ' ' . prettyParen 10 r)
@@ -130,7 +130,6 @@ instance Pretty1 ExprF where
     UnitT -> (-1, showString "unitT")
     Unit -> (-1, showString "unit")
     TypeT -> (-1, showString "typeT")
-    where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
 
 instance Pretty Name where
   prettyPrec = (,) (negate 1) . showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
