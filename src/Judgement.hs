@@ -102,6 +102,14 @@ decompose judgement = case judgement of
       bodyT <- infer body
       return (t .->. bodyT)
 
+    App f arg -> do
+      ty <- infer f
+      case unfix ty of
+        Function a b -> do
+          check arg a
+          return b
+        _ -> fail ("Expectred a function type, but got " ++ pretty ty)
+
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
