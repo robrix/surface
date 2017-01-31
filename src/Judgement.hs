@@ -116,7 +116,11 @@ decompose judgement = case judgement of
       isType b
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
-  Fresh -> return (var (Name 0))
+  Fresh -> do
+    c <- getContext
+    let t = var (Name (fromIntegral (length c)))
+    putContext (t : c)
+    return t
 
   GetContext -> return []
 
