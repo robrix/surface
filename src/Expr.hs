@@ -132,6 +132,9 @@ instance Pretty1 ExprF where
     TypeT -> (-1, showString "typeT")
     where showName = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
 
+instance Pretty Name where
+  prettyPrec = (,) (negate 1) . showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
+
 instance Eq1 ExprF where
   liftEq eq a b = case (a, b) of
     (App o1 a1, App o2 a2) -> eq o1 o2 && eq a1 a2
