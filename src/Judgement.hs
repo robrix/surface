@@ -95,6 +95,13 @@ decompose judgement = case judgement of
         Just t -> return t
         _ -> fail ("No variable " ++ pretty name ++ " in context.")
 
+    Abs name body -> do
+      context <- getContext
+      t <- fresh
+      putContext ((name, t) : context)
+      bodyT <- infer body
+      return (t .->. bodyT)
+
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
