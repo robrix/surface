@@ -25,7 +25,7 @@ data Goal f a where
   Return :: a -> Goal f a
   Then :: f x -> (x -> Goal f a) -> Goal f a
 
-type Context = [Type]
+type Context = [(Name, Type)]
 
 
 infer :: Term -> Goal Judgement Type
@@ -118,9 +118,9 @@ decompose judgement = case judgement of
 
   Fresh -> do
     c <- getContext
-    let t = var (Name (fromIntegral (length c)))
-    putContext (t : c)
-    return t
+    let name = Name (fromIntegral (length c))
+    putContext ((name, var name) : c)
+    return (var name)
 
   GetContext -> return []
 
