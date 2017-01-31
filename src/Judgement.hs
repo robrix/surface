@@ -117,8 +117,6 @@ decompose judgement = case judgement of
     Product{} -> isType term >> return typeT
     Sum{} -> isType term >> return typeT
 
-    _ -> fail ("No rule to infer type of " ++ pretty term)
-
   Check term ty -> do
     ty' <- infer term
     unless (ty' == ty) $ fail ("expected " ++ pretty ty ++ " but got " ++ pretty ty')
