@@ -89,6 +89,12 @@ decompose judgement = case judgement of
 
     Unit -> return unitT
 
+    Var name -> do
+      context <- getContext
+      case lookup name context of
+        Just t -> return t
+        _ -> fail ("No variable " ++ pretty name ++ " in context.")
+
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
