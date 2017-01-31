@@ -17,6 +17,9 @@ data Judgement a where
 
   Fresh :: Judgement Type
 
+  GetContext :: Judgement Context
+  PutContext :: Context -> Judgement ()
+
 data Goal f a where
   Failure :: [String] -> Goal f a
   Return :: a -> Goal f a
@@ -36,6 +39,12 @@ isType term = IsType term `Then` Return
 
 fresh :: Goal Judgement Type
 fresh = Fresh `Then` Return
+
+getContext :: Goal Judgement Context
+getContext = GetContext `Then` Return
+
+putContext :: Context -> Goal Judgement ()
+putContext context = PutContext context `Then` Return
 
 
 decompose :: Judgement a -> Goal Judgement a
@@ -109,6 +118,10 @@ decompose judgement = case judgement of
 
   Fresh -> return (var (Name 0))
 
+  GetContext -> return []
+
+  PutContext _ -> pure ()
+
 
 iterGoal :: (forall x. f x -> (x -> Result a) -> Result a) -> Goal f a -> Result a
 iterGoal algebra = go
@@ -132,6 +145,9 @@ instance Show1 Judgement where
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
     Fresh -> showString "Fresh"
+
+    GetContext -> showString "GetContext"
+    PutContext context -> showsUnaryWith showsPrec "PutContext" d context
 
 instance Functor (Goal f) where
   fmap f g = case g of
