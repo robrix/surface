@@ -119,7 +119,7 @@ decompose judgement = case judgement of
 
   Check term ty -> do
     ty' <- infer term
-    unless (ty' == ty) $ fail ("expected " ++ pretty ty ++ " but got " ++ pretty ty')
+    unless (ty' == ty) $ fail ("Expected " ++ pretty ty ++ " but got " ++ pretty ty')
 
   IsType ty -> case unfix ty of
     UnitT -> return ()
