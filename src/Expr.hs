@@ -37,7 +37,7 @@ type Term = Fix TermF
 
 
 newtype Name = Name Integer
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 unName :: Name -> Integer
 unName (Name n) = n
