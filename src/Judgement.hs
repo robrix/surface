@@ -6,19 +6,15 @@ import qualified Control.Monad.Fail as Fail
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.Result
+import Data.Semigroup hiding (Sum, Product)
 import Expr
 import Text.Pretty
 
 data Judgement a where
-  Check :: Term -> Type -> Judgement ()
-  Infer :: Term -> Judgement Type
+  Check :: Context -> Term -> Type -> Judgement ()
+  Infer :: Context -> Term -> Judgement Type
 
-  IsType :: Term -> Judgement ()
-
-  Fresh :: Judgement Type
-
-  GetContext :: Judgement Context
-  PutContext :: Context -> Judgement ()
+  IsType :: Context -> Term -> Judgement ()
 
 data Goal f a where
   Failure :: [String] -> Goal f a
@@ -28,122 +24,111 @@ data Goal f a where
 type Context = [(Name, Type)]
 
 
-infer :: Term -> Goal Judgement Type
-infer term = Infer term `Then` Return
+infer :: Context -> Term -> Goal Judgement Type
+infer context term = Infer context term `Then` Return
 
-check :: Term -> Type -> Goal Judgement ()
-check term ty = Check term ty `Then` Return
+check :: Context -> Term -> Type -> Goal Judgement ()
+check context term ty = Check context term ty `Then` Return
 
-isType :: Term -> Goal Judgement ()
-isType term = IsType term `Then` Return
+isType :: Context -> Term -> Goal Judgement ()
+isType context term = IsType context term `Then` Return
 
-fresh :: Goal Judgement Type
-fresh = Fresh `Then` Return
+fresh :: Context -> Goal Judgement Type
+fresh = return . var . maybe (Name 0) getMax . sfoldMap (Max . fst)
 
-getContext :: Goal Judgement Context
-getContext = GetContext `Then` Return
+sfoldMap :: (Semigroup s, Foldable t) => (a -> s) -> t a -> Maybe s
+sfoldMap f = getOption . foldMap (Option . Just . f)
 
-putContext :: Context -> Goal Judgement ()
-putContext context = PutContext context `Then` Return
 
+define :: Name -> Type -> Context -> Context
+define name ty = ((name, ty):)
+
+lookupName :: Name -> Context -> Goal Judgement Type
+lookupName name context = case lookup name context of
+    Just ty -> return ty
+    _ -> fail ("No variable " ++ pretty name ++ " in context.")
 
 decompose :: Judgement a -> Goal Judgement a
 decompose judgement = case judgement of
-  Infer term -> case unfix term of
+  Infer context term -> case unfix term of
     Pair x y -> do
-      a <- infer x
-      b <- infer y
+      a <- infer context x
+      b <- infer context y
       return (a .*. b)
 
     Fst p -> do
-      ty <- infer p
+      ty <- infer context p
       case unfix ty of
         Product a _ -> return a
         _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     Snd p -> do
-      ty <- infer p
+      ty <- infer context p
       case unfix ty of
         Product _ b -> return b
         _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     InL l -> do
-      a <- infer l
-      b <- fresh
+      a <- infer context l
+      b <- fresh context
       return (a .+. b)
 
     InR r -> do
-      a <- fresh
-      b <- infer r
+      a <- fresh context
+      b <- infer context r
       return (a .+. b)
 
     Case subject ifL ifR -> do
-      ty <- infer subject
+      ty <- infer context subject
       case unfix ty of
         Sum l r -> do
-          b <- fresh
-          check (l .->. b) ifL
-          check (r .->. b) ifR
+          b <- fresh context
+          check context (l .->. b) ifL
+          check context (r .->. b) ifR
           return b
         _ -> fail ("Expected a sum type, but got " ++ pretty ty)
 
     Unit -> return unitT
 
-    Var name -> do
-      context <- getContext
-      case lookup name context of
-        Just t -> return t
-        _ -> fail ("No variable " ++ pretty name ++ " in context.")
+    Var name -> lookupName name context
 
     Abs name body -> do
-      context <- getContext
-      t <- fresh
-      putContext ((name, t) : context)
-      bodyT <- infer body
+      t <- fresh context
+      bodyT <- infer (define name t context) body
       return (t .->. bodyT)
 
     App f arg -> do
-      ty <- infer f
+      ty <- infer context f
       case unfix ty of
         Function a b -> do
-          check arg a
+          check context arg a
           return b
         _ -> fail ("Expected a function type, but got " ++ pretty ty)
 
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
-    Function{} -> isType term >> return typeT
-    Product{} -> isType term >> return typeT
-    Sum{} -> isType term >> return typeT
+    Function{} -> isType context term >> return typeT
+    Product{} -> isType context term >> return typeT
+    Sum{} -> isType context term >> return typeT
 
-  Check term ty -> do
-    ty' <- infer term
+  Check context term ty -> do
+    ty' <- infer context term
     unless (ty' == ty) $ fail ("Expected " ++ pretty ty ++ " but got " ++ pretty ty')
 
-  IsType ty -> case unfix ty of
+  IsType context ty -> case unfix ty of
     UnitT -> return ()
     TypeT -> return ()
     Sum a b -> do
-      isType a
-      isType b
+      isType context a
+      isType context b
     Product a b -> do
-      isType a
-      isType b
+      isType context a
+      isType context b
     Function a b -> do
-      isType a
-      isType b
+      isType context a
+      isType context b
     _ -> fail ("Expected a Type but got " ++ pretty ty)
-
-  Fresh -> do
-    c <- getContext
-    let name = Name (fromIntegral (length c))
-    putContext ((name, var name) : c)
-    return (var name)
-
-  GetContext -> return []
-
-  PutContext _ -> pure ()
 
 
 iterGoal :: (forall x. f x -> (x -> Result a) -> Result a) -> Goal f a -> Result a
@@ -162,15 +147,10 @@ interpret = iterGoal $ \ judgement cont ->
 
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
-    Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
-    Infer term -> showsUnaryWith showsPrec "Infer" d term
+    Check context term ty -> showsTernaryWith showsPrec showsPrec showsPrec "Check" d context term ty
+    Infer context term -> showsBinaryWith showsPrec showsPrec "Infer" d context term
 
-    IsType ty -> showsUnaryWith showsPrec "IsType" d ty
-
-    Fresh -> showString "Fresh"
-
-    GetContext -> showString "GetContext"
-    PutContext context -> showsUnaryWith showsPrec "PutContext" d context
+    IsType context ty -> showsBinaryWith showsPrec showsPrec "IsType" d context ty
 
 instance Functor (Goal f) where
   fmap f g = case g of
