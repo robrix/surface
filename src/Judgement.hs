@@ -128,6 +128,11 @@ decompose judgement = case judgement of
     Function a b -> do
       isType context a
       isType context b
+
+    Var name -> do
+      ty <- lookupName name context
+      isType context ty
+
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
 
