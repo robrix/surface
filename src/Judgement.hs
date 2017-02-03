@@ -304,6 +304,16 @@ interpret context proof = case runFreer proof of
       Put context' -> interpret context' (cont ())
     R result -> result >>= interpret context . cont
 
+runStep :: (Name, Context) -> Proof a -> Either (Result a) ((Name, Context), Proof a)
+runStep context proof = case runFreer proof of
+  Pure a -> Left $ Result a
+  Free cont proof -> case proof of
+    J judgement -> Right (context, decompose judgement >>= cont)
+    S state -> case state of
+      Get -> Right (context, cont context)
+      Put context' -> Right (context', cont ())
+    R result -> Left $ result >>= interpret context . cont
+
 
 -- Instances
 
