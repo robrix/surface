@@ -29,3 +29,11 @@ data Extension = Restore | Replace Suffix
 
 data Index a = Z | S a
   deriving (Eq, Foldable, Functor, Show)
+
+data Schm a
+  = Type Type
+  | All (Schm (Index a))
+  | LetS Type (Schm (Index a))
+  deriving (Eq, Foldable, Functor, Show)
+
+type Scheme = Schm Name
