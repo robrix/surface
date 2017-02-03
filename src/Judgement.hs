@@ -191,6 +191,18 @@ fail :: String -> Proof a
 fail = wrap . R . Error . (:[])
 
 
+(>-) :: TermEntry -> Proof a -> Proof a
+x `Is` s >- ma = do
+  modifyContext (:< Tm (x `Is` s))
+  a <- ma
+  modifyContext extract
+  return a
+  where extract (context :< Tm (y `Is` _)) | x == y = context
+        extract (context :< Ty d) = extract context :< Ty d
+        extract (_ :< _) = error "Bad context entry!"
+        extract _ = error "Missing term variable!"
+
+
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
