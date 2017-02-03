@@ -25,3 +25,7 @@ context <>< (entry : rest) = context :< Ty entry <>< rest
 
 data Extension = Restore | Replace Suffix
   deriving (Eq, Show)
+
+
+data Index a = Z | S a
+  deriving (Eq, Foldable, Functor, Show)
