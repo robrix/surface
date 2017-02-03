@@ -299,6 +299,11 @@ run context proof = case runStep context proof of
   Left result -> result
   Right next -> uncurry run next
 
+runSteps :: (Name, Context) -> Proof a -> [Either (Result a) ((Name, Context), Proof a)]
+runSteps context proof = case runStep context proof of
+  Left result -> [ Left result ]
+  Right next -> Right next : uncurry runSteps next
+
 runStep :: (Name, Context) -> Proof a -> Either (Result a) ((Name, Context), Proof a)
 runStep context proof = case runFreer proof of
   Pure a -> Left $ Result a
