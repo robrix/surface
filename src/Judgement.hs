@@ -319,3 +319,9 @@ instance Show s => Show1 (State s) where
   liftShowsPrec _ _ d state = case state of
     Get -> showString "Get"
     Put s -> showsUnaryWith showsPrec "Put" d s
+
+instance Show1 ProofF where
+  liftShowsPrec sp sl d proof = case proof of
+    J judgement -> liftShowsPrec sp sl d judgement
+    S state -> liftShowsPrec sp sl d state
+    R result -> liftShowsPrec sp sl d result
