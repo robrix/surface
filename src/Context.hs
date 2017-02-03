@@ -8,9 +8,12 @@ data Declaration = Known Type | Unknown
 
 data Entry
   = Ty TypeEntry
+  | Tm TermEntry
   deriving (Eq, Show)
 
 data TypeEntry = Name := Declaration
+  deriving (Eq, Show)
+data TermEntry = Name `Is` Scheme
   deriving (Eq, Show)
 
 data Backward a = Backward a :< a | Nil
