@@ -339,9 +339,9 @@ instance (Show s, Show a) => Show (State s a) where
 
 instance Show1 ProofF where
   liftShowsPrec sp sl d proof = case proof of
-    J judgement -> liftShowsPrec sp sl d judgement
-    S state -> liftShowsPrec sp sl d state
-    R result -> liftShowsPrec sp sl d result
+    J judgement -> showsUnaryWith (liftShowsPrec sp sl) "J" d judgement
+    S state -> showsUnaryWith (liftShowsPrec sp sl) "S" d state
+    R result -> showsUnaryWith (liftShowsPrec sp sl) "R" d result
 
 instance Show a => Show (ProofF a) where
   showsPrec = showsPrec1
