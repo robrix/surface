@@ -237,13 +237,15 @@ decompose judgement = case judgement of
 
     Case subject ifL ifR -> do
       ty <- infer subject
-      case unfix ty of
-        Sum l r -> do
-          b <- fresh Unknown
-          check (l .->. var b) ifL
-          check (r .->. var b) ifR
-          return (var b)
-        _ -> fail ("Expected a sum type, but got " ++ pretty ty)
+      l <- fresh Unknown
+      r <- fresh Unknown
+      unify ty (var l .+. var r)
+      b <- fresh Unknown
+      tl <- infer ifL
+      tr <- infer ifR
+      unify tl (var l .->. var b)
+      unify tr (var r .->. var b)
+      return (var b)
 
     Unit -> return unitT
 
