@@ -295,14 +295,9 @@ decompose judgement = case judgement of
 
 
 interpret :: (Name, Context) -> Proof a -> Result a
-interpret context proof = case runFreer proof of
-  Pure a -> Result a
-  Free cont proof -> case proof of
-    J judgement -> interpret context (decompose judgement) >>= interpret context . cont
-    S state -> case state of
-      Get -> interpret context (cont context)
-      Put context' -> interpret context' (cont ())
-    R result -> result >>= interpret context . cont
+interpret context proof = case runStep context proof of
+  Left result -> result
+  Right next -> uncurry interpret next
 
 runStep :: (Name, Context) -> Proof a -> Either (Result a) ((Name, Context), Proof a)
 runStep context proof = case runFreer proof of
