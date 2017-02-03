@@ -296,7 +296,6 @@ decompose judgement = case judgement of
 
 interpret :: (Name, Context) -> Proof a -> Result a
 interpret context proof = case runFreer proof of
-  -- Failure s -> Error s
   Pure a -> Result a
   Free cont proof -> case proof of
     J judgement -> interpret context (decompose judgement) >>= interpret context . cont
