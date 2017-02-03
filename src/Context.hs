@@ -18,3 +18,6 @@ type Suffix = [Entry]
 (<><) :: Context -> Suffix -> Context
 context <>< [] = context
 context <>< (entry : rest) = context :< entry <>< rest
+
+data Extension = Restore | Replace Suffix
+  deriving (Eq, Show)
