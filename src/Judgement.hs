@@ -307,7 +307,9 @@ runStep context proof = case runFreer proof of
     S state -> case state of
       Get -> Right (context, cont context)
       Put context' -> Right (context', cont ())
-    R result -> Left $ result >>= interpret context . cont
+    R result -> case result of
+      Error e -> Left (Error e)
+      Result a -> Right (context, cont a)
 
 
 -- Instances
