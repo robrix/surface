@@ -11,3 +11,6 @@ data Entry = Name := Declaration
 
 data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show)
+
+type Context = Backward Entry
+type Suffix = [Entry]
