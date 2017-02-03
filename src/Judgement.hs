@@ -23,6 +23,12 @@ data Goal f a where
 
 type Context = [(Name, Type)]
 
+data Declaration = Known Type | Unknown
+  deriving (Eq, Show)
+
+data Entry = Name := Declaration
+  deriving (Eq, Show)
+
 
 infer :: Context -> Term -> Goal Judgement Type
 infer context term = Infer context term `Then` Return
