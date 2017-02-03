@@ -275,13 +275,6 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
 
-iterGoal :: (forall x. f x -> (x -> Result a) -> Result a) -> Goal f a -> Result a
-iterGoal algebra = go
-  where go goal = case goal of
-          Failure s -> Error s
-          Return a -> Result a
-          Then instruction cont -> algebra instruction (go . cont)
-
 interpret :: (Name, Context) -> Goal Proof a -> Result a
 interpret context proof = case proof of
   Failure s -> Error s
