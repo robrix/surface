@@ -4,7 +4,7 @@ module Judgement where
 import Context hiding (S)
 import qualified Context
 import Control.Monad
-import qualified Control.Monad.Fail as Fail
+import Control.Monad.Free.Freer
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.Result
@@ -16,11 +16,6 @@ data Judgement a where
   Infer :: Term -> Judgement Type
 
   IsType :: Term -> Judgement ()
-
-data Goal f a where
-  Failure :: [String] -> Goal f a
-  Return :: a -> Goal f a
-  Then :: f x -> (x -> Goal f a) -> Goal f a
 
 data State s a where
   Get :: State s s
@@ -49,7 +44,7 @@ instance Binder1 ExprF where
   liftIsBound isBound name = any (isBound name)
 
 
-unify :: Type -> Type -> Goal Proof ()
+unify :: Type -> Type -> Proof ()
 unify t1 t2 = case (unfix t1, unfix t2) of
   (Function a1 b1, Function a2 b2) -> unify a1 a2 >> unify b1 b2
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
@@ -83,7 +78,7 @@ unify t1 t2 = case (unfix t1, unfix t2) of
   _ -> fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
 
 
-solve :: Name -> Suffix -> Type -> Goal Proof ()
+solve :: Name -> Suffix -> Type -> Proof ()
 solve name suffix ty = onTop $ \ (n := d) ->
   case (n == name, isBound n ty || isBound n suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
@@ -99,7 +94,7 @@ solve name suffix ty = onTop $ \ (n := d) ->
       solve name suffix ty
       restore
 
-specialize :: Scheme -> Goal Proof Type
+specialize :: Scheme -> Proof Type
 specialize (Type t) = return t
 specialize s = do
   let (d, s') = unpack s
@@ -115,37 +110,42 @@ specialize s = do
         fromS _ (Context.S a) = a
 
 
-data Proof a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
+data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
 
-getContext :: Goal Proof Context
+type Proof = Freer ProofF
+
+getContext :: Proof Context
 getContext = gets snd
 
-putContext :: Context -> Goal Proof ()
+putContext :: Context -> Proof ()
 putContext context = do
   m <- gets fst
   put (m, context)
 
-modifyContext :: (Context -> Context) -> Goal Proof ()
+modifyContext :: (Context -> Context) -> Proof ()
 modifyContext f = getContext >>= putContext . f
 
-get :: Goal Proof (Name, Context)
-get = S Get `Then` Return
+get :: Proof (Name, Context)
+get = S Get `andThen` return
 
-gets :: ((Name, Context) -> result) -> Goal Proof result
+gets :: ((Name, Context) -> result) -> Proof result
 gets f = fmap f get
 
-put :: (Name, Context) -> Goal Proof ()
-put s = S (Put s) `Then` Return
+put :: (Name, Context) -> Proof ()
+put s = S (Put s) `andThen` return
 
 
-fresh :: Declaration -> Goal Proof Name
+andThen :: f x -> (x -> Freer f a) -> Freer f a
+andThen = (Freer .) . flip Free
+
+fresh :: Declaration -> Proof Name
 fresh d = do
   (m, context) <- get
   put (increment m, context :< Ty (m := d))
   return m
   where increment (Name n) = Name (succ n)
 
-onTop :: (TypeEntry -> Goal Proof Extension) -> Goal Proof ()
+onTop :: (TypeEntry -> Proof Extension) -> Proof ()
 onTop f = do
   context :< vd <- getContext
   putContext context
@@ -158,27 +158,27 @@ onTop f = do
 
     _ -> onTop f >> modifyContext (:< vd)
 
-restore :: Goal Proof Extension
-restore = Return Restore
+restore :: Proof Extension
+restore = return Restore
 
-replace :: Suffix -> Goal Proof Extension
-replace = Return . Replace
-
-
-infer :: Term -> Goal Proof Type
-infer term = J (Infer term) `Then` Return
-
-check :: Term -> Type -> Goal Proof ()
-check term ty = J (Check term ty) `Then` Return
-
-isType :: Term -> Goal Proof ()
-isType term = J (IsType term) `Then` Return
+replace :: Suffix -> Proof Extension
+replace = return . Replace
 
 
-define :: Name -> Type -> Goal Proof ()
+infer :: Term -> Proof Type
+infer term = J (Infer term) `andThen` return
+
+check :: Term -> Type -> Proof ()
+check term ty = J (Check term ty) `andThen` return
+
+isType :: Term -> Proof ()
+isType term = J (IsType term) `andThen` return
+
+
+define :: Name -> Type -> Proof ()
 define name ty = modifyContext (<>< [ name := Known ty ])
 
-find :: Name -> Goal Proof Scheme
+find :: Name -> Proof Scheme
 find name = getContext >>= help
   where help (context :< Tm (found `Is` decl))
           | name == found = return decl
@@ -186,7 +186,7 @@ find name = getContext >>= help
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
 
-decompose :: Judgement a -> Goal Proof a
+decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
     Pair x y -> do
@@ -275,11 +275,11 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
 
-interpret :: (Name, Context) -> Goal Proof a -> Result a
-interpret context proof = case proof of
-  Failure s -> Error s
-  Return a -> Result a
-  Then proof cont -> case proof of
+interpret :: (Name, Context) -> Proof a -> Result a
+interpret context proof = case runFreer proof of
+  -- Failure s -> Error s
+  Pure a -> Result a
+  Free cont proof -> case proof of
     J judgement -> interpret context (decompose judgement) >>= interpret context . cont
     S state -> case state of
       Get -> interpret context (cont context)
@@ -295,34 +295,3 @@ instance Show1 Judgement where
     Infer term -> showsUnaryWith showsPrec "Infer" d term
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
-
-instance Functor (Goal f) where
-  fmap f g = case g of
-    Failure s -> Failure s
-    Return a -> Return (f a)
-    Then r t -> Then r (fmap f . t)
-
-instance Applicative (Goal f) where
-  pure = Return
-  Failure s <*> _ = Failure s
-  Return f <*> a = fmap f a
-  Then instruction cont <*> a = instruction `Then` ((<*> a) . cont)
-
-instance Monad (Goal f) where
-  return = pure
-  fail = Fail.fail
-  Failure s >>= _ = Failure s
-  Return a >>= f = f a
-  Then instruction cont >>= f = instruction `Then` ((>>= f) . cont)
-
-instance Fail.MonadFail (Goal f) where
-  fail = Failure . pure
-
-instance Show1 f => Show1 (Goal f) where
-  liftShowsPrec sp sa d goal = case goal of
-    Failure es -> showsUnaryWith showsPrec "Failure" d es
-    Return a -> showsUnaryWith sp "Return" d a
-    Then inst cont -> showsBinaryWith (liftShowsPrec (\ i -> liftShowsPrec sp sa i . cont) (liftShowList sp sa . fmap cont)) (const showString) "Then" d inst "id"
-
-instance (Show1 f, Show a) => Show (Goal f a) where
-  showsPrec = liftShowsPrec showsPrec showList
