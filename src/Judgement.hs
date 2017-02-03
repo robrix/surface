@@ -250,10 +250,9 @@ decompose judgement = case judgement of
     Var name -> find name >>= specialize
 
     Abs name body -> do
-      t <- fresh (Known typeT)
-      define name (var t)
-      bodyT <- infer body
-      return (var t .->. bodyT)
+      a <- fresh Unknown
+      v <- name `Is` Type (var a) >- infer body
+      return (var a .->. v)
 
     App f arg -> do
       ty <- infer f
