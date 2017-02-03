@@ -314,3 +314,8 @@ instance Show1 Judgement where
     Infer term -> showsUnaryWith showsPrec "Infer" d term
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
+
+instance Show s => Show1 (State s) where
+  liftShowsPrec _ _ d state = case state of
+    Get -> showString "Get"
+    Put s -> showsUnaryWith showsPrec "Put" d s
