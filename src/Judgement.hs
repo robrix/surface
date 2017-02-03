@@ -315,13 +315,22 @@ instance Show1 Judgement where
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
+instance Show a => Show (Judgement a) where
+  showsPrec = showsPrec1
+
 instance Show s => Show1 (State s) where
   liftShowsPrec _ _ d state = case state of
     Get -> showString "Get"
     Put s -> showsUnaryWith showsPrec "Put" d s
+
+instance (Show s, Show a) => Show (State s a) where
+  showsPrec = showsPrec1
 
 instance Show1 ProofF where
   liftShowsPrec sp sl d proof = case proof of
     J judgement -> liftShowsPrec sp sl d judgement
     S state -> liftShowsPrec sp sl d state
     R result -> liftShowsPrec sp sl d result
+
+instance Show a => Show (ProofF a) where
+  showsPrec = showsPrec1
