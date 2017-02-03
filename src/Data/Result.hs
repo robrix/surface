@@ -3,6 +3,7 @@ module Data.Result where
 
 import qualified Control.Monad.Fail as Fail
 import Control.Applicative
+import Data.Functor.Classes
 import Text.Pretty
 
 data Result a = Result a | Error [String]
@@ -34,3 +35,8 @@ instance Alternative Result where
 instance Pretty a => Pretty (Result a) where
   prettyPrec (Result a) = prettyPrec a
   prettyPrec (Error errors) = (0, foldr (.) id (fmap (\ e -> showString e . showChar '\n') errors))
+
+instance Show1 Result where
+  liftShowsPrec sp _ d result = case result of
+    Error s -> showsUnaryWith showsPrec "Error" d s
+    Result a -> showsUnaryWith sp "Result" d a
