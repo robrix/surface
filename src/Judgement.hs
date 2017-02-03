@@ -1,143 +1,276 @@
-{-# LANGUAGE GADTs, RankNTypes #-}
+{-# LANGUAGE FlexibleInstances, GADTs, RankNTypes #-}
 module Judgement where
 
+import Context hiding (S)
+import qualified Context
 import Control.Monad
 import qualified Control.Monad.Fail as Fail
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.Result
-import Data.Semigroup hiding (Sum, Product)
 import Expr
 import Text.Pretty
 
 data Judgement a where
-  Check :: Context -> Term -> Type -> Judgement ()
-  Infer :: Context -> Term -> Judgement Type
+  Check :: Term -> Type -> Judgement ()
+  Infer :: Term -> Judgement Type
 
-  IsType :: Context -> Term -> Judgement ()
+  IsType :: Term -> Judgement ()
 
 data Goal f a where
   Failure :: [String] -> Goal f a
   Return :: a -> Goal f a
   Then :: f x -> (x -> Goal f a) -> Goal f a
 
-type Context = [(Name, Type)]
-
-data Declaration = Known Type | Unknown
-  deriving (Eq, Show)
-
-data Entry = Name := Declaration
-  deriving (Eq, Show)
+data State s a where
+  Get :: State s s
+  Put :: s -> State s ()
 
 
-infer :: Context -> Term -> Goal Judgement Type
-infer context term = Infer context term `Then` Return
+class Binder a where
+  isBound :: Name -> a -> Bool
 
-check :: Context -> Term -> Type -> Goal Judgement ()
-check context term ty = Check context term ty `Then` Return
+class Binder1 f where
+  liftIsBound :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
-isType :: Context -> Term -> Goal Judgement ()
-isType context term = IsType context term `Then` Return
+instance (Foldable t, Binder a) => Binder (t a) where
+  isBound name = any (isBound name)
 
-fresh :: Context -> Goal Judgement Type
-fresh = return . var . maybe (Name 0) getMax . sfoldMap (Max . fst)
+instance Binder Name where isBound = (==)
 
-sfoldMap :: (Semigroup s, Foldable t) => (a -> s) -> t a -> Maybe s
-sfoldMap f = getOption . foldMap (Option . Just . f)
+instance Binder TypeEntry where
+  isBound name (_ := Known t) = isBound name t
+  isBound _ _ = False
+
+instance Binder1 f => Binder (Fix f) where
+   isBound name = liftIsBound isBound name . unfix
+
+instance Binder1 ExprF where
+  liftIsBound isBound name = any (isBound name)
 
 
-define :: Name -> Type -> Context -> Context
-define name ty = ((name, ty):)
+unify :: Type -> Type -> Goal Proof ()
+unify t1 t2 = case (unfix t1, unfix t2) of
+  (Function a1 b1, Function a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
+  (UnitT, UnitT) -> return ()
+  (TypeT, TypeT) -> return ()
 
-lookupName :: Name -> Context -> Goal Judgement Type
-lookupName name context = case lookup name context of
-    Just ty -> return ty
-    _ -> fail ("No variable " ++ pretty name ++ " in context.")
+  (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context
+  (Var v1, Var v2) -> onTop $ \ (n := d) ->
+    case (n == v1, n == v2, d) of
+      (True, True, _) -> restore
+      (True, False, Unknown) -> replace [ v1 := Known (var v2) ]
+      (False, True, Unknown) -> replace [ v2 := Known (var v1) ]
+      (True, False, Known t) -> unify t2 t >> restore
+      (False, True, Known t) -> unify t1 t >> restore
+      (False, False, _) -> unify t1 t2 >> restore
+  (Var v, _) -> solve v [] t1
+  (_, Var v) -> solve v [] t2
+  (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
-decompose :: Judgement a -> Goal Judgement a
+  (InL l1, InL l2) -> unify l1 l2
+  (InR r1, InR r2) -> unify r1 r2
+  (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
+
+  (Pair a1 b1, Pair a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Fst p1, Fst p2) -> unify p1 p2
+  (Snd p1, Snd p2) -> unify p1 p2
+
+  (Unit, Unit) -> return ()
+
+  _ -> fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
+
+
+solve :: Name -> Suffix -> Type -> Goal Proof ()
+solve name suffix ty = onTop $ \ (n := d) ->
+  case (n == name, isBound n ty || isBound n suffix, d) of
+    (True, True, _) -> fail "Occurs check failed."
+    (True, False, Unknown) -> replace (suffix ++ [ name := Known ty ])
+    (True, False, Known v) -> do
+      modifyContext (<>< suffix)
+      unify v ty
+      restore
+    (False, True, _) -> do
+      solve name (n := d : suffix) ty
+      replace suffix
+    (False, False, _) -> do
+      solve name suffix ty
+      restore
+
+specialize :: Scheme -> Goal Proof Type
+specialize (Type t) = return t
+specialize s = do
+  let (d, s') = unpack s
+  b <- fresh d
+  specialize (fmap (fromS b) s')
+  where unpack :: Scheme -> (Declaration, Schm (Index Name))
+        unpack (Context.All s') = (Unknown, s')
+        unpack (LetS t s') = (Known t, s')
+        unpack (Type _) = error "unpack cannot be called with a Type Schm."
+
+        fromS :: Name -> Index Name -> Name
+        fromS b Z = b
+        fromS _ (Context.S a) = a
+
+
+data Proof a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
+
+getContext :: Goal Proof Context
+getContext = gets snd
+
+putContext :: Context -> Goal Proof ()
+putContext context = do
+  m <- gets fst
+  put (m, context)
+
+modifyContext :: (Context -> Context) -> Goal Proof ()
+modifyContext f = getContext >>= putContext . f
+
+get :: Goal Proof (Name, Context)
+get = S Get `Then` Return
+
+gets :: ((Name, Context) -> result) -> Goal Proof result
+gets f = fmap f get
+
+put :: (Name, Context) -> Goal Proof ()
+put s = S (Put s) `Then` Return
+
+
+fresh :: Declaration -> Goal Proof Name
+fresh d = do
+  (m, context) <- get
+  put (increment m, context :< Ty (m := d))
+  return m
+  where increment (Name n) = Name (succ n)
+
+onTop :: (TypeEntry -> Goal Proof Extension) -> Goal Proof ()
+onTop f = do
+  context :< vd <- getContext
+  putContext context
+  case vd of
+    Ty d -> do
+      m <- f d
+      case m of
+        Replace with -> modifyContext (<>< with)
+        Restore -> modifyContext (:< vd)
+
+    _ -> onTop f >> modifyContext (:< vd)
+
+restore :: Goal Proof Extension
+restore = Return Restore
+
+replace :: Suffix -> Goal Proof Extension
+replace = Return . Replace
+
+
+infer :: Term -> Goal Proof Type
+infer term = J (Infer term) `Then` Return
+
+check :: Term -> Type -> Goal Proof ()
+check term ty = J (Check term ty) `Then` Return
+
+isType :: Term -> Goal Proof ()
+isType term = J (IsType term) `Then` Return
+
+
+define :: Name -> Type -> Goal Proof ()
+define name ty = modifyContext (<>< [ name := Known ty ])
+
+find :: Name -> Goal Proof Scheme
+find name = getContext >>= help
+  where help (context :< Tm (found `Is` decl))
+          | name == found = return decl
+          | otherwise = help context
+        help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+
+
+decompose :: Judgement a -> Goal Proof a
 decompose judgement = case judgement of
-  Infer context term -> case unfix term of
+  Infer term -> case unfix term of
     Pair x y -> do
-      a <- infer context x
-      b <- infer context y
+      a <- infer x
+      b <- infer y
       return (a .*. b)
 
     Fst p -> do
-      ty <- infer context p
+      ty <- infer p
       case unfix ty of
         Product a _ -> return a
         _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     Snd p -> do
-      ty <- infer context p
+      ty <- infer p
       case unfix ty of
         Product _ b -> return b
         _ -> fail ("Expected a product type, but got " ++ pretty ty)
 
     InL l -> do
-      a <- infer context l
-      b <- fresh context
-      return (a .+. b)
+      a <- infer l
+      b <- fresh Unknown
+      return (a .+. var b)
 
     InR r -> do
-      a <- fresh context
-      b <- infer context r
-      return (a .+. b)
+      a <- fresh Unknown
+      b <- infer r
+      return (var a .+. b)
 
     Case subject ifL ifR -> do
-      ty <- infer context subject
+      ty <- infer subject
       case unfix ty of
         Sum l r -> do
-          b <- fresh context
-          check context (l .->. b) ifL
-          check context (r .->. b) ifR
-          return b
+          b <- fresh Unknown
+          check (l .->. var b) ifL
+          check (r .->. var b) ifR
+          return (var b)
         _ -> fail ("Expected a sum type, but got " ++ pretty ty)
 
     Unit -> return unitT
 
-    Var name -> lookupName name context
+    Var name -> find name >>= specialize
 
     Abs name body -> do
-      t <- fresh context
-      bodyT <- infer (define name t context) body
-      return (t .->. bodyT)
+      t <- fresh (Known typeT)
+      define name (var t)
+      bodyT <- infer body
+      return (var t .->. bodyT)
 
     App f arg -> do
-      ty <- infer context f
+      ty <- infer f
       case unfix ty of
         Function a b -> do
-          check context arg a
+          check arg a
           return b
         _ -> fail ("Expected a function type, but got " ++ pretty ty)
 
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
-    Function{} -> isType context term >> return typeT
-    Product{} -> isType context term >> return typeT
-    Sum{} -> isType context term >> return typeT
+    Function{} -> isType term >> return typeT
+    Product{} -> isType term >> return typeT
+    Sum{} -> isType term >> return typeT
 
-  Check context term ty -> do
-    ty' <- infer context term
+  Check term ty -> do
+    ty' <- infer term
     unless (ty' == ty) $ fail ("Expected " ++ pretty ty ++ " but got " ++ pretty ty')
 
-  IsType context ty -> case unfix ty of
+  IsType ty -> case unfix ty of
     UnitT -> return ()
     TypeT -> return ()
     Sum a b -> do
-      isType context a
-      isType context b
+      isType a
+      isType b
     Product a b -> do
-      isType context a
-      isType context b
+      isType a
+      isType b
     Function a b -> do
-      isType context a
-      isType context b
+      isType a
+      isType b
 
     Var name -> do
-      ty <- lookupName name context
-      isType context ty
+      ty <- find name >>= specialize
+      isType ty
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
@@ -149,19 +282,26 @@ iterGoal algebra = go
           Return a -> Result a
           Then instruction cont -> algebra instruction (go . cont)
 
-interpret :: Goal Judgement a -> Result a
-interpret = iterGoal $ \ judgement cont ->
-  interpret (decompose judgement) >>= cont
+interpret :: (Name, Context) -> Goal Proof a -> Result a
+interpret context proof = case proof of
+  Failure s -> Error s
+  Return a -> Result a
+  Then proof cont -> case proof of
+    J judgement -> interpret context (decompose judgement) >>= interpret context . cont
+    S state -> case state of
+      Get -> interpret context (cont context)
+      Put context' -> interpret context' (cont ())
+    R result -> result >>= interpret context . cont
 
 
 -- Instances
 
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
-    Check context term ty -> showsTernaryWith showsPrec showsPrec showsPrec "Check" d context term ty
-    Infer context term -> showsBinaryWith showsPrec showsPrec "Infer" d context term
+    Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
+    Infer term -> showsUnaryWith showsPrec "Infer" d term
 
-    IsType context ty -> showsBinaryWith showsPrec showsPrec "IsType" d context ty
+    IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
 instance Functor (Goal f) where
   fmap f g = case g of
