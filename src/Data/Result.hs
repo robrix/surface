@@ -33,11 +33,11 @@ instance Alternative Result where
   _ <|> Result b = Result b
 
 instance Pretty1 Result where
-  prettyPrec1 (Result a) = a
-  prettyPrec1 (Error errors) = (0, foldr (.) id (fmap (\ e -> showString e . showChar '\n') errors))
+  liftPrettyPrec pp d (Result a) = pp d a
+  liftPrettyPrec _ _ (Error errors) = foldr (.) id (fmap (\ e -> showString e . showChar '\n') errors)
 
 instance Pretty a => Pretty (Result a) where
-  prettyPrec = prettyPrec1 . fmap prettyPrec
+  prettyPrec = prettyPrec1
 
 instance Show1 Result where
   liftShowsPrec sp _ d result = case result of

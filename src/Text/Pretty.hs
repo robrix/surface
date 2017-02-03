@@ -3,22 +3,22 @@ module Text.Pretty where
 import Data.Functor.Foldable
 
 class Pretty t where
-  prettyPrec :: t -> (Int, ShowS)
+  prettyPrec :: Int -> t -> ShowS
 
 class Pretty1 f where
-  prettyPrec1 :: f (Int, ShowS) -> (Int, ShowS)
+  liftPrettyPrec :: (Int -> a -> ShowS) -> Int -> f a -> ShowS
+
+prettyPrec1 :: (Pretty a, Pretty1 f) => Int -> f a -> ShowS
+prettyPrec1 = liftPrettyPrec prettyPrec
 
 prettyPrint :: Pretty a => a -> IO ()
 prettyPrint = putStrLn . pretty
 
-prettyParen :: Int -> (Int, ShowS) -> ShowS
-prettyParen d (p, s) = showParen (p >= d) s
-
 pretty :: Pretty a => a -> String
-pretty = ($ "") . snd . prettyPrec
+pretty = ($ "") . prettyPrec 0
 
 
 -- Instances
 
-instance (Functor f, Pretty1 f) => Pretty (Fix f) where
-  prettyPrec = cata prettyPrec1
+instance Pretty1 f => Pretty (Fix f) where
+  prettyPrec d = liftPrettyPrec prettyPrec d . unfix

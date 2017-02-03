@@ -114,25 +114,25 @@ unit = Fix Unit
 -- Instances
 
 instance Pretty1 ExprF where
-  prettyPrec1 term = case term of
-    App a b -> (0, prettyParen 0 a . showString " # " . prettyParen 0 b)
-    Abs v b -> (10, showString "lam " . showParen True (showChar '\\' . snd (prettyPrec v) . showString " -> " . snd b))
-    Var v -> prettyPrec v
-    InL l -> (10, showString "inL" . showChar ' ' . prettyParen 10 l)
-    InR r -> (10, showString "inR" . showChar ' ' . prettyParen 10 r)
-    Case c l r -> (10, showString "case " . prettyParen 10 c . showChar ' ' . prettyParen 10 l . showChar ' ' . prettyParen 10 r)
-    Pair a b -> (10, showString "pair " . prettyParen 10 a . showChar ' ' . prettyParen 10 b)
-    Fst f -> (10, showString "fst' " . prettyParen 10 f)
-    Snd s -> (10, showString "snd'" . prettyParen 10 s)
-    Function a b -> (0, prettyParen 0 a . showString " .->. " . prettyParen 0 b)
-    Sum a b -> (6, prettyParen 6 a . showString " .+. " . prettyParen 7 b)
-    Product a b -> (7, prettyParen 7 a . showString " .*. " . prettyParen 8 b)
-    UnitT -> (-1, showString "unitT")
-    Unit -> (-1, showString "unit")
-    TypeT -> (-1, showString "typeT")
+  liftPrettyPrec pp d term = case term of
+    App a b -> showParen (d > 0) $ pp 0 a . showString " # " . pp 0 b
+    Abs v b -> showParen (d > 10) $ showString "lam " . showParen True (showChar '\\' . prettyPrec 10 v . showString " -> " . pp 0 b)
+    Var v -> prettyPrec d v
+    InL l -> showParen (d > 10) $ showString "inL " . pp 10 l
+    InR r -> showParen (d > 10) $ showString "inR " . pp 10 r
+    Case c l r -> showParen (d > 10) $ showString "case " . pp 10 c . showChar ' ' . pp 10 l . showChar ' ' . pp 10 r
+    Pair a b -> showParen (d > 10) $ showString "pair " . pp 10 a . showChar ' ' . pp 10 b
+    Fst f -> showParen (d > 10) $ showString "fst' " . pp 10 f
+    Snd s -> showParen (d > 10) $ showString "snd'" . pp 10 s
+    Function a b -> showParen (d > 0) $ pp 0 a . showString " .->. " . pp 0 b
+    Sum a b -> showParen (d > 6) $ pp 6 a . showString " .+. " . pp 7 b
+    Product a b -> showParen (d > 7) $ pp 7 a . showString " .*. " . pp 8 b
+    UnitT -> showString "unitT"
+    Unit -> showString "unit"
+    TypeT -> showString "typeT"
 
 instance Pretty Name where
-  prettyPrec = (,) (negate 1) . showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
+  prettyPrec _ = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
 
 instance Eq1 ExprF where
   liftEq eq a b = case (a, b) of
