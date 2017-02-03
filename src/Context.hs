@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFoldable, DeriveFunctor #-}
 module Context where
 
 import Expr
@@ -7,3 +8,6 @@ data Declaration = Known Type | Unknown
 
 data Entry = Name := Declaration
   deriving (Eq, Show)
+
+data Backward a = Backward a :< a | Nil
+  deriving (Eq, Foldable, Functor, Show)
