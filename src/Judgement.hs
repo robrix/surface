@@ -345,3 +345,9 @@ instance Show1 ProofF where
 
 instance Show a => Show (ProofF a) where
   showsPrec = showsPrec1
+
+instance Pretty1 Judgement where
+  liftPrettyPrec _ d judgement = case judgement of
+    Check term ty -> showParen (d > 10) $ showsBinaryWith showsPrec showsPrec "check" 10 term ty
+    Infer term -> showParen (d > 10) $ showsUnaryWith showsPrec "infer" 10 term
+    IsType ty -> showParen (d > 10) $ showsUnaryWith showsPrec "isType" 10 ty
