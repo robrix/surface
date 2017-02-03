@@ -3,12 +3,13 @@ module Judgement where
 
 import Context hiding (S)
 import qualified Context
-import Control.Monad
+import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.Result
 import Expr
+import Prelude hiding (fail)
 import Text.Pretty
 
 data Judgement a where
@@ -184,6 +185,10 @@ find name = getContext >>= help
           | name == found = return decl
           | otherwise = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+
+
+fail :: String -> Proof a
+fail = wrap . R . Error . (:[])
 
 
 decompose :: Judgement a -> Proof a
