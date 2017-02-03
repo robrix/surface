@@ -201,15 +201,17 @@ decompose judgement = case judgement of
 
     Fst p -> do
       ty <- infer p
-      case unfix ty of
-        Product a _ -> return a
-        _ -> fail ("Expected a product type, but got " ++ pretty ty)
+      a <- fresh Unknown
+      b <- fresh Unknown
+      unify ty (var a .*. var b)
+      return (var a)
 
     Snd p -> do
       ty <- infer p
-      case unfix ty of
-        Product _ b -> return b
-        _ -> fail ("Expected a product type, but got " ++ pretty ty)
+      a <- fresh Unknown
+      b <- fresh Unknown
+      unify ty (var a .*. var b)
+      return (var b)
 
     InL l -> do
       a <- infer l
@@ -243,11 +245,10 @@ decompose judgement = case judgement of
 
     App f arg -> do
       ty <- infer f
-      case unfix ty of
-        Function a b -> do
-          check arg a
-          return b
-        _ -> fail ("Expected a function type, but got " ++ pretty ty)
+      a <- infer arg
+      b <- fresh Unknown
+      unify ty (a .->. var b)
+      return (var b)
 
     -- Types
     UnitT -> return typeT
