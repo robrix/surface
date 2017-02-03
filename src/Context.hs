@@ -14,3 +14,7 @@ data Backward a = Backward a :< a | Nil
 
 type Context = Backward Entry
 type Suffix = [Entry]
+
+(<><) :: Context -> Suffix -> Context
+context <>< [] = context
+context <>< (entry : rest) = context :< entry <>< rest
