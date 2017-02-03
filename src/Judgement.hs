@@ -294,10 +294,10 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
 
-interpret :: (Name, Context) -> Proof a -> Result a
-interpret context proof = case runStep context proof of
+run :: (Name, Context) -> Proof a -> Result a
+run context proof = case runStep context proof of
   Left result -> result
-  Right next -> uncurry interpret next
+  Right next -> uncurry run next
 
 runStep :: (Name, Context) -> Proof a -> Either (Result a) ((Name, Context), Proof a)
 runStep context proof = case runFreer proof of
