@@ -5,7 +5,7 @@ import Data.Functor.Foldable
 class Pretty t where
   prettyPrec :: t -> (Int, ShowS)
 
-class Functor f => Pretty1 f where
+class Pretty1 f where
   prettyPrec1 :: f (Int, ShowS) -> (Int, ShowS)
 
 prettyPrint :: Pretty a => a -> IO ()
@@ -20,5 +20,5 @@ pretty = ($ "") . snd . prettyPrec
 
 -- Instances
 
-instance Pretty1 f => Pretty (Fix f) where
+instance (Functor f, Pretty1 f) => Pretty (Fix f) where
   prettyPrec = cata prettyPrec1
