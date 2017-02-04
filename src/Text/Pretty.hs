@@ -46,6 +46,7 @@ instance Pretty1 f => Pretty1 (Freer f) where
   liftPrettyPrec pa = go where go d = liftPrettyPrec2 pa go d . runFreer
 
 instance Pretty1 [] where
+  liftPrettyPrec _ _ [] = showString "[]"
   liftPrettyPrec pp _ xs = showString "[ " . foldr (.) id (intersperse (showString ", ") (pp 0 <$> xs)) . showString " ]"
 
 instance Pretty2 Either where
