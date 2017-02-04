@@ -51,3 +51,7 @@ instance Pretty1 Backward where
   liftPrettyPrec pp d (Nil :< h) = pp d h
   liftPrettyPrec pp d (t :< h) = showParen (d > 8) (liftPrettyPrec pp 8 t . showString " :< " . pp 9 h)
   liftPrettyPrec _ _ Nil = showString "Nil"
+
+instance Pretty Declaration where
+  prettyPrec d (Known ty) = showChar '!' . prettyPrec d ty
+  prettyPrec _ _ = showChar '?'
