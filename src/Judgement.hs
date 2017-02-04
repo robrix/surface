@@ -69,8 +69,8 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
       (True, False, Known t) -> unify t2 t >> restore
       (False, True, Known t) -> unify t1 t >> restore
       (False, False, _) -> unify t1 t2 >> restore
-  (Var v, _) -> solve v [] t1
-  (_, Var v) -> solve v [] t2
+  (Var v, _) -> solve v [] t2
+  (_, Var v) -> solve v [] t1
   (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
   (InL l1, InL l2) -> unify l1 l2
