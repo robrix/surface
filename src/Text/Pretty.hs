@@ -45,3 +45,12 @@ instance Pretty1 f => Pretty1 (Freer f) where
 
 instance (Pretty1 f, Pretty a) => Pretty (Freer f a) where
   prettyPrec = liftPrettyPrec prettyPrec
+
+instance Pretty2 Either where
+  liftPrettyPrec2 pl pr d = either (pl d) (pr d)
+
+instance Pretty a => Pretty1 (Either a) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec
+
+instance (Pretty a, Pretty b) => Pretty (Either a b) where
+  prettyPrec = prettyPrec2
