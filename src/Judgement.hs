@@ -347,13 +347,13 @@ instance Show a => Show (ProofF a) where
   showsPrec = showsPrec1
 
 instance Pretty1 Judgement where
-  liftPrettyPrec = const prettyPrec
-
-instance Pretty (Judgement a) where
-  prettyPrec d judgement = case judgement of
+  liftPrettyPrec _ d judgement = case judgement of
     Check term ty -> showParen (d > 10) $ showsBinaryWith prettyPrec prettyPrec "check" 10 term ty
     Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyPrec "isType" 10 ty
+
+instance Pretty a => Pretty (Judgement a) where
+  prettyPrec = prettyPrec1
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
