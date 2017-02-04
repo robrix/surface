@@ -66,7 +66,7 @@ instance Pretty TermEntry where
   prettyPrec d (name `Is` scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
-  liftPrettyPrec _ d (Type ty) = prettyPrec d ty
+  liftPrettyPrec _ d (Type ty) = prettyType d ty
   liftPrettyPrec pp d (All schm) = showParen (d > 10) $ showString "All " .  liftPrettyPrec (liftPrettyPrec pp) 10 schm
   liftPrettyPrec pp d (LetS ty schm) = showParen (d > 10) $ showString "LetS " . prettyPrec 10 ty . showChar ' ' . liftPrettyPrec (liftPrettyPrec pp) 10 schm
 
