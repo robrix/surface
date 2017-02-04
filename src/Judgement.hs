@@ -355,7 +355,10 @@ instance Pretty (Judgement a) where
     Infer term -> showParen (d > 10) $ showsUnaryWith showsPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith showsPrec "isType" 10 ty
 
-instance Pretty s => Pretty1 (State s) where
-  liftPrettyPrec _ d state = case state of
+instance Pretty2 State where
+  liftPrettyPrec2 pp _ d state = case state of
     Get -> showString "Get"
-    Put s -> showParen (d > 10) $ showsUnaryWith prettyPrec "put" 10 s
+    Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
+
+instance Pretty s => Pretty1 (State s) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec
