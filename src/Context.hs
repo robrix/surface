@@ -59,6 +59,11 @@ instance Pretty Declaration where
   prettyPrec d (Known ty) = showChar '!' . prettyPrec d ty
   prettyPrec _ _ = showChar '?'
 
+instance Pretty1 Schm where
+  liftPrettyPrec _ d (Type ty) = prettyPrec d ty
+  liftPrettyPrec pp d (All schm) = showParen (d > 10) $ showString "All " .  liftPrettyPrec (liftPrettyPrec pp) 10 schm
+  liftPrettyPrec pp d (LetS ty schm) = showParen (d > 10) $ showString "LetS " . prettyPrec 10 ty . showChar ' ' . liftPrettyPrec (liftPrettyPrec pp) 10 schm
+
 instance Pretty1 Index where
   liftPrettyPrec _ _ Z = id
   liftPrettyPrec pp d (S a) = pp d a . showChar '\''
