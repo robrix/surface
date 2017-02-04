@@ -354,7 +354,7 @@ instance Pretty1 Judgement where
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
-    Get -> showString "Get"
+    Get -> showString "get"
     Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
 
 instance Pretty1 ProofF where
