@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor #-}
 module Context where
 
+import Data.Foldable (toList)
 import Expr
 import Text.Pretty
 
@@ -48,9 +49,7 @@ type Scheme = Schm Name
 -- Instances
 
 instance Pretty1 Backward where
-  liftPrettyPrec pp d (Nil :< h) = pp d h
-  liftPrettyPrec pp d (t :< h) = showParen (d > 8) (liftPrettyPrec pp 8 t . showString " :< " . pp 9 h)
-  liftPrettyPrec _ _ Nil = showString "∅"
+  liftPrettyPrec pp d = liftPrettyPrec pp d . toList
 
 instance Pretty Entry where
   prettyPrec d (Ty ty) = prettyPrec d ty
