@@ -8,8 +8,14 @@ class Pretty t where
 class Pretty1 f where
   liftPrettyPrec :: (Int -> a -> ShowS) -> Int -> f a -> ShowS
 
+class Pretty2 p where
+  liftPrettyPrec2 :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> Int -> p a b -> ShowS
+
 prettyPrec1 :: (Pretty a, Pretty1 f) => Int -> f a -> ShowS
 prettyPrec1 = liftPrettyPrec prettyPrec
+
+prettyPrec2 :: (Pretty a, Pretty b, Pretty2 p) => Int -> p a b -> ShowS
+prettyPrec2 = liftPrettyPrec2 prettyPrec prettyPrec
 
 prettyPrint :: Pretty a => a -> IO ()
 prettyPrint = putStrLn . pretty
