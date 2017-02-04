@@ -149,6 +149,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Unit -> showString "unit"
   TypeT -> showString "typeT"
 
+
 -- Instances
 
 instance Pretty1 ExprF where
