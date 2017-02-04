@@ -33,3 +33,6 @@ instance Pretty1 f => Pretty (Fix f) where
 instance Pretty1 f => Pretty2 (FreerF f) where
   liftPrettyPrec2 pa _ d (Pure a) = pa d a
   liftPrettyPrec2 _ pb d (Free cont r) = liftPrettyPrec (\ i -> pb i . cont) d r
+
+instance (Pretty1 f, Pretty a) => Pretty1 (FreerF f a) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec
