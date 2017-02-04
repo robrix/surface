@@ -181,9 +181,9 @@ define name ty = modifyContext (<>< [ name := Known ty ])
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
-  where help (context :< Tm (found `Is` decl))
+  where help (_ :< Tm (found `Is` decl))
           | name == found = return decl
-          | otherwise = help context
+        help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
 
