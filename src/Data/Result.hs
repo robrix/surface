@@ -3,6 +3,7 @@ module Data.Result where
 
 import qualified Control.Monad.Fail as Fail
 import Control.Applicative
+import Data.List (intersperse)
 import Data.Functor.Classes
 import Text.Pretty
 
@@ -34,7 +35,7 @@ instance Alternative Result where
 
 instance Pretty1 Result where
   liftPrettyPrec pp d (Result a) = pp d a
-  liftPrettyPrec _ _ (Error errors) = foldr (.) id (fmap (\ e -> showString e . showChar '\n') errors)
+  liftPrettyPrec _ _ (Error errors) = showString "[ " . foldr (.) id (intersperse (showChar '\n') (showString <$> errors)) . showString " ]"
 
 instance Show1 Result where
   liftShowsPrec sp _ d result = case result of
