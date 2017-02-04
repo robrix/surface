@@ -352,25 +352,13 @@ instance Pretty1 Judgement where
     Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyPrec "isType" 10 ty
 
-instance Pretty a => Pretty (Judgement a) where
-  prettyPrec = prettyPrec1
-
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
     Get -> showString "Get"
     Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
-
-instance Pretty s => Pretty1 (State s) where
-  liftPrettyPrec = liftPrettyPrec2 prettyPrec
-
-instance (Pretty s, Pretty a) => Pretty (State s a) where
-  prettyPrec = prettyPrec2
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
     J judgement -> liftPrettyPrec pp d judgement
     S state -> liftPrettyPrec2 showsPrec pp d state
     R result -> liftPrettyPrec pp d result
-
-instance Pretty a => Pretty (ProofF a) where
-  prettyPrec = prettyPrec1

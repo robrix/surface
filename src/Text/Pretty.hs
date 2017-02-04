@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Text.Pretty where
 
 import Control.Monad.Free.Freer
@@ -43,14 +44,14 @@ instance (Pretty1 f, Pretty a, Pretty b) => Pretty (FreerF f a b) where
 instance Pretty1 f => Pretty1 (Freer f) where
   liftPrettyPrec pa = go where go d = liftPrettyPrec2 pa go d . runFreer
 
-instance (Pretty1 f, Pretty a) => Pretty (Freer f a) where
-  prettyPrec = liftPrettyPrec prettyPrec
-
 instance Pretty2 Either where
   liftPrettyPrec2 pl pr d = either (pl d) (pr d)
 
-instance Pretty a => Pretty1 (Either a) where
+instance Pretty2 (,) where
+  liftPrettyPrec2 pa pb _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
+
+instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
   liftPrettyPrec = liftPrettyPrec2 prettyPrec
 
-instance (Pretty a, Pretty b) => Pretty (Either a b) where
-  prettyPrec = prettyPrec2
+instance (Pretty1 f, Pretty a) => Pretty (f a) where
+  prettyPrec = prettyPrec1

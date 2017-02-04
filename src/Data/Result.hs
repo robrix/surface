@@ -36,9 +36,6 @@ instance Pretty1 Result where
   liftPrettyPrec pp d (Result a) = pp d a
   liftPrettyPrec _ _ (Error errors) = foldr (.) id (fmap (\ e -> showString e . showChar '\n') errors)
 
-instance Pretty a => Pretty (Result a) where
-  prettyPrec = prettyPrec1
-
 instance Show1 Result where
   liftShowsPrec sp _ d result = case result of
     Error s -> showsUnaryWith showsPrec "Error" d s
