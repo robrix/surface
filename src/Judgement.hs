@@ -20,6 +20,8 @@ data Judgement a where
 
   Unify :: Type -> Type -> Judgement ()
 
+  Fresh :: Declaration -> Judgement Name
+
 data State s a where
   Get :: State s s
   Put :: s -> State s ()
@@ -144,12 +146,16 @@ put s = S (Put s) `andThen` return
 andThen :: f x -> (x -> Freer f a) -> Freer f a
 andThen = (Freer .) . flip Free
 
-fresh :: Declaration -> Proof Name
-fresh d = do
+fresh' :: Declaration -> Proof Name
+fresh' d = do
   (m, context) <- get
   put (increment m, context :< Ty (m := d))
   return m
   where increment (Name n) = Name (succ n)
+
+fresh :: Declaration -> Proof Name
+fresh declaration = J (Fresh declaration) `andThen` return
+
 
 onTop :: (TypeEntry -> Proof Extension) -> Proof ()
 onTop f = do
@@ -300,6 +306,8 @@ decompose judgement = case judgement of
 
   Unify t1 t2 -> unify' t1 t2
 
+  Fresh declaration -> fresh' declaration
+
 
 run :: (Name, Context) -> Proof a -> Result a
 run context proof = case runStep context proof of
@@ -335,6 +343,8 @@ instance Show1 Judgement where
 
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
 
+    Fresh declaration -> showsUnaryWith showsPrec "Fresh" d declaration
+
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
 
@@ -361,6 +371,7 @@ instance Pretty1 Judgement where
     Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
     Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
+    Fresh declaration -> showParen (d > 10) $ showsUnaryWith prettyPrec "fresh" 10 declaration
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
