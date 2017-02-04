@@ -128,6 +128,8 @@ prettyTypeName = prettyName typeNames
 prettyName :: String -> Name -> ShowS
 prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
 
+prettyExpr :: String -> Int -> Expr -> ShowS
+prettyExpr alphabet d = liftPrettyExpr alphabet prettyPrec d . unfix
 
 liftPrettyExpr :: String -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
 liftPrettyExpr alphabet pp d expr = case expr of
