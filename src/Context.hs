@@ -2,6 +2,7 @@
 module Context where
 
 import Expr
+import Text.Pretty
 
 data Declaration = Known Type | Unknown
   deriving (Eq, Show)
@@ -42,3 +43,11 @@ data Schm a
   deriving (Eq, Foldable, Functor, Show)
 
 type Scheme = Schm Name
+
+
+-- Instances
+
+instance Pretty1 Backward where
+  liftPrettyPrec pp d (Nil :< h) = pp d h
+  liftPrettyPrec pp d (t :< h) = showParen (d > 8) (liftPrettyPrec pp 8 t . showString " :< " . pp 9 h)
+  liftPrettyPrec _ _ Nil = showString "Nil"
