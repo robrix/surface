@@ -3,6 +3,7 @@ module Text.Pretty where
 
 import Control.Monad.Free.Freer
 import Data.Functor.Foldable
+import Data.List (intersperse)
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
@@ -43,6 +44,9 @@ instance (Pretty1 f, Pretty a, Pretty b) => Pretty (FreerF f a b) where
 
 instance Pretty1 f => Pretty1 (Freer f) where
   liftPrettyPrec pa = go where go d = liftPrettyPrec2 pa go d . runFreer
+
+instance Pretty1 [] where
+  liftPrettyPrec pp _ xs = showString "[ " . foldr (.) id (intersperse (showString ", ") (pp 0 <$> xs)) . showString " ]"
 
 instance Pretty2 Either where
   liftPrettyPrec2 pl pr d = either (pl d) (pr d)
