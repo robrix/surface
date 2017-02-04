@@ -371,3 +371,6 @@ instance Pretty1 ProofF where
     J judgement -> liftPrettyPrec pp d judgement
     S state -> liftPrettyPrec2 showsPrec pp d state
     R result -> liftPrettyPrec pp d result
+
+instance Pretty a => Pretty (ProofF a) where
+  prettyPrec = prettyPrec1
