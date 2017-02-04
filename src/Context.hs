@@ -56,14 +56,14 @@ instance Pretty Entry where
   prettyPrec d (Tm term) = prettyPrec d term
 
 instance Pretty TypeEntry where
-  prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 9 name . showString " := " . prettyPrec 10 declaration
+  prettyPrec d (name := declaration) = showParen (d > 9) $ prettyTypeName name . showString " := " . prettyPrec 10 declaration
 
 instance Pretty Declaration where
   prettyPrec d (Known ty) = showChar '!' . prettyPrec d ty
   prettyPrec _ _ = showChar '?'
 
 instance Pretty TermEntry where
-  prettyPrec d (name `Is` scheme) = showParen (d > 9) $ prettyPrec 9 name . showString " :: " . prettyPrec 10 scheme
+  prettyPrec d (name `Is` scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
   liftPrettyPrec _ d (Type ty) = prettyPrec d ty
