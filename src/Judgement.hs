@@ -18,6 +18,8 @@ data Judgement a where
 
   IsType :: Term -> Judgement ()
 
+  Unify :: Type -> Type -> Judgement ()
+
 data State s a where
   Get :: State s s
   Put :: s -> State s ()
@@ -46,7 +48,10 @@ instance Binder1 ExprF where
 
 
 unify :: Type -> Type -> Proof ()
-unify t1 t2 = case (unfix t1, unfix t2) of
+unify t1 t2 = J (Unify t1 t2) `andThen` return
+
+unify' :: Type -> Type -> Proof ()
+unify' t1 t2 = case (unfix t1, unfix t2) of
   (Function a1 b1, Function a2 b2) -> unify a1 a2 >> unify b1 b2
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
@@ -293,6 +298,8 @@ decompose judgement = case judgement of
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
+  Unify t1 t2 -> unify' t1 t2
+
 
 run :: (Name, Context) -> Proof a -> Result a
 run context proof = case runStep context proof of
@@ -326,6 +333,8 @@ instance Show1 Judgement where
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
+    Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
+
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
 
@@ -351,6 +360,7 @@ instance Pretty1 Judgement where
     Check term ty -> showParen (d > 10) $ showsBinaryWith prettyPrec prettyType "check" 10 term ty
     Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
+    Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
