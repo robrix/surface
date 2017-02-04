@@ -113,11 +113,17 @@ unit = Fix Unit
 
 -- Conveniences
 
+typeNames :: String
+typeNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+termNames :: String
+termNames = "abcdefghijklmnopqrstuvwxyz"
+
 prettyTermName :: Name -> ShowS
-prettyTermName = prettyName "abcdefghijklmnopqrstuvwxyz"
+prettyTermName = prettyName termNames
 
 prettyTypeName :: Name -> ShowS
-prettyTypeName = prettyName "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+prettyTypeName = prettyName typeNames
 
 prettyName :: String -> Name -> ShowS
 prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
