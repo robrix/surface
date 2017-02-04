@@ -16,12 +16,14 @@ data TypeEntry = Name := Declaration
 data TermEntry = Name `Is` Scheme
   deriving (Eq, Show)
 
+infixl 8 :<
 data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show)
 
 type Context = Backward Entry
 type Suffix = [TypeEntry]
 
+infixl 8 <><
 (<><) :: Context -> Suffix -> Context
 context <>< [] = context
 context <>< (entry : rest) = context :< Ty entry <>< rest
