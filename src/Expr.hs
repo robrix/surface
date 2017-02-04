@@ -129,11 +129,11 @@ prettyName :: String -> Name -> ShowS
 prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
 
 
-liftPrettyExpr :: Bool -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
-liftPrettyExpr isType pp d expr = case expr of
+liftPrettyExpr :: String -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
+liftPrettyExpr alphabet pp d expr = case expr of
   App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
-  Abs v b -> showParen (d > 10) $ showString "lam " . showParen True (showChar '\\' . prettyPrec 10 v . showString " . " . pp 0 b)
-  Var v -> prettyPrec d v
+  Abs v b -> showParen (d > 10) $ showString "lam " . showParen True (showChar '\\' . prettyName alphabet v . showString " . " . pp 0 b)
+  Var v -> prettyName alphabet v
   InL l -> showParen (d > 10) $ showString "inL " . pp 10 l
   InR r -> showParen (d > 10) $ showString "inR " . pp 10 r
   Case c l r -> showParen (d > 10) $ showString "case " . pp 10 c . showChar ' ' . pp 10 l . showChar ' ' . pp 10 r
@@ -150,7 +150,7 @@ liftPrettyExpr isType pp d expr = case expr of
 -- Instances
 
 instance Pretty1 ExprF where
-  liftPrettyPrec = liftPrettyExpr False
+  liftPrettyPrec = liftPrettyExpr termNames
 
 instance Pretty Name where
   prettyPrec _ = prettyTermName
