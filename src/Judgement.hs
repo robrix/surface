@@ -19,7 +19,6 @@ data Judgement a where
   IsType :: Term -> Judgement ()
 
   Unify :: Type -> Type -> Judgement ()
-  Solve :: Name -> Suffix -> Type -> Judgement ()
 
 data State s a where
   Get :: State s s
@@ -86,10 +85,7 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
 
 
 solve :: Name -> Suffix -> Type -> Proof ()
-solve name suffix ty = J (Solve name suffix ty) `andThen` return
-
-solve' :: Name -> Suffix -> Type -> Proof ()
-solve' name suffix ty = onTop $ \ (n := d) ->
+solve name suffix ty = onTop $ \ (n := d) ->
   case (n == name, isBound n ty || isBound n suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
     (True, False, Unknown) -> replace (suffix ++ [ name := Known ty ])
@@ -303,7 +299,6 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   Unify t1 t2 -> unify' t1 t2
-  Solve name suffix ty -> solve' name suffix ty
 
 
 run :: (Name, Context) -> Proof a -> Result a
@@ -339,7 +334,6 @@ instance Show1 Judgement where
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
-    Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
 
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
@@ -367,7 +361,6 @@ instance Pretty1 Judgement where
     Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
     Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
-    Solve n s ty -> showParen (d > 10) $ showsTernaryWith (const prettyTypeName) prettyPrec prettyType "solve" d n s ty
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
