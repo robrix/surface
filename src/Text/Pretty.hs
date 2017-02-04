@@ -28,6 +28,11 @@ pretty = ($ "") . prettyPrec 0
 
 newtype PrettyOf = PrettyOf { unPrettyOf :: Int -> ShowS }
 
+prettyLines :: Pretty a => [a] -> PrettyOf
+prettyLines [] = PrettyOf (\ _ -> showString "[]")
+prettyLines [ x ] = PrettyOf (\ _ -> showString "[ " . prettyPrec 0 x . showString " ]")
+prettyLines (x:xs) = PrettyOf (\ _ ->  showString "[ " . prettyPrec 0 x . foldr (\ each into -> showString "\n, " . prettyPrec 0 each . into) id xs  . showString " ]")
+
 
 -- Instances
 
