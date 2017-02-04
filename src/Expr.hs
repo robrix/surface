@@ -111,6 +111,18 @@ unit :: Term
 unit = Fix Unit
 
 
+-- Conveniences
+
+prettyTermName :: Name -> ShowS
+prettyTermName = prettyName "abcdefghijklmnopqrstuvwxyz"
+
+prettyTypeName :: Name -> ShowS
+prettyTypeName = prettyName "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+prettyName :: String -> Name -> ShowS
+prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
+
+
 -- Instances
 
 instance Pretty1 ExprF where
@@ -132,7 +144,7 @@ instance Pretty1 ExprF where
     TypeT -> showString "typeT"
 
 instance Pretty Name where
-  prettyPrec _ = showChar . ("abcdefghijklmnopqrstuvwxyz" !!) . fromInteger . unName
+  prettyPrec _ = prettyTermName
 
 instance Eq1 ExprF where
   liftEq eq a b = case (a, b) of
