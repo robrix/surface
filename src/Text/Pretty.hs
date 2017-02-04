@@ -26,6 +26,8 @@ prettyPrint = putStrLn . pretty
 pretty :: Pretty a => a -> String
 pretty = ($ "") . prettyPrec 0
 
+newtype PrettyOf = PrettyOf { unPrettyOf :: Int -> ShowS }
+
 
 -- Instances
 
@@ -60,3 +62,6 @@ instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
 
 instance (Pretty1 f, Pretty a) => Pretty (f a) where
   prettyPrec = prettyPrec1
+
+instance Pretty PrettyOf where
+  prettyPrec d (PrettyOf pp) = pp d
