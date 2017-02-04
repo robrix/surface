@@ -351,9 +351,9 @@ instance Pretty1 Judgement where
 
 instance Pretty (Judgement a) where
   prettyPrec d judgement = case judgement of
-    Check term ty -> showParen (d > 10) $ showsBinaryWith showsPrec showsPrec "check" 10 term ty
-    Infer term -> showParen (d > 10) $ showsUnaryWith showsPrec "infer" 10 term
-    IsType ty -> showParen (d > 10) $ showsUnaryWith showsPrec "isType" 10 ty
+    Check term ty -> showParen (d > 10) $ showsBinaryWith prettyPrec prettyPrec "check" 10 term ty
+    Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
+    IsType ty -> showParen (d > 10) $ showsUnaryWith prettyPrec "isType" 10 ty
 
 instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
