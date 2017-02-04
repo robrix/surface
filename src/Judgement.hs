@@ -365,3 +365,9 @@ instance Pretty s => Pretty1 (State s) where
 
 instance (Pretty s, Pretty a) => Pretty (State s a) where
   prettyPrec = prettyPrec2
+
+instance Pretty1 ProofF where
+  liftPrettyPrec pp d proof = case proof of
+    J judgement -> liftPrettyPrec pp d judgement
+    S state -> liftPrettyPrec2 showsPrec pp d state
+    R result -> liftPrettyPrec pp d result
