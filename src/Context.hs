@@ -58,3 +58,7 @@ instance Pretty TypeEntry where
 instance Pretty Declaration where
   prettyPrec d (Known ty) = showChar '!' . prettyPrec d ty
   prettyPrec _ _ = showChar '?'
+
+instance Pretty1 Index where
+  liftPrettyPrec _ _ Z = id
+  liftPrettyPrec pp d (S a) = pp d a . showChar '\''
