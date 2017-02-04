@@ -360,5 +360,5 @@ instance Pretty2 State where
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
     J judgement -> liftPrettyPrec pp d judgement
-    S state -> liftPrettyPrec2 showsPrec pp d state
+    S state -> liftPrettyPrec pp d state
     R result -> liftPrettyPrec pp d result
