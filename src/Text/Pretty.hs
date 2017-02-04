@@ -36,3 +36,6 @@ instance Pretty1 f => Pretty2 (FreerF f) where
 
 instance (Pretty1 f, Pretty a) => Pretty1 (FreerF f a) where
   liftPrettyPrec = liftPrettyPrec2 prettyPrec
+
+instance (Pretty1 f, Pretty a, Pretty b) => Pretty (FreerF f a b) where
+  prettyPrec = prettyPrec2
