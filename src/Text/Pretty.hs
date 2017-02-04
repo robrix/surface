@@ -42,3 +42,6 @@ instance (Pretty1 f, Pretty a, Pretty b) => Pretty (FreerF f a b) where
 
 instance Pretty1 f => Pretty1 (Freer f) where
   liftPrettyPrec pa = go where go d = liftPrettyPrec2 pa go d . runFreer
+
+instance (Pretty1 f, Pretty a) => Pretty (Freer f a) where
+  prettyPrec = liftPrettyPrec prettyPrec
