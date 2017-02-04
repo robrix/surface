@@ -131,6 +131,12 @@ prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
 prettyExpr :: String -> Int -> Expr -> ShowS
 prettyExpr alphabet d = liftPrettyExpr alphabet prettyPrec d . unfix
 
+prettyType :: Int -> Expr -> ShowS
+prettyType = prettyExpr typeNames
+
+prettyTerm :: Int -> Expr -> ShowS
+prettyTerm = prettyExpr termNames
+
 liftPrettyExpr :: String -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
 liftPrettyExpr alphabet pp d expr = case expr of
   App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
