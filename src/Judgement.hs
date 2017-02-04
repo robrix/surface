@@ -362,3 +362,6 @@ instance Pretty2 State where
 
 instance Pretty s => Pretty1 (State s) where
   liftPrettyPrec = liftPrettyPrec2 prettyPrec
+
+instance (Pretty s, Pretty a) => Pretty (State s a) where
+  prettyPrec = prettyPrec2
