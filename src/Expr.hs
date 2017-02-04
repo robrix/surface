@@ -151,9 +151,9 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Function a b -> showParen (d > 0) $ pp 0 a . showString " -> " . pp 0 b
   Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
   Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
-  UnitT -> showString "unitT"
+  UnitT -> showString "Unit"
   Unit -> showString "unit"
-  TypeT -> showString "typeT"
+  TypeT -> showString "Type"
 
 
 -- Instances
