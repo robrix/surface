@@ -16,7 +16,7 @@ data Entry
 
 data TypeEntry = Name := Declaration
   deriving (Eq, Show)
-data TermEntry = Name `Is` Scheme
+data TermEntry = Name ::: Scheme
   deriving (Eq, Show)
 
 infixl 8 :<
@@ -65,7 +65,7 @@ instance Pretty Declaration where
   prettyPrec _ _ = showChar '?'
 
 instance Pretty TermEntry where
-  prettyPrec d (name `Is` scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
+  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
   liftPrettyPrec _ d (Type ty) = prettyType d ty

@@ -206,7 +206,7 @@ define name ty = modifyContext (<>< [ name := Some ty ])
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
-  where help (_ :< Tm (found `Is` decl))
+  where help (_ :< Tm (found ::: decl))
           | name == found = return decl
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
@@ -217,12 +217,12 @@ fail = wrap . R . Error . (:[])
 
 
 (>-) :: TermEntry -> Proof a -> Proof a
-x `Is` s >- ma = do
-  modifyContext (:< Tm (x `Is` s))
+x ::: s >- ma = do
+  modifyContext (:< Tm (x ::: s))
   a <- ma
   modifyContext extract
   return a
-  where extract (context :< Tm (y `Is` _)) | x == y = context
+  where extract (context :< Tm (y ::: _)) | x == y = context
         extract (context :< Ty d) = extract context :< Ty d
         extract (_ :< _) = error "Bad context entry!"
         extract _ = error "Missing term variable!"
@@ -305,7 +305,7 @@ decompose judgement = case judgement of
 
     Abs name body -> do
       a <- fresh Hole
-      v <- name `Is` Type (var a) >- infer body
+      v <- name ::: Type (var a) >- infer body
       return (var a .->. v)
 
     App f arg -> do
@@ -324,7 +324,7 @@ decompose judgement = case judgement of
 
     Let name value body -> do
       t <- generalizeOver (infer value)
-      name `Is` t >- infer body
+      name ::: t >- infer body
 
   Check term ty -> do
     ty' <- infer term
