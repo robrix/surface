@@ -115,8 +115,8 @@ snd' = Fix . Snd
 unit :: Term
 unit = Fix Unit
 
-let' :: Name -> Term -> Term -> Term
-let' name value body = Fix (Let name value body)
+let' :: Term -> (Term -> Term) -> Term
+let' value = Fix . uncurry (`Let` value) . bindVariable
 
 
 -- Conveniences
