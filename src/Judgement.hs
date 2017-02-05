@@ -275,19 +275,9 @@ decompose judgement = case judgement of
       b <- infer y
       return (a .*. b)
 
-    Fst p -> do
-      ty <- infer p
-      a <- fresh Hole
-      b <- fresh Hole
-      unify ty (var a .*. var b)
-      return (var a)
+    Fst p -> var . fst <$> inferPair p
 
-    Snd p -> do
-      ty <- infer p
-      a <- fresh Hole
-      b <- fresh Hole
-      unify ty (var a .*. var b)
-      return (var b)
+    Snd p -> var . snd <$> inferPair p
 
     InL l -> do
       a <- infer l
@@ -367,6 +357,12 @@ decompose judgement = case judgement of
   Fresh declaration -> fresh' declaration
   Judgement.Restore -> restore'
   Judgement.Replace suffix -> replace' suffix
+  where inferPair term = do
+          ty <- infer term
+          a <- fresh Hole
+          b <- fresh Hole
+          unify ty (var a .*. var b)
+          return (a, b)
 
 
 run :: (Name, Context) -> Proof a -> Result a
