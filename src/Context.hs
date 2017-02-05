@@ -11,6 +11,7 @@ data Declaration = Known Type | Unknown
 data Entry
   = Ty TypeEntry
   | Tm TermEntry
+  | Sep
   deriving (Eq, Show)
 
 data TypeEntry = Name := Declaration
@@ -54,6 +55,7 @@ instance Pretty1 Backward where
 instance Pretty Entry where
   prettyPrec d (Ty ty) = prettyPrec d ty
   prettyPrec d (Tm term) = prettyPrec d term
+  prettyPrec _ Sep = showChar ';'
 
 instance Pretty TypeEntry where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyTypeName name . showString " := " . prettyPrec 10 declaration
