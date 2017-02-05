@@ -150,19 +150,19 @@ liftPrettyExpr alphabet pp d expr = case expr of
   App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
   Abs v b -> showParen (d > 10) $ showString "lam " . showParen True (showChar '\\' . prettyName alphabet v . showString " . " . pp 0 b)
   Var v -> prettyName alphabet v
-  InL l -> showParen (d > 10) $ showString "inL " . pp 10 l
-  InR r -> showParen (d > 10) $ showString "inR " . pp 10 r
-  Case c l r -> showParen (d > 10) $ showString "case " . pp 10 c . showChar ' ' . pp 10 l . showChar ' ' . pp 10 r
-  Pair a b -> showParen (d > 10) $ showString "pair " . pp 10 a . showChar ' ' . pp 10 b
-  Fst f -> showParen (d > 10) $ showString "fst " . pp 10 f
-  Snd s -> showParen (d > 10) $ showString "snd " . pp 10 s
+  InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
+  InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
+  Case c l r -> showParen (d > 10) $ showString "case " . pp 11 c . showChar ' ' . pp 11 l . showChar ' ' . pp 11 r
+  Pair a b -> showParen (d > 10) $ showString "pair " . pp 11 a . showChar ' ' . pp 11 b
+  Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
+  Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
   Function a b -> showParen (d > 0) $ pp 0 a . showString " -> " . pp 0 b
   Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
   Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
   UnitT -> showString "Unit"
   Unit -> showString "unit"
   TypeT -> showString "Type"
-  Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 10 v . showString " in " . pp 10 b
+  Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 0 v . showString " in " . pp 0 b
 
 
 -- Instances
