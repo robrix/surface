@@ -214,6 +214,13 @@ x `Is` s >- ma = do
         extract _ = error "Missing term variable!"
 
 
+bind :: Name -> Scheme -> Schm (Index Name)
+bind a = fmap help
+  where help :: Name -> Index Name
+        help b | a == b = Z
+               | otherwise = Context.S b
+
+
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
