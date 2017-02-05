@@ -225,6 +225,21 @@ bind a = fmap help
 ((a := Unknown) : rest) ==> ty = All (bind a (rest ==> ty))
 ((a := Known v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
 
+generalizeOver :: Proof Type -> Proof Scheme
+generalizeOver mt = do
+  modifyContext (:< Sep)
+  t <- mt
+  rest <- skimContext []
+  return (rest ==> t)
+  where skimContext :: Suffix -> Proof Suffix
+        skimContext rest = do
+          context :< d <- getContext
+          putContext context
+          case d of
+            Sep -> return rest
+            Ty a -> skimContext (a : rest)
+            Tm _ -> error "Unexpected term variable."
+
 
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
