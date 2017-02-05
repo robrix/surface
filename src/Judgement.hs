@@ -25,40 +25,40 @@ data Judgement a where
 
 
 class Binder a where
-  isBound :: Name -> a -> Bool
-  isBound name = notElem name . freeVariables
+  (<?) :: Name -> a -> Bool
+  (<?) name = notElem name . freeVariables
 
   freeVariables :: a -> [Name]
 
 class Binder1 f where
-  liftIsBound :: (Name -> a -> Bool) -> Name -> f a -> Bool
+  liftIn :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
   liftFreeVariables :: (a -> [Name]) -> f a -> [Name]
 
 instance (Foldable t, Binder a) => Binder (t a) where
-  isBound name = any (isBound name)
+  (<?) name = any (name <?)
 
   freeVariables = foldMap freeVariables
 
 instance Binder Name where
-  isBound = (==)
+  (<?) = (==)
 
   freeVariables = (:[])
 
 instance Binder TypeEntry where
-  isBound name (_ := Some t) = isBound name t
-  isBound _ _ = False
+  (<?) name (_ := Some t) = name <? t
+  _ <? _ = False
 
   freeVariables (_ := Some t) = freeVariables t
   freeVariables _ = []
 
 instance Binder1 f => Binder (Fix f) where
-   isBound name = liftIsBound isBound name . unfix
+   (<?) name = liftIn (<?) name . unfix
 
    freeVariables = liftFreeVariables freeVariables . unfix
 
 instance Binder1 ExprF where
-  liftIsBound isBound name = any (isBound name)
+  liftIn isBound name = any (isBound name)
 
   liftFreeVariables = foldMap
 
@@ -102,7 +102,7 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
 
 solve :: Name -> Suffix -> Type -> Proof ()
 solve name suffix ty = onTop $ \ (n := d) ->
-  case (n == name, isBound n ty || isBound n suffix, d) of
+  case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
     (True, False, Hole) -> replace (suffix ++ [ name := Some ty ])
     (True, False, Some v) -> do
