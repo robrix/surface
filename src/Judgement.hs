@@ -308,6 +308,10 @@ decompose judgement = case judgement of
     Product{} -> isType term >> return typeT
     Sum{} -> isType term >> return typeT
 
+    Let name value body -> do
+      t <- generalizeOver (infer value)
+      name `Is` t >- infer body
+
   Check term ty -> do
     ty' <- infer term
     unless (ty' == ty) $ fail ("Expected " ++ pretty ty ++ " but got " ++ pretty ty')

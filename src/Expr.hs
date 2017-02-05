@@ -25,6 +25,8 @@ data ExprF a where
   Snd :: a -> ExprF a
 
   Unit :: ExprF a
+
+  Let :: Name -> a -> a -> ExprF a
   deriving (Eq, Foldable, Functor, Show)
 
 type Expr = Fix ExprF
@@ -154,6 +156,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   UnitT -> showString "Unit"
   Unit -> showString "unit"
   TypeT -> showString "Type"
+  Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 10 v . showString " in " . pp 10 b
 
 
 -- Instances
@@ -204,6 +207,7 @@ instance Show1 ExprF where
     UnitT -> showString "UnitT"
     Unit -> showString "Unit"
     TypeT -> showString "TypeT"
+    Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
 
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
 showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
