@@ -5,6 +5,7 @@ import Context hiding (S)
 import qualified Context
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
+import Control.State
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.Result
@@ -21,10 +22,6 @@ data Judgement a where
   Unify :: Type -> Type -> Judgement ()
 
   Fresh :: Declaration -> Judgement Name
-
-data State s a where
-  Get :: State s s
-  Put :: s -> State s ()
 
 
 class Binder a where
@@ -396,14 +393,6 @@ instance Show1 Judgement where
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
 
-instance Show s => Show1 (State s) where
-  liftShowsPrec _ _ d state = case state of
-    Get -> showString "Get"
-    Put s -> showsUnaryWith showsPrec "Put" d s
-
-instance (Show s, Show a) => Show (State s a) where
-  showsPrec = showsPrec1
-
 instance Show1 ProofF where
   liftShowsPrec sp sl d proof = case proof of
     J judgement -> showsUnaryWith (liftShowsPrec sp sl) "J" d judgement
@@ -420,11 +409,6 @@ instance Pretty1 Judgement where
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
     Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
     Fresh declaration -> showParen (d > 10) $ showsUnaryWith prettyPrec "fresh" 10 declaration
-
-instance Pretty2 State where
-  liftPrettyPrec2 pp _ d state = case state of
-    Get -> showString "get"
-    Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
