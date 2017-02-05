@@ -111,7 +111,7 @@ solve name suffix ty = onTop $ \ (n := d) ->
       restore
     (False, True, _) -> do
       solve name (n := d : suffix) ty
-      replace suffix
+      replace []
     (False, False, _) -> do
       solve name suffix ty
       restore
