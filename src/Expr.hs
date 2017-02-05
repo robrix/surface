@@ -112,6 +112,9 @@ snd' = Fix . Snd
 unit :: Term
 unit = Fix Unit
 
+let' :: Name -> Term -> Term -> Term
+let' name value body = Fix (Let name value body)
+
 
 -- Conveniences
 
