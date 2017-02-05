@@ -20,6 +20,7 @@ data Judgement a where
   IsType :: Term -> Judgement ()
 
   Unify :: Type -> Type -> Judgement ()
+  Solve :: Name -> Suffix -> Type -> Judgement ()
 
   Fresh :: Declaration -> Judgement Name
 
@@ -101,7 +102,10 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
 
 
 solve :: Name -> Suffix -> Type -> Proof ()
-solve name suffix ty = onTop $ \ (n := d) ->
+solve name suffix ty = J (Solve name suffix ty) `andThen` return
+
+solve' :: Name -> Suffix -> Type -> Proof ()
+solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
     (True, False, Hole) -> replace (suffix ++ [ name := Some ty ])
@@ -350,6 +354,7 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   Unify t1 t2 -> unify' t1 t2
+  Solve name suffix ty -> solve' name suffix ty
 
   Fresh declaration -> fresh' declaration
 
@@ -387,6 +392,7 @@ instance Show1 Judgement where
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
+    Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
 
     Fresh declaration -> showsUnaryWith showsPrec "Fresh" d declaration
 
@@ -409,6 +415,7 @@ instance Pretty1 Judgement where
     IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
     Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
     Fresh declaration -> showParen (d > 10) $ showsUnaryWith prettyPrec "fresh" 10 declaration
+    Solve n s ty -> showParen (d > 10) $ showsTernaryWith (const prettyTypeName) prettyPrec prettyType "solve" d n s ty
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
