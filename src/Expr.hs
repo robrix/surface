@@ -74,7 +74,10 @@ infixl 7 .*.
 (.*.) = (Fix .) . Product
 
 lam :: (Term -> Term) -> Term
-lam f = Fix (Abs n body)
+lam = Fix . uncurry Abs . bindVariable
+
+bindVariable :: (Term -> Term) -> (Name, Term)
+bindVariable f = (n, body)
   where body = f (var n)
         n = Name (succ (maxBoundVariable body))
         maxBoundVariable = cata $ \ term -> case term of
