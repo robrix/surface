@@ -62,7 +62,7 @@ instance Pretty TypeEntry where
 
 instance Pretty Declaration where
   prettyPrec d (Some ty) = showChar '!' . prettyType d ty
-  prettyPrec _ _ = showChar '?'
+  prettyPrec _ _ = showChar '_'
 
 instance Pretty TermEntry where
   prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
