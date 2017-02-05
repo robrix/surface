@@ -23,6 +23,8 @@ data Judgement a where
   Solve :: Name -> Suffix -> Type -> Judgement ()
 
   Fresh :: Declaration -> Judgement Name
+  Restore :: Judgement Extension
+  Replace :: Suffix -> Judgement Extension
 
 
 class Binder a where
@@ -183,16 +185,22 @@ onTop f = do
     Ty d -> do
       m <- f d
       case m of
-        Replace with -> modifyContext (<>< with)
-        Restore -> modifyContext (:< vd)
+        Context.Replace with -> modifyContext (<>< with)
+        Context.Restore -> modifyContext (:< vd)
 
     _ -> onTop f >> modifyContext (:< vd)
 
 restore :: Proof Extension
-restore = return Restore
+restore = J Judgement.Restore `andThen` return
+
+restore' :: Proof Extension
+restore' = return Context.Restore
 
 replace :: Suffix -> Proof Extension
-replace = return . Replace
+replace suffix = J (Judgement.Replace suffix) `andThen` return
+
+replace' :: Suffix -> Proof Extension
+replace' = return . Context.Replace
 
 
 infer :: Term -> Proof Type
@@ -357,6 +365,8 @@ decompose judgement = case judgement of
   Solve name suffix ty -> solve' name suffix ty
 
   Fresh declaration -> fresh' declaration
+  Judgement.Restore -> restore'
+  Judgement.Replace suffix -> replace' suffix
 
 
 run :: (Name, Context) -> Proof a -> Result a
@@ -395,6 +405,8 @@ instance Show1 Judgement where
     Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
 
     Fresh declaration -> showsUnaryWith showsPrec "Fresh" d declaration
+    Judgement.Restore -> showString "Restore"
+    Judgement.Replace suffix -> showsUnaryWith showsPrec "Replace" d suffix
 
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
@@ -410,12 +422,16 @@ instance Show a => Show (ProofF a) where
 
 instance Pretty1 Judgement where
   liftPrettyPrec _ d judgement = case judgement of
-    Check term ty -> showParen (d > 10) $ showsBinaryWith prettyPrec prettyType "check" 10 term ty
-    Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 10 term
-    IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 10 ty
+    Check term ty -> showParen (d > 10) $ showsBinaryWith prettyPrec prettyType "check" 11 term ty
+    Infer term -> showParen (d > 10) $ showsUnaryWith prettyPrec "infer" 11 term
+    IsType ty -> showParen (d > 10) $ showsUnaryWith prettyType "isType" 11 ty
+
     Unify t1 t2 -> showParen (d > 10) $ showsBinaryWith prettyType prettyType "unify" d t1 t2
-    Fresh declaration -> showParen (d > 10) $ showsUnaryWith prettyPrec "fresh" 10 declaration
     Solve n s ty -> showParen (d > 10) $ showsTernaryWith (const prettyTypeName) prettyPrec prettyType "solve" d n s ty
+
+    Fresh declaration -> showParen (d > 10) $ showsUnaryWith prettyPrec "fresh" 11 declaration
+    Judgement.Restore -> showString "restore"
+    Judgement.Replace suffix -> showsUnaryWith prettyPrec "replace" 11 suffix
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
