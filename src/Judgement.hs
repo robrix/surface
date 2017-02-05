@@ -29,24 +29,41 @@ data State s a where
 
 class Binder a where
   isBound :: Name -> a -> Bool
+  isBound name = notElem name . freeVariables
+
+  freeVariables :: a -> [Name]
 
 class Binder1 f where
   liftIsBound :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
+  liftFreeVariables :: (a -> [Name]) -> f a -> [Name]
+
 instance (Foldable t, Binder a) => Binder (t a) where
   isBound name = any (isBound name)
 
-instance Binder Name where isBound = (==)
+  freeVariables = foldMap freeVariables
+
+instance Binder Name where
+  isBound = (==)
+
+  freeVariables = (:[])
 
 instance Binder TypeEntry where
   isBound name (_ := Known t) = isBound name t
   isBound _ _ = False
 
+  freeVariables (_ := Known t) = freeVariables t
+  freeVariables _ = []
+
 instance Binder1 f => Binder (Fix f) where
    isBound name = liftIsBound isBound name . unfix
 
+   freeVariables = liftFreeVariables freeVariables . unfix
+
 instance Binder1 ExprF where
   liftIsBound isBound name = any (isBound name)
+
+  liftFreeVariables = foldMap
 
 
 unify :: Type -> Type -> Proof ()
