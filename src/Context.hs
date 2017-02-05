@@ -5,7 +5,7 @@ import Data.Foldable (toList)
 import Expr
 import Text.Pretty
 
-data Declaration = Known Type | Unknown
+data Declaration = Some Type | Hole
   deriving (Eq, Show)
 
 data Entry
@@ -61,7 +61,7 @@ instance Pretty TypeEntry where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyTypeName name . showString " := " . prettyPrec 10 declaration
 
 instance Pretty Declaration where
-  prettyPrec d (Known ty) = showChar '!' . prettyType d ty
+  prettyPrec d (Some ty) = showChar '!' . prettyType d ty
   prettyPrec _ _ = showChar '?'
 
 instance Pretty TermEntry where

@@ -46,10 +46,10 @@ instance Binder Name where
   freeVariables = (:[])
 
 instance Binder TypeEntry where
-  isBound name (_ := Known t) = isBound name t
+  isBound name (_ := Some t) = isBound name t
   isBound _ _ = False
 
-  freeVariables (_ := Known t) = freeVariables t
+  freeVariables (_ := Some t) = freeVariables t
   freeVariables _ = []
 
 instance Binder1 f => Binder (Fix f) where
@@ -78,10 +78,10 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
   (Var v1, Var v2) -> onTop $ \ (n := d) ->
     case (n == v1, n == v2, d) of
       (True, True, _) -> restore
-      (True, False, Unknown) -> replace [ v1 := Known (var v2) ]
-      (False, True, Unknown) -> replace [ v2 := Known (var v1) ]
-      (True, False, Known t) -> unify t2 t >> restore
-      (False, True, Known t) -> unify t1 t >> restore
+      (True, False, Hole) -> replace [ v1 := Some (var v2) ]
+      (False, True, Hole) -> replace [ v2 := Some (var v1) ]
+      (True, False, Some t) -> unify t2 t >> restore
+      (False, True, Some t) -> unify t1 t >> restore
       (False, False, _) -> unify t1 t2 >> restore
   (Var v, _) -> solve v [] t2
   (_, Var v) -> solve v [] t1
@@ -104,8 +104,8 @@ solve :: Name -> Suffix -> Type -> Proof ()
 solve name suffix ty = onTop $ \ (n := d) ->
   case (n == name, isBound n ty || isBound n suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
-    (True, False, Unknown) -> replace (suffix ++ [ name := Known ty ])
-    (True, False, Known v) -> do
+    (True, False, Hole) -> replace (suffix ++ [ name := Some ty ])
+    (True, False, Some v) -> do
       modifyContext (<>< suffix)
       unify v ty
       restore
@@ -123,8 +123,8 @@ specialize s = do
   b <- fresh d
   specialize (fmap (fromS b) s')
   where unpack :: Scheme -> (Declaration, Schm (Index Name))
-        unpack (Context.All s') = (Unknown, s')
-        unpack (LetS t s') = (Known t, s')
+        unpack (Context.All s') = (Hole, s')
+        unpack (LetS t s') = (Some t, s')
         unpack (Type _) = error "unpack cannot be called with a Type Schm."
 
         fromS :: Name -> Index Name -> Name
@@ -202,7 +202,7 @@ isType term = J (IsType term) `andThen` return
 
 
 define :: Name -> Type -> Proof ()
-define name ty = modifyContext (<>< [ name := Known ty ])
+define name ty = modifyContext (<>< [ name := Some ty ])
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
@@ -235,9 +235,9 @@ bind a = fmap help
                | otherwise = Context.S b
 
 (==>) :: Suffix -> Type -> Scheme
-[]                      ==> ty = Type ty
-((a := Unknown) : rest) ==> ty = All (bind a (rest ==> ty))
-((a := Known v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
+[]                     ==> ty = Type ty
+((a := Hole) : rest)   ==> ty = All (bind a (rest ==> ty))
+((a := Some v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
 
 generalizeOver :: Proof Type -> Proof Scheme
 generalizeOver mt = do
@@ -265,34 +265,34 @@ decompose judgement = case judgement of
 
     Fst p -> do
       ty <- infer p
-      a <- fresh Unknown
-      b <- fresh Unknown
+      a <- fresh Hole
+      b <- fresh Hole
       unify ty (var a .*. var b)
       return (var a)
 
     Snd p -> do
       ty <- infer p
-      a <- fresh Unknown
-      b <- fresh Unknown
+      a <- fresh Hole
+      b <- fresh Hole
       unify ty (var a .*. var b)
       return (var b)
 
     InL l -> do
       a <- infer l
-      b <- fresh Unknown
+      b <- fresh Hole
       return (a .+. var b)
 
     InR r -> do
-      a <- fresh Unknown
+      a <- fresh Hole
       b <- infer r
       return (var a .+. b)
 
     Case subject ifL ifR -> do
       ty <- infer subject
-      l <- fresh Unknown
-      r <- fresh Unknown
+      l <- fresh Hole
+      r <- fresh Hole
       unify ty (var l .+. var r)
-      b <- fresh Unknown
+      b <- fresh Hole
       tl <- infer ifL
       tr <- infer ifR
       unify tl (var l .->. var b)
@@ -304,14 +304,14 @@ decompose judgement = case judgement of
     Var name -> find name >>= specialize
 
     Abs name body -> do
-      a <- fresh Unknown
+      a <- fresh Hole
       v <- name `Is` Type (var a) >- infer body
       return (var a .->. v)
 
     App f arg -> do
       ty <- infer f
       a <- infer arg
-      b <- fresh Unknown
+      b <- fresh Hole
       unify ty (a .->. var b)
       return (var b)
 
