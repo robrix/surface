@@ -220,6 +220,11 @@ bind a = fmap help
         help b | a == b = Z
                | otherwise = Context.S b
 
+(==>) :: Suffix -> Type -> Scheme
+[]                      ==> ty = Type ty
+((a := Unknown) : rest) ==> ty = All (bind a (rest ==> ty))
+((a := Known v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
+
 
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
