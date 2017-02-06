@@ -7,7 +7,7 @@ import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
 import Control.State
 import Data.Functor.Classes
-import Data.Functor.Foldable
+import Data.Functor.Foldable hiding (Nil)
 import Data.List (delete, nub)
 import Data.Result
 import Expr
@@ -72,6 +72,12 @@ instance Binder1 ExprF where
     Var v -> [v]
     _ -> nub (foldMap fvs expr)
 
+
+applyContext :: Context -> Expr -> Expr
+applyContext context expr = case context of
+  Nil -> expr
+  (rest :< Ty (name := d)) | Some t <- d -> applyContext rest (substitute name t expr)
+  (rest :< _) -> applyContext rest expr
 
 substitute :: Name -> Expr -> Expr -> Expr
 substitute name with = para $ \ expr -> case expr of
