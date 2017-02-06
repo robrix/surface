@@ -36,6 +36,9 @@ prettyLines (x:xs) = PrettyOf (\ _ ->  showString "[ " . prettyPrec 0 x . foldr 
 
 -- Instances
 
+instance Pretty () where
+  prettyPrec _ _ = showString "()"
+
 instance Pretty1 f => Pretty (Fix f) where
   prettyPrec d = liftPrettyPrec prettyPrec d . unfix
 
