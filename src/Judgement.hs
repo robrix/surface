@@ -73,11 +73,11 @@ instance Binder1 ExprF where
     _ -> nub (foldMap fvs expr)
 
 
-applyContext :: Context -> Expr -> Expr
-applyContext context expr = case context of
+applyContext :: Expr -> Context -> Expr
+applyContext expr context = case context of
   Nil -> expr
-  (rest :< Ty (name := d)) | Some t <- d -> applyContext rest (substitute name t expr)
-  (rest :< _) -> applyContext rest expr
+  (rest :< Ty (name := d)) | Some t <- d -> applyContext (substitute name t expr) rest
+  (rest :< _) -> applyContext expr rest
 
 substitute :: Name -> Expr -> Expr -> Expr
 substitute name with = para $ \ expr -> case expr of
