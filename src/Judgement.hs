@@ -73,6 +73,13 @@ instance Binder1 ExprF where
     _ -> nub (foldMap fvs expr)
 
 
+substitute :: Name -> Expr -> Expr -> Expr
+substitute name with = para $ \ expr -> case expr of
+  Var v | v == name -> with
+  Abs v (original, substituted) | v == name -> original
+                                | otherwise -> substituted
+  _ -> Fix (fmap snd expr)
+
 unify :: Type -> Type -> Proof ()
 unify t1 t2 = J (Unify t1 t2) `andThen` return
 
