@@ -8,6 +8,7 @@ import Control.Monad.Free.Freer
 import Control.State
 import Data.Functor.Classes
 import Data.Functor.Foldable
+import Data.List (delete, nub)
 import Data.Result
 import Expr
 import Prelude hiding (fail)
@@ -61,9 +62,15 @@ instance Binder1 f => Binder (Fix f) where
    freeVariables = liftFreeVariables freeVariables . unfix
 
 instance Binder1 ExprF where
-  liftIn isBound name = any (isBound name)
+  liftIn occurs name expr = case expr of
+    Abs n _ | n == name -> False
+    Var v | v == name -> True
+    _ -> any (occurs name) expr
 
-  liftFreeVariables = foldMap
+  liftFreeVariables fvs expr = case expr of
+    Abs n b -> delete n (fvs b)
+    Var v -> [v]
+    _ -> nub (foldMap fvs expr)
 
 
 unify :: Type -> Type -> Proof ()
