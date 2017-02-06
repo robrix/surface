@@ -2,6 +2,7 @@
 module Context where
 
 import Data.Foldable (toList)
+import Data.Functor.Classes
 import Expr
 import Text.Pretty
 
@@ -69,8 +70,8 @@ instance Pretty TermEntry where
 
 instance Pretty1 Schm where
   liftPrettyPrec _ d (Type ty) = prettyType d ty
-  liftPrettyPrec pp d (All schm) = showParen (d > 10) $ showString "All " .  liftPrettyPrec (liftPrettyPrec pp) 10 schm
-  liftPrettyPrec pp d (LetS ty schm) = showParen (d > 10) $ showString "LetS " . prettyPrec 10 ty . showChar ' ' . liftPrettyPrec (liftPrettyPrec pp) 10 schm
+  liftPrettyPrec pp d (All schm) = showsUnaryWith (liftPrettyPrec (liftPrettyPrec pp)) "All" d schm
+  liftPrettyPrec pp d (LetS ty schm) = showsBinaryWith prettyPrec (liftPrettyPrec (liftPrettyPrec pp)) "LetS" d ty schm
 
 instance Pretty1 Index where
   liftPrettyPrec _ _ Z = id
