@@ -28,7 +28,7 @@ main = do
       result <- parseFromFile module' path
       case result of
         Result a -> prettyPrint a
-        Error es -> for_ es putStrLn
+        Error es -> for_ es putStr
   -- pure ()
 
 versionString :: String
