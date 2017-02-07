@@ -25,7 +25,7 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         termP = application <?> "term"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP
+        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP
         unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
