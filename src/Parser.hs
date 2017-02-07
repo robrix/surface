@@ -21,11 +21,13 @@ parser = termP <|> typeP
         termP = unitP <|> pairP <?> "a term"
         typeP = typeTP <|> unitTP <?> "a type"
         pairP = pair <$> (char '('
-                      *> skipMany (satisfy isSpace)
+                      *> ws
                       *> termP)
-                      <* skipMany (satisfy isSpace)
+                      <* ws
                      <*> (highlight Operator (char ',')
-                      *> skipMany (satisfy isSpace)
+                      *> ws
                       *> termP
-                      <* skipMany (satisfy isSpace)
+                      <* ws
                       <* char ')')
+
+        ws = skipMany (satisfy isSpace)
