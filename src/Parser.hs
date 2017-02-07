@@ -31,6 +31,8 @@ parser = termP <|> typeP
                       <* char ')')
         inLP = inL <$> (string "inL" *> ws' *> termP)
         inRP = inR <$> (string "inR" *> ws' *> termP)
+        fstP = fst' <$> (string "fst" *> ws' *> termP)
+        sndP = snd' <$> (string "snd" *> ws' *> termP)
 
         ws = skipMany (satisfy isSpace)
         ws' = skipSome (satisfy isSpace)
