@@ -35,12 +35,14 @@ module' = runUnlined . lift $
           Module <$  preword "module"
                  <*> typeIdentifier <* preword "where" <* eol
                  <*> declaration `sepEndBy` eol
+                 <?> "module"
   where declaration = runUnlined . lift $ do
           name <- identifier
           Declaration name <$  colon
                            <*> expr <* some newline
                            <*  token (highlight Identifier (string name)) <* symbolic '='
                            <*> expr <* eol
+                           <?> "declaration"
         eol = void (some newline) <|> eof
 
 expr :: Parser Expr
