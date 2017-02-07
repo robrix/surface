@@ -25,7 +25,8 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "term"
         unitP = unit <$ token (string "unit")
-        pairP = parens (termP `chainr1` (pair <$ op ",")) <?> "tuple"
+
+        pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
         fstP = fst' <$ preword "fst" <*> termP
         sndP = snd' <$ preword "snd" <*> termP
 
