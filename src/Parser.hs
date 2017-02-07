@@ -45,7 +45,7 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         varP = var <$> identifierP
 
-        identifierP = N <$> ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+        identifierP = N <$> ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
         reservedWords =  [ "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
 
