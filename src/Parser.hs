@@ -8,16 +8,16 @@ import Expr
 import Module
 import Text.Parser.Token
 import Text.Parser.Token.Highlight
-import Text.Trifecta
+import Text.Trifecta as Trifecta
 
 parseExpr :: String -> Result.Result Expr
-parseExpr = parseToResult expr
+parseExpr = Parser.parseString expr
 
 parseModule :: String -> Result.Result Module
-parseModule = parseToResult module'
+parseModule = Parser.parseString module'
 
-parseToResult :: Parser a -> String -> Result.Result a
-parseToResult p s = case parseString p mempty s of
+parseString :: Parser a -> String -> Result.Result a
+parseString p s = case Trifecta.parseString p mempty s of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
