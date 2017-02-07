@@ -2,7 +2,6 @@
 module Parser where
 
 import Control.Applicative
-import Data.Char
 import Data.Result as Result
 import Expr
 import Text.Parser.Token
@@ -16,7 +15,7 @@ parse s = case parseString parser mempty s of
 
 parser :: Parser Expr
 parser = whiteSpace  *> (termP <|> typeP) <* eof
-  where typeP = exponentialType <?> "a type"
+  where typeP = exponentialType <?> "type"
         exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
         additiveType = atomicType `chainl1` ((.+.) <$ op "+") <?> "sum type"
@@ -24,14 +23,13 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         typeTP = typeT <$ token (string "Type")
         unitTP = unitT <$ token (string "Unit")
 
-        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "a term"
+        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "term"
         unitP = unit <$ token (string "unit")
-        pairP = parens (termP `chainr1` (pair <$ op ","))
-        inLP = inL <$> (string "inL" *> ws' *> termP)
-        inRP = inR <$> (string "inR" *> ws' *> termP)
-        fstP = fst' <$> (string "fst" *> ws' *> termP)
-        sndP = snd' <$> (string "snd" *> ws' *> termP)
-
-        ws' = skipSome (satisfy isSpace)
+        pairP = parens (termP `chainr1` (pair <$ op ",")) <?> "tuple"
+        inLP = inL <$ preword "inL" <*> termP
+        inRP = inR <$ preword "inR" <*> termP
+        fstP = fst' <$ preword "fst" <*> termP
+        sndP = snd' <$ preword "snd" <*> termP
 
         op = token . highlight Operator . string
+        preword s = token (highlight Symbol (string s <* notFollowedBy alphaNum))
