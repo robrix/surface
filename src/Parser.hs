@@ -20,11 +20,11 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
         additiveType = atomicType `chainl1` ((.+.) <$ op "+") <?> "sum type"
         atomicType = typeTP <|> unitTP <|> parens typeP
-        typeTP = typeT <$ token (string "Type")
-        unitTP = unitT <$ token (string "Unit")
+        typeTP = typeT <$ preword "Type"
+        unitTP = unitT <$ preword "Unit"
 
         termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "term"
-        unitP = unit <$ token (string "unit")
+        unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
         fstP = fst' <$ preword "fst" <*> termP
