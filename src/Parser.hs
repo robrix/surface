@@ -18,7 +18,7 @@ parser = termP <|> typeP
   where typeTP = typeT <$ string "Type"
         unitP = unit <$ string "unit"
         unitTP = unitT <$ string "Unit"
-        termP = unitP <|> pairP <?> "a term"
+        termP = unitP <|> pairP <|> inLP <|> inRP <?> "a term"
         typeP = typeTP <|> unitTP <?> "a type"
         pairP = pair <$> (char '('
                       *> ws
@@ -29,5 +29,7 @@ parser = termP <|> typeP
                       *> termP
                       <* ws
                       <* char ')')
+        inLP = inL <$> (string "inL" *> ws *> termP)
+        inRP = inR <$> (string "inR" *> ws *> termP)
 
         ws = skipMany (satisfy isSpace)
