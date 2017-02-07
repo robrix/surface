@@ -32,7 +32,7 @@ module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
   where mod = Module <$  preword "module"
                      <*> typeIdentifier <* preword "where" <* some newline
-                     <*> (declaration `sepBy` some newline) <* many newline
+                     <*> (declaration `sepEndBy` some newline)
                      <?> "module"
         declaration = do
           name <- identifier
