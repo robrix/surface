@@ -17,7 +17,10 @@ parseModule :: String -> Result.Result Module
 parseModule = Parser.parseString module'
 
 parseString :: Parser a -> String -> Result.Result a
-parseString p s = case Trifecta.parseString p mempty s of
+parseString p = toResult . Trifecta.parseString p mempty
+
+toResult :: Trifecta.Result a -> Result.Result a
+toResult r = case r of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
