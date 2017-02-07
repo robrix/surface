@@ -31,14 +31,17 @@ toResult r = case r of
   Failure info -> Error [show (_errDoc info)]
 
 module' :: Parser Module
-module' = Module <$  preword "module"
-                 <*> typeIdentifier <* preword "where" <* newline
-                 <*> many declaration
-  where declaration = runUnlined $ do
-          name <- lift identifier <* colon
-          ty <- lift expr <* newline
-          term <- token (highlight Identifier (string name)) *> symbolic '=' *> lift expr <* (void newline <|> eof)
-          pure $! Declaration name ty term
+module' = runUnlined . lift $
+          Module <$  preword "module"
+                 <*> typeIdentifier <* preword "where" <* eol
+                 <*> declaration `sepEndBy` eol
+  where declaration = runUnlined . lift $ do
+          name <- identifier
+          Declaration name <$  colon
+                           <*> expr <* some newline
+                           <*  token (highlight Identifier (string name)) <* symbolic '='
+                           <*> expr <* eol
+        eol = void (some newline) <|> eof
 
 expr :: Parser Expr
 expr = whiteSpace *> (termP <|> typeP) <* eof
