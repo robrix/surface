@@ -29,7 +29,6 @@ main = do
       case result of
         Result a -> prettyPrint a
         Error es -> for_ es putStr
-  -- pure ()
 
 versionString :: String
 versionString = "refinement version " <> showVersion Library.version
