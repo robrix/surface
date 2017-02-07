@@ -26,15 +26,11 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "a term"
         unitP = unit <$ token (string "unit")
-        pairP = pair <$> (char '('
-                      *> ws
-                      *> termP)
-                      <* ws
-                     <*> (highlight Operator (char ',')
-                      *> ws
-                      *> termP
-                      <* ws
-                      <* char ')')
+        pairP = pair <$ token (char '(')
+                    <*> termP
+                     <* token (highlight Operator (char ','))
+                    <*> termP
+                     <* token (char ')')
         inLP = inL <$> (string "inL" *> ws' *> termP)
         inRP = inR <$> (string "inR" *> ws' *> termP)
         fstP = fst' <$> (string "fst" *> ws' *> termP)
