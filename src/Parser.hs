@@ -9,12 +9,12 @@ import Text.Parser.Token.Highlight
 import Text.Trifecta
 
 parseExpr :: String -> Result.Result Expr
-parseExpr s = case parseString parser mempty s of
+parseExpr s = case parseString expr mempty s of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
-parser :: Parser Expr
-parser = whiteSpace *> (termP <|> typeP) <* eof
+expr :: Parser Expr
+expr = whiteSpace *> (termP <|> typeP) <* eof
   where typeP = exponentialType <?> "type"
         exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
