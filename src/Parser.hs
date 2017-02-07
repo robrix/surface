@@ -13,6 +13,9 @@ import Text.Trifecta
 parseExpr :: String -> Result.Result Expr
 parseExpr = parseToResult expr
 
+parseModule :: String -> Result.Result Module
+parseModule = parseToResult module'
+
 parseToResult :: Parser a -> String -> Result.Result a
 parseToResult p s = case parseString p mempty s of
   Success a -> Result a
