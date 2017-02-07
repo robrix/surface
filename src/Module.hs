@@ -4,4 +4,9 @@ import Expr
 
 data Module = Module
   { moduleName :: String
-  , moduleBindings :: [(String, Type, Term)] }
+  , moduleDeclarations :: [Declaration] }
+
+data Declaration = Declaration
+  { declarationName :: String
+  , declarationType :: Type
+  , declarationTerm :: Term }
