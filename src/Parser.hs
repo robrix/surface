@@ -23,7 +23,7 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
 
-        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> lambdaP <?> "term"
+        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <?> "term"
         unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
@@ -32,6 +32,10 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         inLP = inL <$ preword "inL" <*> termP
         inRP = inR <$ preword "inR" <*> termP
+        caseP = makeCase <$  preword "case"
+                         <*> termP <* preword "of"
+                         <*> parens lambdaP
+                         <*> parens lambdaP
 
         lambdaP = makeLambda <$  symbol "\\"
                              <*> identifierP <* dot
