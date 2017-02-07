@@ -20,6 +20,7 @@ library
                      , Data.Result
                      , Expr
                      , Judgement
+                     , Module
                      , Parser
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
