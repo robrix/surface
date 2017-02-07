@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, OverloadedLists #-}
 module Parser where
 
 import Control.Applicative
@@ -23,7 +23,7 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
 
-        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "term"
+        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> lambdaP <?> "term"
         unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
@@ -32,6 +32,14 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         inLP = inL <$ preword "inL" <*> termP
         inRP = inR <$ preword "inR" <*> termP
+
+        lambdaP = makeLambda <$  symbol "\\"
+                             <*> identifierP <* dot
+                             <*> termP
+
+        identifierP = N <$> ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+
+        reservedWords =  [ "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
 
         op = token . highlight Operator . string
         preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))
