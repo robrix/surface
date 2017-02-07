@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Module where
 
+import Data.List (intersperse)
 import Expr
 import Text.Pretty
 
@@ -27,4 +28,4 @@ instance Pretty Module where
   prettyPrec _ Module{..}
     = showString "module " . showString moduleName . showString " where" . showChar '\n'
     . showChar '\n'
-    . foldr (\ each into -> prettyPrec 0 each . showChar '\n' . into ) id moduleDeclarations
+    . foldr (.) id (intersperse (showChar '\n') (prettyPrec 0 <$> moduleDeclarations))
