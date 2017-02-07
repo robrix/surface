@@ -2,6 +2,7 @@
 module Parser where
 
 import Control.Applicative
+import Control.Monad.IO.Class
 import Data.HashSet
 import Data.Result as Result
 import Expr
@@ -18,6 +19,9 @@ parseModule = Parser.parseString module'
 
 parseString :: Parser a -> String -> Result.Result a
 parseString p = toResult . Trifecta.parseString p mempty
+
+parseFromFile :: MonadIO m => Parser a -> FilePath -> m (Result.Result a)
+parseFromFile p = fmap toResult . parseFromFileEx p
 
 toResult :: Trifecta.Result a -> Result.Result a
 toResult r = case r of
