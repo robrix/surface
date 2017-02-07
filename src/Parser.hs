@@ -34,10 +34,10 @@ module' :: Parser Module
 module' = Module <$  preword "module"
                  <*> typeIdentifier <* preword "where" <* newline
                  <*> many declaration
-  where declaration = do
-          name <- identifier <* colon
-          ty <- runUnlined (lift expr) <* newline
-          term <- runUnlined $! lift (token (highlight Identifier (string name)) *> symbolic '=' *> expr) <* (void newline <|> eof)
+  where declaration = runUnlined $ do
+          name <- lift identifier <* colon
+          ty <- lift expr <* newline
+          term <- token (highlight Identifier (string name)) *> symbolic '=' *> lift expr <* (void newline <|> eof)
           pure $! Declaration name ty term
 
 expr :: Parser Expr
