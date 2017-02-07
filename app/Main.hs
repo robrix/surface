@@ -1,5 +1,7 @@
 module Main where
 
+import Data.Foldable (for_)
+import Data.Result
 import Data.Version (showVersion)
 import Parser
 import qualified Paths_refinement as Library (version)
@@ -22,9 +24,12 @@ main :: IO ()
 main = do
   command <- execParser arguments
   case command of
-    Run path -> parseFromFile module' path
-    >>= prettyPrint
-  pure ()
+    Run path -> do
+      result <- parseFromFile module' path
+      case result of
+        Result a -> prettyPrint a
+        Error es -> for_ es putStrLn
+  -- pure ()
 
 versionString :: String
 versionString = "refinement version " <> showVersion Library.version
