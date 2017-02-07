@@ -2,6 +2,7 @@
 module Parser where
 
 import Control.Applicative
+import Data.HashSet
 import Data.Result as Result
 import Expr
 import Text.Parser.Token
@@ -40,14 +41,18 @@ expr = whiteSpace *> (termP <|> typeP) <* eof
                          <*> parens lambdaP
 
         lambdaP = makeLambda <$  symbol "\\"
-                             <*> identifierP <* dot
+                             <*> (N <$> identifier) <* dot
                              <*> termP
 
-        varP = var <$> identifierP
-
-        identifierP = N <$> ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
-
-        reservedWords =  [ "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
+        varP = var . N <$> identifier
 
         op = token . highlight Operator . string
-        preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))
+
+identifier :: Parser String
+identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+
+reservedWords :: HashSet String
+reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
+
+preword :: TokenParsing m => String -> m String
+preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))

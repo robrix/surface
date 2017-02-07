@@ -28,6 +28,7 @@ library
                      , parsers
                      , recursion-schemes
                      , trifecta
+                     , unordered-containers
   default-language:    Haskell2010
   ghc-options:         -Wall -Wno-name-shadowing
 
