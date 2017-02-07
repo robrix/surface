@@ -3,6 +3,8 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class (lift)
+import Data.Functor (void)
 import Data.HashSet
 import Data.Result as Result
 import Expr
@@ -34,8 +36,8 @@ module' = Module <$  preword "module"
                  <*> many declaration
   where declaration = do
           name <- identifier <* colon
-          ty <- expr <* newline
-          term <- token (highlight Identifier (string name)) *> symbolic '=' *> expr
+          ty <- runUnlined (lift expr) <* newline
+          term <- runUnlined $! lift (token (highlight Identifier (string name)) *> symbolic '=' *> expr) <* (void newline <|> eof)
           pure $! Declaration name ty term
 
 expr :: Parser Expr
