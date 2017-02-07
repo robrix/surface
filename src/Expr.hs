@@ -99,7 +99,10 @@ inR :: Term -> Term
 inR = Fix . InR
 
 case' :: Term -> (Term -> Term) -> (Term -> Term) -> Term
-case' t f g = Fix (Case t (lam f) (lam g))
+case' t f g = makeCase t (lam f) (lam g)
+
+makeCase :: Term -> Term -> Term -> Term
+makeCase t l r = Fix (Case t l r)
 
 pair :: Term -> Term -> Term
 pair = (Fix .) . Pair
