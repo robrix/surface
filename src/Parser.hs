@@ -11,7 +11,10 @@ import Text.Parser.Token.Highlight
 import Text.Trifecta
 
 parseExpr :: String -> Result.Result Expr
-parseExpr s = case parseString expr mempty s of
+parseExpr = parseToResult expr
+
+parseToResult :: Parser a -> String -> Result.Result a
+parseToResult p s = case parseString p mempty s of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
