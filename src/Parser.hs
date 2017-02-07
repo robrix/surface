@@ -5,6 +5,7 @@ import Control.Applicative
 import Data.HashSet
 import Data.Result as Result
 import Expr
+import Module
 import Text.Parser.Token
 import Text.Parser.Token.Highlight
 import Text.Trifecta
@@ -13,6 +14,16 @@ parseExpr :: String -> Result.Result Expr
 parseExpr s = case parseString expr mempty s of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
+
+module' :: Parser Module
+module' = Module <$  preword "module"
+                 <*> typeIdentifier <* preword "where" <* newline
+                 <*> many declaration
+  where declaration = do
+          name <- identifier <* colon
+          ty <- expr <* newline
+          term <- token (highlight Identifier (string name)) *> symbolic '=' *> expr
+          pure $! Declaration name ty term
 
 expr :: Parser Expr
 expr = whiteSpace *> (termP <|> typeP) <* eof
