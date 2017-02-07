@@ -26,17 +26,12 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
 
         termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "a term"
         unitP = unit <$ token (string "unit")
-        pairP = pair <$ token (char '(')
-                    <*> termP
-                     <* token (highlight Operator (char ','))
-                    <*> termP
-                     <* token (char ')')
+        pairP = parens (termP `chainr1` (pair <$ op ","))
         inLP = inL <$> (string "inL" *> ws' *> termP)
         inRP = inR <$> (string "inR" *> ws' *> termP)
         fstP = fst' <$> (string "fst" *> ws' *> termP)
         sndP = snd' <$> (string "snd" *> ws' *> termP)
 
-        ws = skipMany (satisfy isSpace)
         ws' = skipSome (satisfy isSpace)
 
-        op s = symbol s *> ws
+        op = token . highlight Operator . string
