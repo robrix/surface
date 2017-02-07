@@ -51,6 +51,9 @@ expr = whiteSpace *> (termP <|> typeP) <* eof
 identifier :: Parser String
 identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
+typeIdentifier :: Parser String
+typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+
 reservedWords :: HashSet String
 reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
 
