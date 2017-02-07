@@ -23,7 +23,7 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
 
-        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <?> "term"
+        termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <?> "term"
         unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
@@ -40,6 +40,8 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         lambdaP = makeLambda <$  symbol "\\"
                              <*> identifierP <* dot
                              <*> termP
+
+        varP = var <$> identifierP
 
         identifierP = N <$> ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
