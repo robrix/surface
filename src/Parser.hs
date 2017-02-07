@@ -26,10 +26,11 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         termP = unitP <|> try (parens termP) <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "term"
         unitP = unit <$ token (string "unit")
         pairP = parens (termP `chainr1` (pair <$ op ",")) <?> "tuple"
-        inLP = inL <$ preword "inL" <*> termP
-        inRP = inR <$ preword "inR" <*> termP
         fstP = fst' <$ preword "fst" <*> termP
         sndP = snd' <$ preword "snd" <*> termP
+
+        inLP = inL <$ preword "inL" <*> termP
+        inRP = inR <$ preword "inR" <*> termP
 
         op = token . highlight Operator . string
         preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))
