@@ -18,7 +18,7 @@ parser = termP <|> typeP
   where typeTP = typeT <$ string "Type"
         unitP = unit <$ string "unit"
         unitTP = unitT <$ string "Unit"
-        termP = unitP <|> pairP <|> inLP <|> inRP <?> "a term"
+        termP = unitP <|> try (char '(' *> ws *> termP <* ws <* char ')') <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <?> "a term"
         typeP = typeTP <|> unitTP <?> "a type"
         pairP = pair <$> (char '('
                       *> ws
