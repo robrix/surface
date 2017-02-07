@@ -3,8 +3,6 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Class (lift)
-import Data.Functor (void)
 import Data.HashSet
 import Data.Result as Result
 import Expr
@@ -14,10 +12,10 @@ import Text.Parser.Token.Highlight
 import Text.Trifecta as Trifecta
 
 parseExpr :: String -> Result.Result Expr
-parseExpr = Parser.parseString expr
+parseExpr = Parser.parseString (whiteSpace *> expr <* eof)
 
 parseModule :: String -> Result.Result Module
-parseModule = Parser.parseString module'
+parseModule = Parser.parseString (whiteSpace *> module' <* eof)
 
 parseString :: Parser a -> String -> Result.Result a
 parseString p = toResult . Trifecta.parseString p mempty
@@ -30,23 +28,22 @@ toResult r = case r of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
-module' :: Parser Module
-module' = runUnlined . lift $
-          Module <$  preword "module"
-                 <*> typeIdentifier <* preword "where" <* eol
-                 <*> declaration `sepEndBy` eol
-                 <?> "module"
-  where declaration = runUnlined . lift $ do
+module' :: (Monad m, TokenParsing m) => m Module
+module' = runUnlined mod
+  where mod = Module <$  preword "module"
+                     <*> typeIdentifier <* preword "where" <* some newline
+                     <*> (declaration `sepBy` some newline) <* many newline
+                     <?> "module"
+        declaration = do
           name <- identifier
           Declaration name <$  colon
                            <*> expr <* some newline
                            <*  token (highlight Identifier (string name)) <* symbolic '='
-                           <*> expr <* eol
+                           <*> expr
                            <?> "declaration"
-        eol = void (some newline) <|> eof
 
-expr :: Parser Expr
-expr = whiteSpace *> (termP <|> typeP) <* eof
+expr :: (Monad m, TokenParsing m) => m Expr
+expr = termP <|> typeP
   where typeP = exponentialType <?> "type"
         exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
@@ -79,10 +76,10 @@ expr = whiteSpace *> (termP <|> typeP) <* eof
 
         op = token . highlight Operator . string
 
-identifier :: Parser String
+identifier :: (Monad m, TokenParsing m) => m String
 identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
-typeIdentifier :: Parser String
+typeIdentifier :: (Monad m, TokenParsing m) => m String
 typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
 reservedWords :: HashSet String
