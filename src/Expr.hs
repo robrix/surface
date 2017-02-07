@@ -38,11 +38,9 @@ type TermF = ExprF
 type Term = Fix TermF
 
 
-newtype Name = Name Integer
+data Name = I Integer
+          | N String
   deriving (Eq, Ord, Show)
-
-unName :: Name -> Integer
-unName (Name n) = n
 
 
 unitT :: Type
@@ -79,10 +77,10 @@ lam = Fix . uncurry Abs . bindVariable
 bindVariable :: (Term -> Term) -> (Name, Term)
 bindVariable f = (n, body)
   where body = f (var n)
-        n = Name (succ (maxBoundVariable body))
+        n = I (succ (maxBoundVariable body))
         maxBoundVariable = cata $ \ term -> case term of
           App o a -> max o a
-          Abs (Name v) _ -> v
+          Abs (I v) _ -> v
           _ -> -1
 
 var :: Name -> Expr
@@ -134,7 +132,9 @@ prettyTypeName :: Name -> ShowS
 prettyTypeName = prettyName typeNames
 
 prettyName :: String -> Name -> ShowS
-prettyName alphabet = showChar . (alphabet !!) . fromInteger . unName
+prettyName alphabet name = case name of
+  I i -> showChar (alphabet !! fromInteger i)
+  N s -> showString s
 
 prettyExpr :: String -> Int -> Expr -> ShowS
 prettyExpr alphabet d = liftPrettyExpr alphabet prettyPrec d . unfix

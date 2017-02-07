@@ -191,7 +191,8 @@ fresh' d = do
   (m, context) <- get
   put (increment m, context :< Ty (m := d))
   return m
-  where increment (Name n) = Name (succ n)
+  where increment (I n) = I (succ n)
+        increment (N s) = N (s ++ "'")
 
 fresh :: Declaration -> Proof Name
 fresh declaration = J (Fresh declaration) `andThen` return
