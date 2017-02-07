@@ -14,7 +14,7 @@ parse s = case parseString parser mempty s of
   Failure info -> Error [show (_errDoc info)]
 
 parser :: Parser Expr
-parser = whiteSpace  *> (termP <|> typeP) <* eof
+parser = whiteSpace *> (termP <|> typeP) <* eof
   where typeP = exponentialType <?> "type"
         exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
