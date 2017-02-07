@@ -8,8 +8,8 @@ import Text.Parser.Token
 import Text.Parser.Token.Highlight
 import Text.Trifecta
 
-parse :: String -> Result.Result Expr
-parse s = case parseString parser mempty s of
+parseExpr :: String -> Result.Result Expr
+parseExpr s = case parseString parser mempty s of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
 
