@@ -32,4 +32,4 @@ parser = whiteSpace  *> (termP <|> typeP) <* eof
         sndP = snd' <$ preword "snd" <*> termP
 
         op = token . highlight Operator . string
-        preword s = token (highlight Symbol (string s <* notFollowedBy alphaNum))
+        preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))
