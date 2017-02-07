@@ -72,7 +72,10 @@ infixl 7 .*.
 (.*.) = (Fix .) . Product
 
 lam :: (Term -> Term) -> Term
-lam = Fix . uncurry Abs . bindVariable
+lam = uncurry makeLambda . bindVariable
+
+makeLambda :: Name -> Term -> Term
+makeLambda = (Fix .) . Abs
 
 bindVariable :: (Term -> Term) -> (Name, Term)
 bindVariable f = (n, body)
