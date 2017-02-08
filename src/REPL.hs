@@ -5,6 +5,6 @@ import Control.Monad.Free.Freer
 
 data REPLF a where
   Prompt :: String -> REPLF String
-  Response :: String -> REPLF ()
+  Result :: String -> REPLF ()
 
 type REPL = Freer REPLF
