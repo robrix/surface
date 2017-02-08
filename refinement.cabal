@@ -22,6 +22,7 @@ library
                      , Judgement
                      , Module
                      , Parser
+                     , REPL
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , freer-cofreer
