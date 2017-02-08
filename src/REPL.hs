@@ -1,10 +1,12 @@
 {-# LANGUAGE GADTs #-}
 module REPL where
 
+import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Result
 import Expr
 import Text.Pretty
+import Text.Trifecta hiding (Result)
 
 data REPLF a where
   Prompt :: String -> REPLF String
@@ -27,6 +29,18 @@ output a = Output a `andThen` return
 
 andThen :: f x -> (x -> Freer f a) -> Freer f a
 andThen = (Freer .) . flip Free
+
+
+command :: Parser Command
+command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
+  where meta = (Help <$ (long "help" <|> short 'h') <?> "help")
+           <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
+           <|> (Version <$ (long "version" <|> short 'v') <?> "version")
+
+        eval = Run <$> expr <?> "expression"
+
+        short = symbol . (:[])
+        long = symbol
 
 
 runREPL :: REPL a -> IO a
