@@ -41,7 +41,7 @@ repl = do
     Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
-    error -> output error
+    error -> output error >> repl
 
 
 command :: Parser Command
