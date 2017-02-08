@@ -36,7 +36,7 @@ repl :: REPL ()
 repl = do
   input <- prompt "λ . "
   case Parser.parseString command input of
-    Result Help -> output (Error [ "help info goes here" ] :: Result ())
+    Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
     error -> output error
 
 
