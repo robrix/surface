@@ -1,6 +1,10 @@
 {-# LANGUAGE GADTs #-}
 module REPL where
 
-data REPL a where
-  Prompt :: String -> REPL String
-  Response :: String -> REPL ()
+import Control.Monad.Free.Freer
+
+data REPLF a where
+  Prompt :: String -> REPLF String
+  Response :: String -> REPLF ()
+
+type REPL = Freer REPLF
