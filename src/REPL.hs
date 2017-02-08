@@ -2,18 +2,20 @@
 module REPL where
 
 import Control.Monad.Free.Freer
+import Data.Result
+import Text.Pretty
 
 data REPLF a where
   Prompt :: String -> REPLF String
-  Result :: String -> REPLF ()
+  Output :: Pretty a => Result a -> REPLF ()
 
 type REPL = Freer REPLF
 
 prompt :: String -> REPL String
 prompt s = Prompt s `andThen` return
 
-result :: String -> REPL ()
-result s = Result s `andThen` return
+output :: Pretty a => Result a -> REPL ()
+output a = Output a `andThen` return
 
 
 andThen :: f x -> (x -> Freer f a) -> Freer f a
@@ -27,4 +29,4 @@ runREPL = iterFreer alg . fmap pure
           Prompt s -> do
             putStr s
             getLine >>= cont
-          Result s -> putStrLn s >>= cont
+          Output s -> prettyPrint s >>= cont
