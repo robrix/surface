@@ -37,3 +37,13 @@ runREPL = iterFreer alg . fmap pure
             putStr s
             getLine >>= cont
           Output s -> prettyPrint s >>= cont
+
+
+-- Instances
+
+instance Pretty Command where
+  prettyPrec d command = case command of
+    Run expr -> prettyPrec d expr
+    Help -> showString ":help"
+    Quit -> showString ":quit"
+    Version -> showString ":version"
