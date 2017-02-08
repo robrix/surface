@@ -4,8 +4,10 @@ module REPL where
 import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Result
+import Data.Version (showVersion)
 import Expr
 import Parser
+import qualified Paths_refinement as Library (version)
 import Text.Pretty
 import Text.Trifecta hiding (Result)
 
@@ -37,6 +39,7 @@ repl = do
   input <- prompt "λ . "
   case Parser.parseString command input of
     Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
+    Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
     error -> output error
 
