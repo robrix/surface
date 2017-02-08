@@ -5,6 +5,7 @@ import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Result
 import Expr
+import Parser
 import Text.Pretty
 import Text.Trifecta hiding (Result)
 
@@ -29,6 +30,14 @@ output a = Output a `andThen` return
 
 andThen :: f x -> (x -> Freer f a) -> Freer f a
 andThen = (Freer .) . flip Free
+
+
+repl :: REPL ()
+repl = do
+  input <- prompt "λ: "
+  case Parser.parseString command input of
+    Result Help -> output (Error [ "help info goes here" ] :: Result ())
+    error -> output error
 
 
 command :: Parser Command
