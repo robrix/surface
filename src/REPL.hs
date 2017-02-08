@@ -34,7 +34,7 @@ andThen = (Freer .) . flip Free
 
 repl :: REPL ()
 repl = do
-  input <- prompt "λ: "
+  input <- prompt "λ . "
   case Parser.parseString command input of
     Result Help -> output (Error [ "help info goes here" ] :: Result ())
     error -> output error
