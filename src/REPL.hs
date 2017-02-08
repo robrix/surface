@@ -3,6 +3,7 @@ module REPL where
 
 import Control.Monad.Free.Freer
 import Data.Result
+import Expr
 import Text.Pretty
 
 data REPLF a where
@@ -10,6 +11,12 @@ data REPLF a where
   Output :: Pretty a => Result a -> REPLF ()
 
 type REPL = Freer REPLF
+
+data Command
+  = Run Expr
+  | Help
+  | Quit
+  | Version
 
 prompt :: String -> REPL String
 prompt s = Prompt s `andThen` return
