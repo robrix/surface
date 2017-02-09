@@ -18,6 +18,7 @@ library
   exposed-modules:     Context
                      , Control.State
                      , Data.Result
+                     , Evaluation
                      , Expr
                      , Judgement
                      , Module
