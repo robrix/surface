@@ -4,6 +4,7 @@ module REPL where
 import Context
 import Control.Applicative
 import Control.Monad.Free.Freer
+import Data.Foldable (for_)
 import Data.Result
 import Data.Version (showVersion)
 import Expr
@@ -65,7 +66,9 @@ runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
           Prompt s -> getInputLine s >>= cont
-          Output s -> outputStrLn (pretty s) >>= cont
+          Output r -> case r of
+            Result a -> outputStrLn (pretty a) >>= cont
+            Error es -> for_ es outputStrLn >>= cont
 
 
 -- Instances
