@@ -389,6 +389,10 @@ decompose judgement = case judgement of
       Fix (Pair a _) <- normalize p
       return a
 
+    Snd p -> do
+      Fix (Pair _ b) <- normalize p
+      return b
+
     Function a b -> (.->.) <$> normalize a <*> normalize b
     Product a b -> (.*.) <$> normalize a <*> normalize b
     Sum a b -> (.+.) <$> normalize a <*> normalize b
