@@ -27,6 +27,8 @@ data Judgement a where
   Restore :: Judgement Extension
   Replace :: Suffix -> Judgement Extension
 
+  Normalize :: Expr -> Judgement Expr
+
 
 class Binder a where
   (<?) :: Name -> a -> Bool
@@ -156,6 +158,9 @@ specialize s = do
         fromS :: Name -> Index Name -> Name
         fromS b Z = b
         fromS _ (Context.S a) = a
+
+normalize :: Expr -> Proof Expr
+normalize expr = J (Normalize expr) `andThen` return
 
 
 data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
@@ -378,6 +383,9 @@ decompose judgement = case judgement of
   Fresh declaration -> fresh' declaration
   Judgement.Restore -> restore'
   Judgement.Replace suffix -> replace' suffix
+
+  Normalize expr -> case unfix expr of
+    _ -> pure expr
   where inferPair term = do
           ty <- infer term
           a <- fresh Hole
@@ -425,6 +433,8 @@ instance Show1 Judgement where
     Judgement.Restore -> showString "Restore"
     Judgement.Replace suffix -> showsUnaryWith showsPrec "Replace" d suffix
 
+    Normalize expr -> showsUnaryWith showsPrec "Normalize" d expr
+
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
 
@@ -449,6 +459,8 @@ instance Pretty1 Judgement where
     Fresh declaration -> showsUnaryWith prettyPrec "fresh" d declaration
     Judgement.Restore -> showString "restore"
     Judgement.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
+
+    Normalize expr -> showsUnaryWith prettyPrec "normalize" d expr
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
