@@ -70,7 +70,7 @@ runREPL :: REPL a -> IO a
 runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
-          Prompt s -> getInputLine s >>= cont
+          Prompt s -> getInputLine ("\ESC[1;32m\STX" ++ s ++ "\ESC[0m\STX") >>= cont
           Output r -> case r of
             Result a -> outputStrLn (pretty a) >>= cont
             Error es -> for_ es outputStrLn >>= cont
