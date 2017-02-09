@@ -65,12 +65,17 @@ command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
         short = symbol . (:[])
         long = symbol
 
+green :: String
+green = "\ESC[1;32m\STX"
+
+plain :: String
+plain = "\ESC[0m\STX"
 
 runREPL :: REPL a -> IO a
 runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
-          Prompt s -> getInputLine ("\ESC[1;32m\STX" ++ s ++ "\ESC[0m\STX") >>= cont
+          Prompt s -> getInputLine (green ++ s ++ plain) >>= cont
           Output r -> case r of
             Result a -> outputStrLn (pretty a) >>= cont
             Error es -> for_ es outputStrLn >>= cont
