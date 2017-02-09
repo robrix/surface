@@ -385,6 +385,9 @@ decompose judgement = case judgement of
   Judgement.Replace suffix -> replace' suffix
 
   Normalize expr -> case unfix expr of
+    InL l -> inL <$> normalize l
+    InR r -> inR <$> normalize r
+
     Pair a b -> pair <$> normalize a <*> normalize b
 
     Fst p -> do
