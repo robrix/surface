@@ -42,7 +42,11 @@ repl = do
 handleInput :: String -> REPL ()
 handleInput input =
   case Parser.parseString command input of
-    Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
+    Result Help -> output (Error
+      [ ":help, :h, :? - print this help text"
+      , ":quit, :q     - exit the REPL"
+      , ":version      - print version information"
+      ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
     Result (Run expr) -> output (run (I 0, Nil) (infer expr)) >> repl
