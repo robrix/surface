@@ -5,6 +5,7 @@ import Context
 import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Foldable (for_)
+import Data.Functor.Classes (showsUnaryWith)
 import Data.Result
 import Data.Version (showVersion)
 import Expr
@@ -23,6 +24,7 @@ type REPL = Freer REPLF
 
 data Command
   = Run Expr
+  | TypeOf Expr
   | Help
   | Quit
   | Version
@@ -43,13 +45,14 @@ handleInput :: String -> REPL ()
 handleInput input =
   case Parser.parseString command input of
     Result Help -> output (Error
-      [ ":help, :h, :? - print this help text"
-      , ":quit, :q     - exit the REPL"
-      , ":version      - print version information"
+      [ ":help, :h, :?     - print this help text"
+      , ":quit, :q         - exit the REPL"
+      , ":version          - print version information"
+      , ":type, :t <expr>  - print the type of <expr>"
       ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
-    Result (Run expr) -> output (run (I 0, Nil) (infer expr)) >> repl
+    Result (TypeOf expr) -> output (run (I 0, Nil) (infer expr)) >> repl
     error -> output error >> repl
 
 
@@ -86,6 +89,7 @@ runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
 instance Pretty Command where
   prettyPrec d command = case command of
     Run expr -> prettyPrec d expr
+    TypeOf expr -> showsUnaryWith prettyPrec ":type" d expr
     Help -> showString ":help"
     Quit -> showString ":quit"
     Version -> showString ":version"
