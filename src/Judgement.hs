@@ -296,13 +296,9 @@ generalizeOver mt = do
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
-    Pair x y -> do
-      a <- infer x
-      b <- infer y
-      return (a .*. b)
+    Pair x y -> (.*.) <$> infer x <*> infer y
 
     Fst p -> var . fst <$> inferPair p
-
     Snd p -> var . snd <$> inferPair p
 
     InL l -> do
