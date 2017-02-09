@@ -397,12 +397,16 @@ decompose judgement = case judgement of
     Pair a b -> pair <$> normalize a <*> normalize b
 
     Fst p -> do
-      Fix (Pair a _) <- normalize p
-      return a
+      Fix p' <- normalize p
+      case p' of
+        Pair a _ -> return a
+        _ -> error ("fst applied to non-product value: " ++ pretty p')
 
     Snd p -> do
-      Fix (Pair _ b) <- normalize p
-      return b
+      Fix p' <- normalize p
+      case p' of
+        Pair _ b -> return b
+        _ -> error ("snd applied to non-product value: " ++ pretty p')
 
     Function a b -> (.->.) <$> normalize a <*> normalize b
     Product a b -> (.*.) <$> normalize a <*> normalize b
