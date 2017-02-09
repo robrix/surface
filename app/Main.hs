@@ -4,7 +4,7 @@ import Data.Foldable (for_)
 import Data.Result
 import Data.Version (showVersion)
 import Parser
-import qualified Paths_refinement as Library (version)
+import qualified Paths_surface as Library (version)
 import Options.Applicative
 import Text.Pretty
 
@@ -17,8 +17,8 @@ arguments :: ParserInfo Command
 arguments = info
   (version <*> helper <*> Main.command)
     (fullDesc
-  <> progDesc "refinement is a small experiment in proof refinement–style typechecking and evaluation of dependently-typed languages."
-  <> header "refinement - a dependently typed language with nothing much to say for itself")
+  <> progDesc "Surface is a small experiment in proof refinement–style typechecking and evaluation of dependently-typed languages."
+  <> header "surface - a dependently typed language with nothing much to say for itself")
 
 main :: IO ()
 main = do
@@ -31,7 +31,7 @@ main = do
         Error es -> for_ es putStr
 
 versionString :: String
-versionString = "refinement version " <> showVersion Library.version
+versionString = "Surface version " <> showVersion Library.version
 
 version :: Parser (a -> a)
 version = infoOption versionString (long "version" <> short 'V' <> help "output the version of the program")

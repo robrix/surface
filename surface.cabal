@@ -1,8 +1,8 @@
-name:                refinement
+name:                surface
 version:             0.1.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
-homepage:            https://github.com/robrix/refinement#readme
+homepage:            https://github.com/robrix/surface#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Rob Rix
@@ -35,13 +35,13 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall -Wno-name-shadowing
 
-executable refinement
+executable surface
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , optparse-applicative
-                     , refinement
+                     , surface
   default-language:    Haskell2010
 
 test-suite test
@@ -49,10 +49,10 @@ test-suite test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , refinement
+                     , surface
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head
   type:     git
-  location: https://github.com/robrix/refinement
+  location: https://github.com/robrix/surface

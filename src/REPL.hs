@@ -11,7 +11,7 @@ import Data.Version (showVersion)
 import Expr
 import Judgement
 import Parser
-import qualified Paths_refinement as Library (version)
+import qualified Paths_surface as Library (version)
 import System.Console.Haskeline
 import Text.Pretty
 import Text.Trifecta hiding (Result)
