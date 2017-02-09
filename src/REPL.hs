@@ -10,11 +10,12 @@ import Expr
 import Judgement
 import Parser
 import qualified Paths_refinement as Library (version)
+import System.Console.Haskeline
 import Text.Pretty
 import Text.Trifecta hiding (Result)
 
 data REPLF a where
-  Prompt :: String -> REPLF String
+  Prompt :: String -> REPLF (Maybe String)
   Output :: Pretty a => Result a -> REPLF ()
 
 type REPL = Freer REPLF
@@ -25,7 +26,7 @@ data Command
   | Quit
   | Version
 
-prompt :: String -> REPL String
+prompt :: String -> REPL (Maybe String)
 prompt s = Prompt s `andThen` return
 
 output :: Pretty a => Result a -> REPL ()
@@ -35,6 +36,10 @@ output a = Output a `andThen` return
 repl :: REPL ()
 repl = do
   input <- prompt "λ . "
+  maybe (pure ()) handleInput input
+
+handleInput :: String -> REPL ()
+handleInput input =
   case Parser.parseString command input of
     Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
@@ -56,13 +61,11 @@ command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
 
 
 runREPL :: REPL a -> IO a
-runREPL = iterFreer alg . fmap pure
-  where alg :: (x -> IO a) -> REPLF x -> IO a
+runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
+  where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
-          Prompt s -> do
-            putStr s
-            getLine >>= cont
-          Output s -> prettyPrint s >>= cont
+          Prompt s -> getInputLine s >>= cont
+          Output s -> outputStrLn (pretty s) >>= cont
 
 
 -- Instances
