@@ -36,7 +36,7 @@ output a = Output a `andThen` return
 
 repl :: REPL ()
 repl = do
-  input <- prompt "λ . "
+  input <- prompt "λ: "
   maybe (pure ()) handleInput input
 
 handleInput :: String -> REPL ()
