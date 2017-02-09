@@ -1,11 +1,13 @@
 {-# LANGUAGE GADTs #-}
 module REPL where
 
+import Context
 import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Result
 import Data.Version (showVersion)
 import Expr
+import Judgement
 import Parser
 import qualified Paths_refinement as Library (version)
 import Text.Pretty
@@ -30,10 +32,6 @@ output :: Pretty a => Result a -> REPL ()
 output a = Output a `andThen` return
 
 
-andThen :: f x -> (x -> Freer f a) -> Freer f a
-andThen = (Freer .) . flip Free
-
-
 repl :: REPL ()
 repl = do
   input <- prompt "λ . "
@@ -41,6 +39,7 @@ repl = do
     Result Help -> output (Error [ "help info goes here" ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
+    Result (Run expr) -> output (run (I 0, Nil) (infer expr)) >> repl
     error -> output error >> repl
 
 
