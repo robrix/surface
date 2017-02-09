@@ -383,6 +383,16 @@ decompose judgement = case judgement of
   Normalize expr -> case unfix expr of
     InL l -> inL <$> normalize l
     InR r -> inR <$> normalize r
+    Case subject ifL ifR -> do
+      Fix s <- normalize subject
+      case s of
+        InL l -> do
+          i <- normalize ifL
+          normalize (i # l)
+        InR r -> do
+          i <- normalize ifR
+          normalize (i # r)
+        _ -> error ("Case expression on non-sum value: " ++ pretty s)
 
     Pair a b -> pair <$> normalize a <*> normalize b
 
