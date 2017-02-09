@@ -385,6 +385,9 @@ decompose judgement = case judgement of
   Judgement.Replace suffix -> replace' suffix
 
   Normalize expr -> case unfix expr of
+    Function a b -> (.->.) <$> normalize a <*> normalize b
+    Product a b -> (.*.) <$> normalize a <*> normalize b
+    Sum a b -> (.+.) <$> normalize a <*> normalize b
     _ -> pure expr
   where inferPair term = do
           ty <- infer term
