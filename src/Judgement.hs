@@ -387,7 +387,7 @@ decompose judgement = case judgement of
   Normalize expr -> case unfix expr of
     Fst a -> do
       Fix (Pair a' _) <- normalize a
-      pure a'
+      return a'
 
     Function a b -> (.->.) <$> normalize a <*> normalize b
     Product a b -> (.*.) <$> normalize a <*> normalize b
