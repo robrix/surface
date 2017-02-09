@@ -61,6 +61,7 @@ command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
            <|> (Version <$ (long "version" <|> short 'v') <?> "version")
+           <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
            <?> "command; use :? for help"
 
         eval = Run <$> expr <?> "expression"
