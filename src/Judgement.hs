@@ -440,6 +440,12 @@ decompose judgement = case judgement of
     Function a b -> (.->.) <$> normalize a <*> normalize b
     Product a b -> (.*.) <$> normalize a <*> normalize b
     Sum a b -> (.+.) <$> normalize a <*> normalize b
+
+    Let name value body -> do
+      v <- normalize value
+      define name v
+      normalize body
+
     _ -> pure expr
   where inferPair term = do
           ty <- infer term
