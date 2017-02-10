@@ -53,7 +53,10 @@ handleInput input =
     Result Quit -> pure ()
     Result (Run expr) -> output (run (infer expr >> normalize expr)) >> repl
     Result (TypeOf expr) -> do
-      output (run (applyContext <$> infer expr <*> getContext))
+      output (run $ do
+        ty <- infer expr
+        context <- getContext
+        return (expr `as` applyContext ty context))
       repl
     error -> output error >> repl
 
