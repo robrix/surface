@@ -51,7 +51,7 @@ instance Binder Name where
 
   freeVariables = (:[])
 
-instance Binder TypeEntry where
+instance Binder Binding where
   (<?) name (_ := Some t) = name <? t
   _ <? _ = False
 
@@ -203,7 +203,7 @@ fresh :: Declaration -> Proof Name
 fresh declaration = J (Fresh declaration) `andThen` return
 
 
-onTop :: (TypeEntry -> Proof Extension) -> Proof ()
+onTop :: (Binding -> Proof Extension) -> Proof ()
 onTop f = do
   context :< vd <- getContext
   putContext context
