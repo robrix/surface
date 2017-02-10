@@ -455,10 +455,13 @@ decompose judgement = case judgement of
           return (a, b)
 
 
-run :: (Name, Context) -> Proof a -> Result a
-run context proof = case runStep context proof of
+run :: Proof a -> Result a
+run = runAll (I 0, Nil)
+
+runAll :: (Name, Context) -> Proof a -> Result a
+runAll context proof = case runStep context proof of
   Left result -> result
-  Right next -> uncurry run next
+  Right next -> uncurry runAll next
 
 runSteps :: (Name, Context) -> Proof a -> [Either (Result a) ((Name, Context), Proof a)]
 runSteps context proof = Right (context, proof) : case runStep context proof of

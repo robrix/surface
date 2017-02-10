@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs #-}
 module REPL where
 
-import Context
 import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Foldable (for_)
@@ -52,9 +51,9 @@ handleInput input =
       ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
-    Result (Run expr) -> output (run (I 0, Nil) (infer expr >> normalize expr)) >> repl
+    Result (Run expr) -> output (run (infer expr >> normalize expr)) >> repl
     Result (TypeOf expr) -> do
-      output (run (I 0, Nil) (applyContext <$> infer expr <*> getContext))
+      output (run (applyContext <$> infer expr <*> getContext))
       repl
     error -> output error >> repl
 
