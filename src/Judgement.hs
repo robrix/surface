@@ -360,6 +360,10 @@ decompose judgement = case judgement of
       t <- generalizeOver (infer value)
       name ::: t >- infer body
 
+    As term ty -> do
+      check term ty
+      return ty
+
   Check term ty -> do
     ty' <- infer term
     unless (ty' == ty) $ fail ("Expected " ++ pretty ty ++ " but got " ++ pretty ty')

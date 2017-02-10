@@ -27,6 +27,8 @@ data ExprF a where
   Unit :: ExprF a
 
   Let :: Name -> a -> a -> ExprF a
+
+  As :: a -> a -> ExprF a
   deriving (Eq, Foldable, Functor, Show)
 
 type Expr = Fix ExprF
@@ -125,6 +127,9 @@ let' value = uncurry (`makeLet` value) . bindVariable
 makeLet :: Name -> Term -> Term -> Term
 makeLet name value body = Fix (Let name value body)
 
+as :: Term -> Type -> Term
+as = (Fix .) . As
+
 
 -- Conveniences
 
@@ -172,6 +177,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Unit -> showString "unit"
   TypeT -> showString "Type"
   Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 0 v . showString " in " . pp 0 b
+  As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
 
 
 -- Instances
@@ -223,6 +229,7 @@ instance Show1 ExprF where
     Unit -> showString "Unit"
     TypeT -> showString "TypeT"
     Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
+    As term ty -> showsBinaryWith sp sp "As" d term ty
 
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
 showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
