@@ -162,7 +162,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
   InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
   Case c l r -> showParen (d > 10) $ showString "case " . pp 11 c . showChar ' ' . pp 11 l . showChar ' ' . pp 11 r
-  Pair a b -> showParen (d > 10) $ showString "pair " . pp 11 a . showChar ' ' . pp 11 b
+  Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
   Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
   Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
   Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
