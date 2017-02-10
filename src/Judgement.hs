@@ -240,10 +240,10 @@ isType term = J (IsType term) `andThen` return
 
 
 define :: Name -> Type -> Proof ()
-define name ty = declare name (Some ty)
+define name ty = declare (name := Some ty)
 
-declare :: Name -> Declaration -> Proof ()
-declare name decl = modifyContext (<>< [ name := decl ])
+declare :: Binding -> Proof ()
+declare binding = modifyContext (<>< [ binding ])
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
