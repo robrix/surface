@@ -120,7 +120,10 @@ unit :: Term
 unit = Fix Unit
 
 let' :: Term -> (Term -> Term) -> Term
-let' value = Fix . uncurry (`Let` value) . bindVariable
+let' value = uncurry (`makeLet` value) . bindVariable
+
+makeLet :: Name -> Term -> Term -> Term
+makeLet name value body = Fix (Let name value body)
 
 
 -- Conveniences
