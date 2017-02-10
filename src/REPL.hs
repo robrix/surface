@@ -53,7 +53,9 @@ handleInput input =
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
     Result (Run expr) -> output (run (I 0, Nil) (infer expr >> normalize expr)) >> repl
-    Result (TypeOf expr) -> output (run (I 0, Nil) (infer expr)) >> repl
+    Result (TypeOf expr) -> do
+      output (run (I 0, Nil) (applyContext <$> infer expr <*> getContext))
+      repl
     error -> output error >> repl
 
 
