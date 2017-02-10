@@ -401,6 +401,15 @@ decompose judgement = case judgement of
       declare (name := Hole)
       makeLambda name <$> normalize body
 
+    App op arg -> do
+      Fix o <- normalize op
+      case o of
+        Abs name body -> do
+          a <- normalize arg
+          declare (name := Some a)
+          normalize body
+        _ -> error ("Application of non-abstraction value: " ++ pretty o)
+
     InL l -> inL <$> normalize l
     InR r -> inR <$> normalize r
     Case subject ifL ifR -> do
