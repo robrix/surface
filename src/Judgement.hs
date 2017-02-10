@@ -249,6 +249,13 @@ find name = getContext >>= help
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
+findDeclaration :: Name -> Proof Declaration
+findDeclaration name = getContext >>= help
+  where help (_ :< Ty (found := decl))
+          | name == found = return decl
+        help (context :< _) = help context
+        help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+
 
 fail :: String -> Proof a
 fail = wrap . R . Error . (:[])
