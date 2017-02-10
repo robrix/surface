@@ -412,6 +412,7 @@ decompose judgement = case judgement of
         Abs name body -> do
           declare (name := Some a)
           normalize body
+        Var v -> return (var v # a)
         _ -> error ("Application of non-abstraction value: " ++ pretty o)
 
     InL l -> inL <$> normalize l
