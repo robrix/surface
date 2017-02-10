@@ -52,7 +52,12 @@ expr = termP <|> typeP
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
 
-        termP = application <?> "term"
+        termP = ascription <?> "term"
+        ascription = do
+          app <- application
+          ty <- optional (symbolic ':' *> typeP)
+          return (maybe app (app `as`) ty)
+          <?> "type annotation"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
         atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <|> letP
         unitP = unit <$ preword "unit"
