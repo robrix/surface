@@ -397,6 +397,10 @@ decompose judgement = case judgement of
         Some term -> return term
         Hole -> return (var name)
 
+    Abs name body -> do
+      declare (name := Hole)
+      makeLambda name <$> normalize body
+
     InL l -> inL <$> normalize l
     InR r -> inR <$> normalize r
     Case subject ifL ifR -> do
