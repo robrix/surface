@@ -54,7 +54,7 @@ expr = termP <|> typeP
 
         termP = application <?> "term"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP
+        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <|> letP
         unitP = unit <$ preword "unit"
 
         pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
@@ -73,6 +73,11 @@ expr = termP <|> typeP
                              <*> termP
 
         varP = var . N <$> identifier
+
+        letP = makeLet <$  preword "let"
+                       <*> (N <$> identifier) <*  symbolic '='
+                       <*> termP <*  preword "in"
+                       <*> termP
 
         op = token . highlight Operator . string
 
