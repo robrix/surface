@@ -388,6 +388,12 @@ decompose judgement = case judgement of
   Judgement.Replace suffix -> replace' suffix
 
   Normalize expr -> case unfix expr of
+    Var name -> do
+      decl <- findDeclaration name
+      case decl of
+        Some term -> return term
+        Hole -> return (var name)
+
     InL l -> inL <$> normalize l
     InR r -> inR <$> normalize r
     Case subject ifL ifR -> do
