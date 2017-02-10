@@ -6,16 +6,16 @@ import Data.Functor.Classes
 import Expr
 import Text.Pretty
 
-data Declaration = Some Type | Hole
+data Declaration = Some Expr | Hole
   deriving (Eq, Show)
 
 data Entry
-  = Ty TypeEntry
+  = Ty Binding
   | Tm TermEntry
   | Sep
   deriving (Eq, Show)
 
-data TypeEntry = Name := Declaration
+data Binding = Name := Declaration
   deriving (Eq, Show)
 data TermEntry = Name ::: Scheme
   deriving (Eq, Show)
@@ -25,7 +25,7 @@ data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show)
 
 type Context = Backward Entry
-type Suffix = [TypeEntry]
+type Suffix = [Binding]
 
 infixl 8 <><
 (<><) :: Context -> Suffix -> Context
@@ -58,7 +58,7 @@ instance Pretty Entry where
   prettyPrec d (Tm term) = prettyPrec d term
   prettyPrec _ Sep = showChar ';'
 
-instance Pretty TypeEntry where
+instance Pretty Binding where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyTypeName name . showString " := " . prettyPrec 10 declaration
 
 instance Pretty Declaration where

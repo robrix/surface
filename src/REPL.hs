@@ -52,7 +52,10 @@ handleInput input =
       ] :: Result ()) >> repl
     Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
-    Result (TypeOf expr) -> output (run (I 0, Nil) (infer expr)) >> repl
+    Result (Run expr) -> output (run (I 0, Nil) (infer expr >> normalize expr)) >> repl
+    Result (TypeOf expr) -> do
+      output (run (I 0, Nil) (applyContext <$> infer expr <*> getContext))
+      repl
     error -> output error >> repl
 
 
@@ -61,6 +64,7 @@ command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
            <|> (Version <$ (long "version" <|> short 'v') <?> "version")
+           <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
            <?> "command; use :? for help"
 
         eval = Run <$> expr <?> "expression"

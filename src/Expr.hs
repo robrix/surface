@@ -162,7 +162,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Pair a b -> showParen (d > 10) $ showString "pair " . pp 11 a . showChar ' ' . pp 11 b
   Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
   Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
-  Function a b -> showParen (d > 0) $ pp 0 a . showString " -> " . pp 0 b
+  Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
   Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
   Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
   UnitT -> showString "Unit"

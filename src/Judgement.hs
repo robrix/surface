@@ -27,6 +27,8 @@ data Judgement a where
   Restore :: Judgement Extension
   Replace :: Suffix -> Judgement Extension
 
+  Normalize :: Expr -> Judgement Expr
+
 
 class Binder a where
   (<?) :: Name -> a -> Bool
@@ -49,7 +51,7 @@ instance Binder Name where
 
   freeVariables = (:[])
 
-instance Binder TypeEntry where
+instance Binder Binding where
   (<?) name (_ := Some t) = name <? t
   _ <? _ = False
 
@@ -157,6 +159,9 @@ specialize s = do
         fromS b Z = b
         fromS _ (Context.S a) = a
 
+normalize :: Expr -> Proof Expr
+normalize expr = J (Normalize expr) `andThen` return
+
 
 data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
 
@@ -198,7 +203,7 @@ fresh :: Declaration -> Proof Name
 fresh declaration = J (Fresh declaration) `andThen` return
 
 
-onTop :: (TypeEntry -> Proof Extension) -> Proof ()
+onTop :: (Binding -> Proof Extension) -> Proof ()
 onTop f = do
   context :< vd <- getContext
   putContext context
@@ -235,11 +240,21 @@ isType term = J (IsType term) `andThen` return
 
 
 define :: Name -> Type -> Proof ()
-define name ty = modifyContext (<>< [ name := Some ty ])
+define name ty = declare (name := Some ty)
+
+declare :: Binding -> Proof ()
+declare binding = modifyContext (<>< [ binding ])
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
   where help (_ :< Tm (found ::: decl))
+          | name == found = return decl
+        help (context :< _) = help context
+        help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+
+findDeclaration :: Name -> Proof Declaration
+findDeclaration name = getContext >>= help
+  where help (_ :< Ty (found := decl))
           | name == found = return decl
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
@@ -291,13 +306,9 @@ generalizeOver mt = do
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   Infer term -> case unfix term of
-    Pair x y -> do
-      a <- infer x
-      b <- infer y
-      return (a .*. b)
+    Pair x y -> (.*.) <$> infer x <*> infer y
 
     Fst p -> var . fst <$> inferPair p
-
     Snd p -> var . snd <$> inferPair p
 
     InL l -> do
@@ -378,6 +389,58 @@ decompose judgement = case judgement of
   Fresh declaration -> fresh' declaration
   Judgement.Restore -> restore'
   Judgement.Replace suffix -> replace' suffix
+
+  Normalize expr -> case unfix expr of
+    Var name -> do
+      decl <- findDeclaration name
+      case decl of
+        Some term -> return term
+        Hole -> return (var name)
+
+    Abs name body -> do
+      declare (name := Hole)
+      makeLambda name <$> normalize body
+
+    App op arg -> do
+      Fix o <- normalize op
+      case o of
+        Abs name body -> do
+          a <- normalize arg
+          declare (name := Some a)
+          normalize body
+        _ -> error ("Application of non-abstraction value: " ++ pretty o)
+
+    InL l -> inL <$> normalize l
+    InR r -> inR <$> normalize r
+    Case subject ifL ifR -> do
+      Fix s <- normalize subject
+      case s of
+        InL l -> do
+          i <- normalize ifL
+          normalize (i # l)
+        InR r -> do
+          i <- normalize ifR
+          normalize (i # r)
+        _ -> error ("Case expression on non-sum value: " ++ pretty s)
+
+    Pair a b -> pair <$> normalize a <*> normalize b
+
+    Fst p -> do
+      Fix p' <- normalize p
+      case p' of
+        Pair a _ -> return a
+        _ -> error ("fst applied to non-product value: " ++ pretty p')
+
+    Snd p -> do
+      Fix p' <- normalize p
+      case p' of
+        Pair _ b -> return b
+        _ -> error ("snd applied to non-product value: " ++ pretty p')
+
+    Function a b -> (.->.) <$> normalize a <*> normalize b
+    Product a b -> (.*.) <$> normalize a <*> normalize b
+    Sum a b -> (.+.) <$> normalize a <*> normalize b
+    _ -> pure expr
   where inferPair term = do
           ty <- infer term
           a <- fresh Hole
@@ -425,6 +488,8 @@ instance Show1 Judgement where
     Judgement.Restore -> showString "Restore"
     Judgement.Replace suffix -> showsUnaryWith showsPrec "Replace" d suffix
 
+    Normalize expr -> showsUnaryWith showsPrec "Normalize" d expr
+
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
 
@@ -449,6 +514,8 @@ instance Pretty1 Judgement where
     Fresh declaration -> showsUnaryWith prettyPrec "fresh" d declaration
     Judgement.Restore -> showString "restore"
     Judgement.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
+
+    Normalize expr -> showsUnaryWith prettyPrec "normalize" d expr
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
