@@ -257,7 +257,7 @@ findDeclaration name = getContext >>= help
   where help (_ :< Ty (found := decl))
           | name == found = return decl
         help (context :< _) = help context
-        help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+        help _ = fail ("Missing variable " ++ pretty name ++ " in environment.")
 
 
 fail :: String -> Proof a
