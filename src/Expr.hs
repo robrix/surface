@@ -157,7 +157,7 @@ prettyTerm = prettyExpr termNames
 liftPrettyExpr :: String -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
 liftPrettyExpr alphabet pp d expr = case expr of
   App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
-  Abs v b -> showParen (d > 10) $ showString "lam " . showParen True (showChar '\\' . prettyName alphabet v . showString " . " . pp 0 b)
+  Abs v b -> showParen (d > 0) $ showChar '\\' . prettyName alphabet v . showString " . " . pp 0 b
   Var v -> prettyName alphabet v
   InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
   InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
