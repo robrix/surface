@@ -407,9 +407,9 @@ decompose judgement = case judgement of
 
     App op arg -> do
       Fix o <- normalize op
+      a <- normalize arg
       case o of
         Abs name body -> do
-          a <- normalize arg
           declare (name := Some a)
           normalize body
         _ -> error ("Application of non-abstraction value: " ++ pretty o)
