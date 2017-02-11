@@ -84,7 +84,8 @@ expr = termP <|> typeP
                        <*> termP <*  preword "in"
                        <*> termP
 
-        name = N <$> identifier
+name :: (Monad m, TokenParsing m) => m Name
+name = N <$> identifier
 
 op :: TokenParsing m => String -> m String
 op = token . highlight Operator . string
