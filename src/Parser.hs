@@ -50,7 +50,7 @@ term = ascription <?> "term"
           return (maybe app (app `as`) ty)
           <?> "type annotation"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <|> letP
+        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> Parser.var <|> letP
         unitP = unit <$ preword "unit"
 
         pairP = parens (term `chainr1` (pair <$ comma)) <?> "tuple"
@@ -68,7 +68,6 @@ term = ascription <?> "term"
                              <*> name <* dot
                              <*> term
 
-        varP = var <$> name
 
         letP = makeLet <$  preword "let"
                        <*> name <*  symbolic '='
@@ -86,6 +85,11 @@ type' = exponentialType <?> "type"
 
 expr :: (Monad m, TokenParsing m) => m Expr
 expr = term <|> type'
+
+
+var :: (Monad m, TokenParsing m) => m Expr
+var = Expr.var <$> name
+
 
 name :: (Monad m, TokenParsing m) => m Name
 name = N <$> identifier
