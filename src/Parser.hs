@@ -109,8 +109,8 @@ case' = makeCase <$  preword "case"
 
 let' :: (Monad m, TokenParsing m) => m Term
 let' = makeLet <$  preword "let"
-               <*> name <*  op "="
-               <*> term <*  preword "in"
+               <*> name <* op "="
+               <*> term <* preword "in"
                <*> term
                <?> "let"
 
