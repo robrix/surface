@@ -54,8 +54,7 @@ term = annotation <?> "term"
 type' :: (Monad m, TokenParsing m) => m Type
 type' = exponentialType <?> "type"
   where exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
-        multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
-        additiveType = typeAtom `chainl1` ((.+.) <$ op "+") <?> "sum type"
+        multiplicativeType = sumType `chainl1` ((.*.) <$ op "*") <?> "product type"
 
 
 termAtom :: (Monad m, TokenParsing m) => m Term
@@ -131,6 +130,9 @@ unitType = unitT <$ preword "Unit"
 
 typeType :: (Monad m, TokenParsing m) => m Type
 typeType = typeT <$ preword "Type"
+
+sumType :: (Monad m, TokenParsing m) => m Type
+sumType = typeAtom `chainl1` ((.+.) <$ op "+") <?> "sum type"
 
 
 name :: (Monad m, TokenParsing m) => m Name
