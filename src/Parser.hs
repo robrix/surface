@@ -3,7 +3,7 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
-import Data.HashSet
+import qualified Data.HashSet as HashSet
 import Data.Result as Result
 import Expr
 import Module
@@ -176,7 +176,7 @@ identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum 
 typeIdentifier :: (Monad m, TokenParsing m) => m String
 typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
-reservedWords :: HashSet String
+reservedWords :: HashSet.HashSet String
 reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
 
 preword :: TokenParsing m => String -> m String
