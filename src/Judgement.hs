@@ -253,7 +253,11 @@ find name = getContext >>= help
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
 findDeclaration :: Name -> Proof Declaration
-findDeclaration name = getContext >>= help
+findDeclaration name = do
+  context <- getContext
+  case help context of
+    Freer (Free cont (R (Error es))) -> R (Error (es ++ [ pretty context ])) `andThen` cont
+    other -> other
   where help (_ :< Ty (found := decl))
           | name == found = return decl
         help (context :< _) = help context
