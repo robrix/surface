@@ -56,7 +56,7 @@ term = ascription <?> "term"
           return (maybe app (app `as`) ty)
           <?> "type annotation"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = Parser.unit <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambda <|> Parser.var <|> letP
+        atomicTerm = Parser.unit <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> Parser.case' <|> lambda <|> Parser.var <|> letP
 
         pairP = parens (term `chainr1` (pair <$ comma)) <?> "tuple"
         fstP = fst' <$ preword "fst" <*> term
@@ -64,10 +64,6 @@ term = ascription <?> "term"
 
         inLP = inL <$ preword "inL" <*> term
         inRP = inR <$ preword "inR" <*> term
-        caseP = makeCase <$  preword "case"
-                         <*> term <* preword "of"
-                         <*> parens lambdaP
-                         <*> parens lambdaP
 
         letP = makeLet <$  preword "let"
                        <*> name <*  symbolic '='
@@ -93,6 +89,12 @@ lambda :: (Monad m, TokenParsing m) => m Term
 lambda = makeLambda <$  symbol "\\"
                     <*> name <* dot
                     <*> term
+
+case' :: (Monad m, TokenParsing m) => m Term
+case' = makeCase <$  preword "case"
+                 <*> term <* preword "of"
+                 <*> parens lambda
+                 <*> parens lambda
 
 
 name :: (Monad m, TokenParsing m) => m Name
