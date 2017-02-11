@@ -1,0 +1,12 @@
+module Parser.Spec where
+
+import Data.Result
+import Expr
+import Parser
+import Test.Hspec
+
+spec :: Spec
+spec = do
+  describe "expr" $ do
+    it "parses function types" $
+      expr `parseString` "Unit -> Unit" `shouldBe` Result (unitT .->. unitT)

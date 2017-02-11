@@ -1,2 +1,6 @@
+import Test.Hspec
+import Parser.Spec as Parser
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = hspec . parallel $ do
+  describe "Parser" Parser.spec
