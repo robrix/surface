@@ -133,19 +133,24 @@ typeAtom
   <|> parens type'
 
 unitType :: (Monad m, TokenParsing m) => m Type
-unitType = unitT <$ preword "Unit"
+unitType = unitT <$  preword "Unit"
+                 <?> "unit type"
 
 typeType :: (Monad m, TokenParsing m) => m Type
-typeType = typeT <$ preword "Type"
+typeType = typeT <$  preword "Type"
+                 <?> "Type"
 
 sumType :: (Monad m, TokenParsing m) => m Type
-sumType = typeAtom `chainl1` ((.+.) <$ op "+") <?> "sum type"
+sumType = typeAtom `chainl1` ((.+.) <$ op "+")
+                   <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
-productType = sumType `chainl1` ((.*.) <$ op "*") <?> "product type"
+productType = sumType `chainl1` ((.*.) <$ op "*")
+                      <?> "product type"
 
 functionType :: (Monad m, TokenParsing m) => m Type
-functionType = productType `chainr1` ((.->.) <$ op "->") <?> "function type"
+functionType = productType `chainr1` ((.->.) <$ op "->")
+                           <?> "function type"
 
 piType :: (Monad m, TokenParsing m) => m Type
 piType
