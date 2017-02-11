@@ -9,6 +9,7 @@ data ExprF a where
   Product :: a -> a -> ExprF a
   Sum :: a -> a -> ExprF a
   Function :: a -> a -> ExprF a
+  Pi :: Name -> a -> a -> ExprF a
   UnitT :: ExprF a
   TypeT :: ExprF a
 
@@ -171,6 +172,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
   Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
   Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
+  Pi n t b -> showParen (d > 0) $ showParen True (prettyName alphabet n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
   Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
   Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
   UnitT -> showString "Unit"
@@ -223,6 +225,7 @@ instance Show1 ExprF where
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
     Function a b -> showsBinaryWith sp sp "Function" d a b
+    Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
     UnitT -> showString "UnitT"

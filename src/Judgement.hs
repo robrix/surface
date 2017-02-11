@@ -356,6 +356,11 @@ decompose judgement = case judgement of
     Product{} -> isType term >> return typeT
     Sum{} -> isType term >> return typeT
 
+    Pi name ty body -> do
+      result <- name ::: Type ty >- infer body
+      isType result
+      return typeT
+
     Let name value body -> do
       t <- generalizeOver (infer value)
       name ::: t >- infer body
