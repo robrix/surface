@@ -42,6 +42,39 @@ module' = runUnlined mod
                            <*> expr
                            <?> "declaration"
 
+term :: (Monad m, TokenParsing m) => m Term
+term = ascription <?> "term"
+  where ascription = do
+          app <- application
+          ty <- optional (op ":" *> type')
+          return (maybe app (app `as`) ty)
+          <?> "type annotation"
+        application = atomicTerm `chainr1` pure (#) <?> "function application"
+        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <|> letP
+        unitP = unit <$ preword "unit"
+
+        pairP = parens (term `chainr1` (pair <$ comma)) <?> "tuple"
+        fstP = fst' <$ preword "fst" <*> term
+        sndP = snd' <$ preword "snd" <*> term
+
+        inLP = inL <$ preword "inL" <*> term
+        inRP = inR <$ preword "inR" <*> term
+        caseP = makeCase <$  preword "case"
+                         <*> term <* preword "of"
+                         <*> parens lambdaP
+                         <*> parens lambdaP
+
+        lambdaP = makeLambda <$  symbol "\\"
+                             <*> name <* dot
+                             <*> term
+
+        varP = var <$> name
+
+        letP = makeLet <$  preword "let"
+                       <*> name <*  symbolic '='
+                       <*> term <*  preword "in"
+                       <*> term
+
 type' :: (Monad m, TokenParsing m) => m Type
 type' = exponentialType <?> "type"
   where exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
@@ -52,38 +85,7 @@ type' = exponentialType <?> "type"
         unitTP = unitT <$ preword "Unit"
 
 expr :: (Monad m, TokenParsing m) => m Expr
-expr = termP <|> type'
-  where termP = ascription <?> "term"
-        ascription = do
-          app <- application
-          ty <- optional (op ":" *> type')
-          return (maybe app (app `as`) ty)
-          <?> "type annotation"
-        application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = unitP <|> pairP <|> inLP <|> inRP <|> fstP <|> sndP <|> caseP <|> lambdaP <|> varP <|> letP
-        unitP = unit <$ preword "unit"
-
-        pairP = parens (termP `chainr1` (pair <$ comma)) <?> "tuple"
-        fstP = fst' <$ preword "fst" <*> termP
-        sndP = snd' <$ preword "snd" <*> termP
-
-        inLP = inL <$ preword "inL" <*> termP
-        inRP = inR <$ preword "inR" <*> termP
-        caseP = makeCase <$  preword "case"
-                         <*> termP <* preword "of"
-                         <*> parens lambdaP
-                         <*> parens lambdaP
-
-        lambdaP = makeLambda <$  symbol "\\"
-                             <*> name <* dot
-                             <*> termP
-
-        varP = var <$> name
-
-        letP = makeLet <$  preword "let"
-                       <*> name <*  symbolic '='
-                       <*> termP <*  preword "in"
-                       <*> termP
+expr = term <|> type'
 
 name :: (Monad m, TokenParsing m) => m Name
 name = N <$> identifier
