@@ -85,10 +85,10 @@ snd' = Expr.snd' <$ preword "snd" <*> term
                                   <?> "snd"
 
 lambda :: (Monad m, TokenParsing m) => m Term
-lambda = makeLambda <$  op "\\"
-                    <*> name <* dot
-                    <*> term
-                    <?> "lambda"
+lambda = foldr ((.) . makeLambda) id <$  op "\\"
+                                     <*> some name <* dot
+                                     <*> term
+                                     <?> "lambda"
 
 application :: (Monad m, TokenParsing m) => m Term
 application = termAtom `chainr1` pure (#) <?> "function application"
