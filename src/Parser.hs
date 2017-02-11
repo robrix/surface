@@ -42,6 +42,10 @@ module' = runUnlined mod
                            <*> expr
                            <?> "declaration"
 
+expr :: (Monad m, TokenParsing m) => m Expr
+expr = term <|> type'
+
+
 term :: (Monad m, TokenParsing m) => m Term
 term = ascription <?> "term"
   where ascription = do
@@ -80,10 +84,6 @@ type' = exponentialType <?> "type"
         atomicType = typeTP <|> unitTP <|> parens type'
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
-
-expr :: (Monad m, TokenParsing m) => m Expr
-expr = term <|> type'
-
 
 unit :: (Monad m, TokenParsing m) => m Term
 unit = Expr.unit <$ preword "unit"
