@@ -65,33 +65,41 @@ termAtom
   <|> Parser.let'
 
 unit :: (Monad m, TokenParsing m) => m Term
-unit = Expr.unit <$ preword "unit"
+unit = Expr.unit <$  preword "unit"
+                 <?> "unit"
 
 var :: (Monad m, TokenParsing m) => m Expr
 var = Expr.var <$> name
+               <?> "variable"
 
 tuple :: (Monad m, TokenParsing m) => m Term
-tuple = parens (term `chainr1` (pair <$ comma)) <?> "tuple"
+tuple = parens (term `chainr1` (pair <$ comma))
+                     <?> "tuple"
 
 fst' :: (Monad m, TokenParsing m) => m Term
 fst' = Expr.fst' <$ preword "fst" <*> term
+                                  <?> "fst"
 
 snd' :: (Monad m, TokenParsing m) => m Term
 snd' = Expr.snd' <$ preword "snd" <*> term
+                                  <?> "snd"
 
 lambda :: (Monad m, TokenParsing m) => m Term
 lambda = makeLambda <$  symbol "\\"
                     <*> name <* dot
                     <*> term
+                    <?> "lambda"
 
 application :: (Monad m, TokenParsing m) => m Term
 application = termAtom `chainr1` pure (#) <?> "function application"
 
 inL :: (Monad m, TokenParsing m) => m Term
 inL = Expr.inL <$ preword "inL" <*> term
+                                <?> "inL"
 
 inR :: (Monad m, TokenParsing m) => m Term
 inR = Expr.inR <$ preword "inR" <*> term
+                                <?> "inR"
 
 case' :: (Monad m, TokenParsing m) => m Term
 case' = makeCase <$  preword "case"
@@ -104,6 +112,7 @@ let' = makeLet <$  preword "let"
                <*> name <*  symbolic '='
                <*> term <*  preword "in"
                <*> term
+               <?> "let"
 
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
