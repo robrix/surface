@@ -129,6 +129,7 @@ typeAtom :: (Monad m, TokenParsing m) => m Type
 typeAtom
    =  typeType
   <|> unitType
+  <|> Parser.var
   <|> parens type'
 
 unitType :: (Monad m, TokenParsing m) => m Type
