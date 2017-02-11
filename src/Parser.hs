@@ -49,12 +49,7 @@ expr = term <|> type'
 
 
 term :: (Monad m, TokenParsing m) => m Term
-term = ascription <?> "term"
-  where ascription = do
-          app <- application
-          ty <- optional (op ":" *> type')
-          return (maybe app (app `as`) ty)
-          <?> "type annotation"
+term = annotation <?> "term"
 
 type' :: (Monad m, TokenParsing m) => m Type
 type' = exponentialType <?> "type"
@@ -119,6 +114,12 @@ let' = makeLet <$  preword "let"
                <*> term <*  preword "in"
                <*> term
 
+annotation :: (Monad m, TokenParsing m) => m Term
+annotation = do
+        app <- application
+        ty <- optional (op ":" *> type')
+        return (maybe app (app `as`) ty)
+        <?> "type annotation"
 
 name :: (Monad m, TokenParsing m) => m Name
 name = N <$> identifier
