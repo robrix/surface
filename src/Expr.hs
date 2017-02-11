@@ -131,6 +131,9 @@ makeLet name value body = Fix (Let name value body)
 as :: Term -> Type -> Term
 as = (Fix .) . As
 
+makePi :: Name -> Term -> Term -> Term
+makePi name ty body = Fix (Pi name ty body)
+
 
 -- Conveniences
 
