@@ -10,3 +10,6 @@ spec = do
   describe "expr" $ do
     it "parses function types" $
       expr `parseString` "Unit -> Unit" `shouldBe` Result (unitT .->. unitT)
+
+    it "parses product types" $
+      expr `parseString` "Unit * Unit" `shouldBe` Result (unitT .*. unitT)
