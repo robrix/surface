@@ -51,10 +51,6 @@ expr = term <|> type'
 term :: (Monad m, TokenParsing m) => m Term
 term = annotation <?> "term"
 
-type' :: (Monad m, TokenParsing m) => m Type
-type' = functionType <?> "type"
-
-
 termAtom :: (Monad m, TokenParsing m) => m Term
 termAtom
    =  Parser.unit
@@ -116,6 +112,9 @@ annotation = do
         return (maybe app (app `as`) ty)
         <?> "type annotation"
 
+
+type' :: (Monad m, TokenParsing m) => m Type
+type' = functionType <?> "type"
 
 typeAtom :: (Monad m, TokenParsing m) => m Type
 typeAtom
