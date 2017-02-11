@@ -34,13 +34,15 @@ module' = runUnlined mod
                      <*> typeIdentifier <* preword "where" <* some newline
                      <*> (declaration `sepEndBy` some newline)
                      <?> "module"
-        declaration = do
-          name <- identifier
-          Declaration name <$  colon
-                           <*> expr <* some newline
-                           <*  token (highlight Identifier (string name)) <* symbolic '='
-                           <*> expr
-                           <?> "declaration"
+
+declaration :: (Monad m, TokenParsing m) => m Declaration
+declaration = do
+  name <- identifier
+  Declaration name <$  colon
+                   <*> expr <* some newline
+                   <*  token (highlight Identifier (string name)) <* symbolic '='
+                   <*> expr
+                   <?> "declaration"
 
 expr :: (Monad m, TokenParsing m) => m Expr
 expr = term <|> type'
