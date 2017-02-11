@@ -182,7 +182,7 @@ liftPrettyExpr alphabet pp d expr = case expr of
   Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
   Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
   UnitT -> showString "Unit"
-  Unit -> showString "unit"
+  Unit -> showString "()"
   TypeT -> showString "Type"
   Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 0 v . showString " in " . pp 0 b
   As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
