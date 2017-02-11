@@ -13,3 +13,6 @@ spec = do
 
     it "parses product types" $
       expr `parseString` "Unit * Unit" `shouldBe` Result (unitT .*. unitT)
+
+    it "parses sum types" $
+      expr `parseString` "Unit + Unit" `shouldBe` Result (unitT .+. unitT)
