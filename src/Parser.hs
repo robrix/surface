@@ -85,7 +85,7 @@ snd' = Expr.snd' <$ preword "snd" <*> term
                                   <?> "snd"
 
 lambda :: (Monad m, TokenParsing m) => m Term
-lambda = makeLambda <$  symbol "\\"
+lambda = makeLambda <$  op "\\"
                     <*> name <* dot
                     <*> term
                     <?> "lambda"
