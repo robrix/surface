@@ -39,7 +39,7 @@ declaration :: (Monad m, TokenParsing m) => m Declaration
 declaration = do
   name <- identifier
   Declaration name <$  colon
-                   <*> expr <* some newline
+                   <*> type' <* some newline
                    <*  token (highlight Identifier (string name)) <* op "="
                    <*> expr
                    <?> "declaration"
