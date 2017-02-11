@@ -52,8 +52,7 @@ term :: (Monad m, TokenParsing m) => m Term
 term = annotation <?> "term"
 
 type' :: (Monad m, TokenParsing m) => m Type
-type' = exponentialType <?> "type"
-  where exponentialType = productType `chainr1` ((.->.) <$ op "->") <?> "function type"
+type' = functionType <?> "type"
 
 
 termAtom :: (Monad m, TokenParsing m) => m Term
@@ -135,6 +134,9 @@ sumType = typeAtom `chainl1` ((.+.) <$ op "+") <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
 productType = sumType `chainl1` ((.*.) <$ op "*") <?> "product type"
+
+functionType :: (Monad m, TokenParsing m) => m Type
+functionType = productType `chainr1` ((.->.) <$ op "->") <?> "function type"
 
 
 name :: (Monad m, TokenParsing m) => m Name
