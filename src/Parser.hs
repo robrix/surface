@@ -42,20 +42,21 @@ module' = runUnlined mod
                            <*> expr
                            <?> "declaration"
 
-expr :: (Monad m, TokenParsing m) => m Expr
-expr = termP <|> typeP
-  where typeP = exponentialType <?> "type"
-        exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
+type' :: (Monad m, TokenParsing m) => m Type
+type' = exponentialType <?> "type"
+  where exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
         additiveType = atomicType `chainl1` ((.+.) <$ op "+") <?> "sum type"
-        atomicType = typeTP <|> unitTP <|> parens typeP
+        atomicType = typeTP <|> unitTP <|> parens type'
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
 
-        termP = ascription <?> "term"
+expr :: (Monad m, TokenParsing m) => m Expr
+expr = termP <|> type'
+  where termP = ascription <?> "term"
         ascription = do
           app <- application
-          ty <- optional (op ":" *> typeP)
+          ty <- optional (op ":" *> type')
           return (maybe app (app `as`) ty)
           <?> "type annotation"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
