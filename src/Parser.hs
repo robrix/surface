@@ -109,7 +109,7 @@ case' = makeCase <$  preword "case"
 
 let' :: (Monad m, TokenParsing m) => m Term
 let' = makeLet <$  preword "let"
-               <*> name <*  symbolic '='
+               <*> name <*  op "="
                <*> term <*  preword "in"
                <*> term
                <?> "let"
