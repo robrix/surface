@@ -55,8 +55,7 @@ term = ascription <?> "term"
           ty <- optional (op ":" *> type')
           return (maybe app (app `as`) ty)
           <?> "type annotation"
-        application = atomicTerm `chainr1` pure (#) <?> "function application"
-        atomicTerm = Parser.unit <|> tuple <|> Parser.inL <|> Parser.inR <|> Parser.fst' <|> Parser.snd' <|> Parser.case' <|> lambda <|> Parser.var <|> Parser.let'
+        application = termAtom `chainr1` pure (#) <?> "function application"
 
 type' :: (Monad m, TokenParsing m) => m Type
 type' = exponentialType <?> "type"
@@ -66,6 +65,19 @@ type' = exponentialType <?> "type"
         atomicType = typeTP <|> unitTP <|> parens type'
         typeTP = typeT <$ preword "Type"
         unitTP = unitT <$ preword "Unit"
+
+termAtom :: (Monad m, TokenParsing m) => m Term
+termAtom
+   =  Parser.unit
+  <|> tuple
+  <|> Parser.fst'
+  <|> Parser.snd'
+  <|> Parser.inL
+  <|> Parser.inR
+  <|> Parser.case'
+  <|> lambda
+  <|> Parser.var
+  <|> Parser.let'
 
 unit :: (Monad m, TokenParsing m) => m Term
 unit = Expr.unit <$ preword "unit"
