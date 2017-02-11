@@ -56,8 +56,7 @@ type' = exponentialType <?> "type"
   where exponentialType = multiplicativeType `chainr1` ((.->.) <$ op "->") <?> "function type"
         multiplicativeType = additiveType `chainl1` ((.*.) <$ op "*") <?> "product type"
         additiveType = atomicType `chainl1` ((.+.) <$ op "+") <?> "sum type"
-        atomicType = typeTP <|> unitType <|> parens type'
-        typeTP = typeT <$ preword "Type"
+        atomicType = typeType <|> unitType <|> parens type'
 
 
 termAtom :: (Monad m, TokenParsing m) => m Term
@@ -124,6 +123,9 @@ annotation = do
 
 unitType :: (Monad m, TokenParsing m) => m Type
 unitType = unitT <$ preword "Unit"
+
+typeType :: (Monad m, TokenParsing m) => m Type
+typeType = typeT <$ preword "Type"
 
 
 name :: (Monad m, TokenParsing m) => m Name
