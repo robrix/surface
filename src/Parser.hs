@@ -55,7 +55,6 @@ term = ascription <?> "term"
           ty <- optional (op ":" *> type')
           return (maybe app (app `as`) ty)
           <?> "type annotation"
-        application = termAtom `chainr1` pure (#) <?> "function application"
 
 type' :: (Monad m, TokenParsing m) => m Type
 type' = exponentialType <?> "type"
@@ -98,6 +97,9 @@ lambda :: (Monad m, TokenParsing m) => m Term
 lambda = makeLambda <$  symbol "\\"
                     <*> name <* dot
                     <*> term
+
+application :: (Monad m, TokenParsing m) => m Term
+application = termAtom `chainr1` pure (#) <?> "function application"
 
 inL :: (Monad m, TokenParsing m) => m Term
 inL = Expr.inL <$ preword "inL" <*> term
