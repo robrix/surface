@@ -123,7 +123,7 @@ annotation = do
 
 
 type' :: (Monad m, TokenParsing m) => m Type
-type' = functionType <?> "type"
+type' = piType <?> "type"
 
 typeAtom :: (Monad m, TokenParsing m) => m Type
 typeAtom
@@ -146,6 +146,15 @@ productType = sumType `chainl1` ((.*.) <$ op "*") <?> "product type"
 
 functionType :: (Monad m, TokenParsing m) => m Type
 functionType = productType `chainr1` ((.->.) <$ op "->") <?> "function type"
+
+piType :: (Monad m, TokenParsing m) => m Type
+piType = bound <|> functionType
+  where bound =  op "("
+              *> (try (makePi <$> name <* op ":"
+                              <*> type')
+             <|> (.->.) <$> type')
+             <*  op ")" <* op "->"
+             <*> type'
 
 
 name :: (Monad m, TokenParsing m) => m Name
