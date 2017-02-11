@@ -40,7 +40,7 @@ declaration = do
   name <- identifier
   Declaration name <$  colon
                    <*> expr <* some newline
-                   <*  token (highlight Identifier (string name)) <* symbolic '='
+                   <*  token (highlight Identifier (string name)) <* op "="
                    <*> expr
                    <?> "declaration"
 
