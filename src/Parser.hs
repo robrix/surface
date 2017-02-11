@@ -156,6 +156,7 @@ piType
  <*  op ")" <* op "->"
  <*> type'
  <|> functionType
+ <?> "pi type"
 
 
 name :: (Monad m, TokenParsing m) => m Name
