@@ -55,7 +55,7 @@ expr = termP <|> typeP
         termP = ascription <?> "term"
         ascription = do
           app <- application
-          ty <- optional (symbolic ':' *> typeP)
+          ty <- optional (op ":" *> typeP)
           return (maybe app (app `as`) ty)
           <?> "type annotation"
         application = atomicTerm `chainr1` pure (#) <?> "function application"
