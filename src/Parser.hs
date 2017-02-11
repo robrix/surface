@@ -86,7 +86,8 @@ expr = termP <|> typeP
 
         name = N <$> identifier
 
-        op = token . highlight Operator . string
+op :: TokenParsing m => String -> m String
+op = token . highlight Operator . string
 
 identifier :: (Monad m, TokenParsing m) => m String
 identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
