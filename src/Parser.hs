@@ -73,8 +73,8 @@ var = Expr.var <$> name
                <?> "variable"
 
 tuple :: (Monad m, TokenParsing m) => m Term
-tuple = parens (term `chainr1` (pair <$ comma))
-                     <?> "tuple"
+tuple = parens (chainr term (pair <$ comma) Expr.unit)
+               <?> "tuple"
 
 fst' :: (Monad m, TokenParsing m) => m Term
 fst' = Expr.fst' <$ preword "fst" <*> term
