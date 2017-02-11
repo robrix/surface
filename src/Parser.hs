@@ -74,15 +74,17 @@ expr = termP <|> typeP
                          <*> parens lambdaP
 
         lambdaP = makeLambda <$  symbol "\\"
-                             <*> (N <$> identifier) <* dot
+                             <*> name <* dot
                              <*> termP
 
-        varP = var . N <$> identifier
+        varP = var <$> name
 
         letP = makeLet <$  preword "let"
-                       <*> (N <$> identifier) <*  symbolic '='
+                       <*> name <*  symbolic '='
                        <*> termP <*  preword "in"
                        <*> termP
+
+        name = N <$> identifier
 
         op = token . highlight Operator . string
 
