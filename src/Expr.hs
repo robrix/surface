@@ -4,7 +4,7 @@ module Expr where
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.List (nub, sort)
-import Data.Semigroup (Semigroup, Option(..))
+import Data.Semigroup (Semigroup, Max(..), Option(..))
 import Text.Pretty
 
 data ExprF a where
@@ -160,6 +160,11 @@ freeVariables = nub . sort . cata alg
           Abs n b -> filter (/=n) b
           Var v -> [v]
           _ -> concat expr
+
+freshNameIn :: Expr -> Name
+freshNameIn = maybe (I 0) (succ' . getMax) . sfoldMap Max . freeVariables
+  where succ' (I i) = I (succ i)
+        succ' (N n) = N (n ++ "'")
 
 
 -- Conveniences
