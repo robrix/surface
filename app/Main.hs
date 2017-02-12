@@ -31,9 +31,9 @@ main = do
   case command of
     Interactive -> REPL.runREPL REPL.repl
     Run path -> do
-      result <- parseFromFile module' path
+      result <- parseFromFile source path
       case result of
-        Result a -> prettyPrint a
+        Result a -> for_ a prettyPrint
         Error es -> for_ es putStr
 
 versionString :: String
