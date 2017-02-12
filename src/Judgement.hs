@@ -312,7 +312,10 @@ decompose judgement = case judgement of
   CheckModule module' ->
     for_ (moduleDeclarations module') (checkDeclaration module')
 
-  CheckDeclaration (Module modName _) (Declaration name ty term) ->
+  CheckDeclaration (Module modName _) (Declaration name ty term) -> do
+    for_ (freeVariables ty) (\ name -> do
+      context <- getContext
+      unless (name <? context) $ declare (name := Just typeT))
     contextualizeErrors (fmap ((modName ++ "." ++ name ++ ": ") ++)) $ check term ty
 
   Infer term -> case unfix term of
