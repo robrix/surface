@@ -12,14 +12,13 @@ import qualified REPL
 import Text.Pretty
 
 data Command
-  = Run Bool FilePath
+  = Run FilePath
   | Interactive
 
 command :: Parser Command
 command
   =  flag' Interactive (long "interactive" <> short 'i' <> help "Launch the interactive REPL.")
- <|> Run <$> switch (long "verbose" <> short 'v' <> help "Verbose output, showing all refinement steps on error.")
-         <*> strArgument (metavar "FILE" <> help "The program to run.")
+ <|> Run <$> strArgument (metavar "FILE" <> help "The program to run.")
 
 arguments :: ParserInfo Command
 arguments = info
@@ -33,7 +32,7 @@ main = do
   command <- execParser arguments
   case command of
     Interactive -> REPL.runREPL REPL.repl
-    Run verbose path -> do
+    Run path -> do
       result <- parseFromFile source path
       printResult $ do
         mod <- result
