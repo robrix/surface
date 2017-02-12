@@ -400,7 +400,7 @@ decompose judgement = case judgement of
       unify inferred (var a)
       return ty
 
-  Check term ty -> case (term, ty) of
+  Check term ty -> case (unfix term, unfix ty) of
     _ -> do
       ty' <- infer term
       unify ty ty'
