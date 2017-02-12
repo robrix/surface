@@ -240,6 +240,14 @@ define name ty = declare (name := Just ty)
 declare :: Binding -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
+findEntry :: Name -> Proof Entry
+findEntry name = do
+  context <- getContext
+  case context of
+    (_ :< entry@(Tm (found ::: _))) | name == found -> return entry
+    (_ :< entry@(Ty (found := _)))  | name == found -> return entry
+    _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
+
 find :: Name -> Proof Scheme
 find name = getContext >>= help
   where help (_ :< Tm (found ::: decl))
