@@ -329,7 +329,8 @@ decompose judgement = case judgement of
   CheckModule module' ->
     for_ (moduleDeclarations module') (checkDeclaration module')
 
-  CheckDeclaration _ _ -> return ()
+  CheckDeclaration (Module modName _) (Declaration name ty term) ->
+    contextualizeErrors (fmap ((modName ++ "." ++ name ++ ": ") ++)) $ check term ty
 
   Infer term -> case unfix term of
     Pair x y -> (.*.) <$> infer x <*> infer y
