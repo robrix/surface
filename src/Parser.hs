@@ -143,8 +143,8 @@ typeType = typeT <$  preword "Type"
                  <?> "Type"
 
 sumType :: (Monad m, TokenParsing m) => m Type
-sumType = typeAtom `chainl1` ((.+.) <$ op "+")
-                   <?> "sum type"
+sumType = application typeAtom `chainl1` ((.+.) <$ op "+")
+                               <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
 productType = sumType `chainl1` ((.*.) <$ op "*")
