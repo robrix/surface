@@ -269,9 +269,7 @@ find name = getContext >>= help
 findDeclaration :: Name -> Proof (Maybe Expr)
 findDeclaration name = do
   context <- getContext
-  case help context of
-    Freer (Free cont (R (Error es))) -> R (Error (es ++ [ pretty context ])) `andThen` cont
-    other -> other
+  contextualizeErrors (++ [ pretty context ]) $ help context
   where help (_ :< Ty (found := decl))
           | name == found = return decl
         help (context :< _) = help context
