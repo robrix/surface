@@ -259,8 +259,8 @@ find name = getContext >>= help
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
-findDeclaration :: Name -> Proof (Maybe Expr)
-findDeclaration name = do
+findBinding :: Name -> Proof (Maybe Expr)
+findBinding name = do
   context <- getContext
   contextualizeErrors (++ [ pretty context ]) $ help context
   where help (_ :< Ty (found := decl))
@@ -437,8 +437,8 @@ decompose judgement = case judgement of
 
   Normalize expr -> case unfix expr of
     Var name -> do
-      decl <- findDeclaration name
-      case decl of
+      binding <- findBinding name
+      case binding of
         Just term -> return term
         Nothing -> return (var name)
 
