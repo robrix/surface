@@ -23,11 +23,11 @@ spec = do
       Parser.functionType `parseString` "a -> b -> c" `shouldBe` Parser.functionType `parseString` "a -> (b -> c)"
 
     it "can take type applications" $
-      Parser.functionType `parseString` "a b -> c" `shouldBe` Result (var (N "a") # var (N "b") .->. var (N "c"))
+      Parser.functionType `parseString` "a b -> c" `shouldBe` Result (varN "a" # varN "b" .->. varN "c")
 
   describe "lambda" $ do
     it "can take single params" $
-      Parser.lambda `parseString` "\\ a . a" `shouldBe` Result (makeLambda (N "a") (Expr.var (N "a")))
+      Parser.lambda `parseString` "\\ a . a" `shouldBe` Result (makeLambda (N "a") (varN "a"))
 
     it "can take multiple params" $
-      Parser.lambda `parseString` "\\ a b . a b" `shouldBe` Result (makeLambda (N "a") (makeLambda (N "b") (var (N "a") # var (N "b"))))
+      Parser.lambda `parseString` "\\ a b . a b" `shouldBe` Result (makeLambda (N "a") (makeLambda (N "b") (varN "a" # varN "b")))
