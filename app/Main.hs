@@ -17,8 +17,8 @@ data Command
 
 command :: Parser Command
 command
-  =  flag' Interactive (long "--interactive" <> short 'i')
- <|> Run <$> switch (long "--verbose" <> short 'v')
+  =  flag' Interactive (long "interactive" <> short 'i')
+ <|> Run <$> switch (long "verbose" <> short 'v')
          <*> strArgument (metavar "FILE")
 
 arguments :: ParserInfo Command
