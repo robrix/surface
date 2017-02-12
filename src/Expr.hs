@@ -231,7 +231,9 @@ instance Pretty1 ExprF where
   liftPrettyPrec = liftPrettyExpr termNames
 
 instance Pretty Name where
-  prettyPrec _ = prettyTermName
+  prettyPrec _ name = case name of
+    N s -> showString s
+    I i -> showChar '_' . shows i
 
 instance Eq1 ExprF where
   liftEq eq a b = case (a, b) of
