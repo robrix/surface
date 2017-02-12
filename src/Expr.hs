@@ -3,7 +3,7 @@ module Expr where
 
 import Data.Functor.Classes
 import Data.Functor.Foldable
-import Data.List (nub, sort)
+import Data.List (nub, sort, union)
 import Data.Semigroup (Semigroup, Max(..), Option(..))
 import Text.Pretty
 
@@ -173,7 +173,7 @@ substitute to from = para $ \ expr -> case expr of
     | name == from -> to
     | otherwise    -> var name
   Abs name (original, substituted)
-    | name == from -> let fresh = freshNameIn (freeVariables original) in
+    | name == from -> let fresh = freshNameIn (freeVariables original `union` freeVariables to) in
                       Fix (Abs fresh (substitute to from (rename name fresh original)))
     | otherwise    -> Fix (Abs name substituted)
   _ -> Fix (fmap snd expr)
