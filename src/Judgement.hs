@@ -319,9 +319,11 @@ generalizeOver mt = do
             Tm _ -> error "Unexpected term variable."
 
 contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
-contextualizeErrors addContext proof = case proof of
-  Freer (Free cont (R (Error es))) -> R (Error (addContext es)) `andThen` cont
-  other -> other
+contextualizeErrors addContext = iterFreer alg . fmap pure
+  where alg :: (x -> Proof a) -> ProofF x -> Proof a
+        alg cont proof = Freer . Free cont $ case proof of
+          R (Error es) -> R (Error (addContext es))
+          other -> other
 
 
 decompose :: Judgement a -> Proof a
