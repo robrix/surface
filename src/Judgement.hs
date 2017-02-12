@@ -23,7 +23,7 @@ data Judgement a where
   Unify :: Type -> Type -> Judgement ()
   Solve :: Name -> Suffix -> Type -> Judgement ()
 
-  Fresh :: Declaration -> Judgement Name
+  Fresh :: Maybe Expr -> Judgement Name
   Restore :: Judgement Extension
   Replace :: Suffix -> Judgement Extension
 
@@ -52,10 +52,10 @@ instance Binder Name where
   freeVariables = (:[])
 
 instance Binder Binding where
-  (<?) name (_ := Some t) = name <? t
+  (<?) name (_ := Just t) = name <? t
   _ <? _ = False
 
-  freeVariables (_ := Some t) = freeVariables t
+  freeVariables (_ := Just t) = freeVariables t
   freeVariables _ = []
 
 instance Binder1 f => Binder (Fix f) where
@@ -78,7 +78,7 @@ instance Binder1 ExprF where
 applyContext :: Expr -> Context -> Expr
 applyContext expr context = case context of
   Nil -> expr
-  (rest :< Ty (name := d)) | Some t <- d -> applyContext (substitute name t expr) rest
+  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute name t expr) rest
   (rest :< _) -> applyContext expr rest
 
 substitute :: Name -> Expr -> Expr -> Expr
@@ -103,10 +103,10 @@ unify' t1 t2 = case (unfix t1, unfix t2) of
   (Var v1, Var v2) -> onTop $ \ (n := d) ->
     case (n == v1, n == v2, d) of
       (True, True, _) -> restore
-      (True, False, Hole) -> replace [ v1 := Some (var v2) ]
-      (False, True, Hole) -> replace [ v2 := Some (var v1) ]
-      (True, False, Some t) -> unify t2 t >> restore
-      (False, True, Some t) -> unify t1 t >> restore
+      (True, False, Nothing) -> replace [ v1 := Just (var v2) ]
+      (False, True, Nothing) -> replace [ v2 := Just (var v1) ]
+      (True, False, Just t) -> unify t2 t >> restore
+      (False, True, Just t) -> unify t1 t >> restore
       (False, False, _) -> unify t1 t2 >> restore
   (Var v, _) -> solve v [] t2
   (_, Var v) -> solve v [] t1
@@ -132,8 +132,8 @@ solve' :: Name -> Suffix -> Type -> Proof ()
 solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
-    (True, False, Hole) -> replace (suffix ++ [ name := Some ty ])
-    (True, False, Some v) -> do
+    (True, False, Nothing) -> replace (suffix ++ [ name := Just ty ])
+    (True, False, Just v) -> do
       modifyContext (<>< suffix)
       unify v ty
       restore
@@ -150,9 +150,9 @@ specialize s = do
   let (d, s') = unpack s
   b <- fresh d
   specialize (fmap (fromS b) s')
-  where unpack :: Scheme -> (Declaration, Schm (Index Name))
-        unpack (Context.All s') = (Hole, s')
-        unpack (LetS t s') = (Some t, s')
+  where unpack :: Scheme -> (Maybe Expr, Schm (Index Name))
+        unpack (Context.All s') = (Nothing, s')
+        unpack (LetS t s') = (Just t, s')
         unpack (Type _) = error "unpack cannot be called with a Type Schm."
 
         fromS :: Name -> Index Name -> Name
@@ -191,7 +191,7 @@ put s = S (Put s) `andThen` return
 andThen :: f x -> (x -> Freer f a) -> Freer f a
 andThen = (Freer .) . flip Free
 
-fresh' :: Declaration -> Proof Name
+fresh' :: Maybe Expr -> Proof Name
 fresh' d = do
   (m, context) <- get
   put (increment m, context :< Ty (m := d))
@@ -199,7 +199,7 @@ fresh' d = do
   where increment (I n) = I (succ n)
         increment (N s) = N (s ++ "'")
 
-fresh :: Declaration -> Proof Name
+fresh :: Maybe Expr -> Proof Name
 fresh declaration = J (Fresh declaration) `andThen` return
 
 
@@ -242,7 +242,7 @@ isType term = J (IsType term) `andThen` return
 
 
 define :: Name -> Type -> Proof ()
-define name ty = declare (name := Some ty)
+define name ty = declare (name := Just ty)
 
 declare :: Binding -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
@@ -254,7 +254,7 @@ find name = getContext >>= help
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
-findDeclaration :: Name -> Proof Declaration
+findDeclaration :: Name -> Proof (Maybe Expr)
 findDeclaration name = do
   context <- getContext
   case help context of
@@ -290,8 +290,8 @@ bind a = fmap help
 
 (==>) :: Suffix -> Type -> Scheme
 []                     ==> ty = Type ty
-((a := Hole) : rest)   ==> ty = All (bind a (rest ==> ty))
-((a := Some v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
+((a := Nothing) : rest)   ==> ty = All (bind a (rest ==> ty))
+((a := Just v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
 
 generalizeOver :: Proof Type -> Proof Scheme
 generalizeOver mt = do
@@ -319,20 +319,20 @@ decompose judgement = case judgement of
 
     InL l -> do
       a <- infer l
-      b <- fresh Hole
+      b <- fresh Nothing
       return (a .+. var b)
 
     InR r -> do
-      a <- fresh Hole
+      a <- fresh Nothing
       b <- infer r
       return (var a .+. b)
 
     Case subject ifL ifR -> do
       ty <- infer subject
-      l <- fresh Hole
-      r <- fresh Hole
+      l <- fresh Nothing
+      r <- fresh Nothing
       unify ty (var l .+. var r)
-      b <- fresh Hole
+      b <- fresh Nothing
       tl <- infer ifL
       tr <- infer ifR
       unify tl (var l .->. var b)
@@ -344,14 +344,14 @@ decompose judgement = case judgement of
     Var name -> find name >>= specialize
 
     Abs name body -> do
-      a <- fresh Hole
+      a <- fresh Nothing
       v <- name ::: Type (var a) >- infer body
       return (var a .->. v)
 
     App f arg -> do
       ty <- infer f
       a <- infer arg
-      b <- fresh Hole
+      b <- fresh Nothing
       unify ty (a .->. var b)
       return (var b)
 
@@ -372,7 +372,7 @@ decompose judgement = case judgement of
       name ::: t >- infer body
 
     As term ty -> do
-      a <- fresh (Some ty)
+      a <- fresh (Just ty)
       inferred <- infer term
       unify inferred (var a)
       return ty
@@ -416,11 +416,11 @@ decompose judgement = case judgement of
     Var name -> do
       decl <- findDeclaration name
       case decl of
-        Some term -> return term
-        Hole -> return (var name)
+        Just term -> return term
+        Nothing -> return (var name)
 
     Abs name body -> do
-      declare (name := Hole)
+      declare (name := Nothing)
       makeLambda name <$> normalize body
 
     App op arg -> do
@@ -428,7 +428,7 @@ decompose judgement = case judgement of
       a <- normalize arg
       case o of
         Abs name body -> do
-          declare (name := Some a)
+          declare (name := Just a)
           normalize body
         Var v -> return (var v # a)
         _ -> error ("Application of non-abstraction value: " ++ pretty o)
@@ -472,8 +472,8 @@ decompose judgement = case judgement of
     _ -> pure expr
   where inferPair term = do
           ty <- infer term
-          a <- fresh Hole
-          b <- fresh Hole
+          a <- fresh Nothing
+          b <- fresh Nothing
           unify ty (var a .*. var b)
           return (a, b)
 
@@ -546,7 +546,7 @@ instance Pretty1 Judgement where
     Unify t1 t2 -> showsBinaryWith prettyType prettyType "unify" d t1 t2
     Solve n s ty -> showsTernaryWith (const prettyTypeName) prettyPrec prettyType "solve" d n s ty
 
-    Fresh declaration -> showsUnaryWith prettyPrec "fresh" d declaration
+    Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyPrec) "fresh" d declaration
     Judgement.Restore -> showString "restore"
     Judgement.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
 
