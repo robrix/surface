@@ -49,6 +49,9 @@ instance Binder Name where
 instance Binder Binding where
   name <? (_ := m) = name <? m
 
+instance Binder TermEntry where
+  name <? (_ ::: s) = name <? s
+
 instance Binder1 f => Binder (Fix f) where
    (<?) name = liftIn (<?) name . unfix
 
