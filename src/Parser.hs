@@ -4,6 +4,7 @@ module Parser where
 import Control.Applicative
 import Control.Monad.IO.Class
 import qualified Data.HashSet as HashSet
+import Data.List.NonEmpty as NonEmpty
 import Data.Result as Result
 import Expr
 import Module
@@ -27,6 +28,11 @@ toResult :: Trifecta.Result a -> Result.Result a
 toResult r = case r of
   Success a -> Result a
   Failure info -> Error [show (_errDoc info)]
+
+source :: (Monad m, TokenParsing m) => m (NonEmpty Module)
+source = (:|) <$> module'
+              <*> many module'
+      <|> runUnlined (pure . Module "Main" <$> declaration `sepEndBy` some newline)
 
 module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
