@@ -37,7 +37,7 @@ main = do
       printResult $ do
         mod <- result
         (`traverse` (toList mod >>= moduleDeclarations)) $
-          \ (Declaration _ ty term) -> run (infer term >>= unify ty)
+          \ (Declaration _ ty term) -> run (check term ty)
 
 printResult :: (Traversable f, Pretty a) => Result (f a) -> IO ()
 printResult result = case result of
