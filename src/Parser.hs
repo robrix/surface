@@ -107,6 +107,7 @@ case' = makeCase <$  preword "case"
                  <*> term <* preword "of"
                  <*> parens lambda
                  <*> parens lambda
+                 <?> "case analysis"
 
 let' :: (Monad m, TokenParsing m) => m Term
 let' = makeLet <$  preword "let"
