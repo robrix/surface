@@ -11,10 +11,13 @@ import Data.Functor.Foldable hiding (Nil)
 import Data.List (delete, nub)
 import Data.Result
 import Expr
+import Module
 import Prelude hiding (fail)
 import Text.Pretty
 
 data Judgement a where
+  CheckDeclaration :: Declaration -> Judgement ()
+
   Check :: Term -> Type -> Judgement ()
   Infer :: Term -> Judgement Type
 
@@ -231,6 +234,10 @@ replace' :: Suffix -> Proof Extension
 replace' = return . Context.Replace
 
 
+checkDeclaration :: Declaration -> Proof ()
+checkDeclaration declaration = J (CheckDeclaration declaration) `andThen` return
+
+
 infer :: Term -> Proof Type
 infer term = J (Infer term) `andThen` return
 
@@ -311,6 +318,8 @@ generalizeOver mt = do
 
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
+  CheckDeclaration _ -> return ()
+
   Infer term -> case unfix term of
     Pair x y -> (.*.) <$> infer x <*> infer y
 
@@ -511,6 +520,8 @@ runStep context proof = case runFreer proof of
 
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
+    CheckDeclaration declaration -> showsUnaryWith showsPrec "Declaration" d declaration
+
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
     Infer term -> showsUnaryWith showsPrec "Infer" d term
 
@@ -539,6 +550,8 @@ instance Show a => Show (ProofF a) where
 
 instance Pretty1 Judgement where
   liftPrettyPrec _ d judgement = case judgement of
+    CheckDeclaration declaration -> showsUnaryWith showsPrec "checkDeclaration" d declaration
+
     Check term ty -> showsBinaryWith prettyPrec prettyType "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
     IsType ty -> showsUnaryWith prettyType "isType" d ty
