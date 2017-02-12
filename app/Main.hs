@@ -39,7 +39,7 @@ main = do
         (`traverse` (toList mod >>= moduleDeclarations)) $
           \ (Declaration _ ty term) -> run (check term ty)
 
-printResult :: (Traversable f, Pretty a) => Result (f a) -> IO ()
+printResult :: (Foldable f, Pretty a) => Result (f a) -> IO ()
 printResult result = case result of
   Result a -> for_ a prettyPrint
   Error es -> for_ es putStr
