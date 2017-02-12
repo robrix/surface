@@ -4,6 +4,7 @@ module Expr where
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.List (nub, sort)
+import Data.Semigroup (Semigroup, Option(..))
 import Text.Pretty
 
 data ExprF a where
@@ -209,6 +210,10 @@ liftPrettyExpr alphabet pp d expr = case expr of
   TypeT -> showString "Type"
   Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 0 v . showString " in " . pp 0 b
   As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
+
+
+sfoldMap :: (Semigroup s, Foldable t) => (a -> s) -> t a -> Maybe s
+sfoldMap f = getOption . foldMap (Option . Just . f)
 
 
 -- Instances
