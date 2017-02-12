@@ -6,6 +6,7 @@ import qualified Context
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
 import Control.State
+import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import Data.List (delete, nub)
@@ -17,7 +18,7 @@ import Text.Pretty
 
 data Judgement a where
   CheckModule :: Module -> Judgement ()
-  CheckDeclaration :: Declaration -> Judgement ()
+  CheckDeclaration :: Module -> Declaration -> Judgement ()
 
   Check :: Term -> Type -> Judgement ()
   Infer :: Term -> Judgement Type
@@ -238,8 +239,8 @@ replace' = return . Context.Replace
 checkModule :: Module -> Proof ()
 checkModule module' = J (CheckModule module') `andThen` return
 
-checkDeclaration :: Declaration -> Proof ()
-checkDeclaration declaration = J (CheckDeclaration declaration) `andThen` return
+checkDeclaration :: Module -> Declaration -> Proof ()
+checkDeclaration module' declaration = J (CheckDeclaration module' declaration) `andThen` return
 
 
 infer :: Term -> Proof Type
@@ -322,8 +323,10 @@ generalizeOver mt = do
 
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
-  CheckModule _ -> return ()
-  CheckDeclaration _ -> return ()
+  CheckModule module' ->
+    for_ (moduleDeclarations module') (checkDeclaration module')
+
+  CheckDeclaration _ _ -> return ()
 
   Infer term -> case unfix term of
     Pair x y -> (.*.) <$> infer x <*> infer y
@@ -526,7 +529,7 @@ runStep context proof = case runFreer proof of
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
     CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
-    CheckDeclaration declaration -> showsUnaryWith showsPrec "CheckDeclaration" d declaration
+    CheckDeclaration module' declaration -> showsBinaryWith showsPrec showsPrec "CheckDeclaration" d module' declaration
 
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
     Infer term -> showsUnaryWith showsPrec "Infer" d term
@@ -557,7 +560,7 @@ instance Show a => Show (ProofF a) where
 instance Pretty1 Judgement where
   liftPrettyPrec _ d judgement = case judgement of
     CheckModule module' -> showsUnaryWith prettyPrec "checkModule" d module'
-    CheckDeclaration declaration -> showsUnaryWith prettyPrec "checkDeclaration" d declaration
+    CheckDeclaration module' declaration -> showsBinaryWith prettyPrec prettyPrec "checkDeclaration" d module' declaration
 
     Check term ty -> showsBinaryWith prettyPrec prettyType "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
