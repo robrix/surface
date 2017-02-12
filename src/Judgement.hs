@@ -9,7 +9,6 @@ import Control.State
 import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
-import Data.List (delete, nub)
 import Data.Result
 import Expr
 import Module
