@@ -17,6 +17,10 @@ spec = do
     it "parses sum types" $
       expr `parseString` "Unit + Unit" `shouldBe` Result (unitT .+. unitT)
 
+  describe "functionType" $ do
+    it "associates to the right" $
+      functionType `parseString` "a -> b -> c" `shouldBe` functionType `parseString` "a -> (b -> c)"
+
   describe "lambda" $ do
     it "can take single params" $
       lambda `parseString` "\\ a . a" `shouldBe` Result (makeLambda (N "a") (Expr.var (N "a")))
