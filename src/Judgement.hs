@@ -390,6 +390,10 @@ decompose judgement = case judgement of
       isType a
       isType b
 
+    Pi name ty body -> do
+      isType ty
+      name ::: Type ty >- isType body
+
     Var name -> do
       ty <- find name >>= specialize
       isType ty
