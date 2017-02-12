@@ -476,8 +476,11 @@ decompose judgement = case judgement of
           return (a, b)
 
 
+initialState :: (Name, Context)
+initialState = (I 0, Nil)
+
 run :: Proof a -> Result a
-run = runAll (I 0, Nil)
+run = runAll initialState
 
 runAll :: (Name, Context) -> Proof a -> Result a
 runAll context proof = case runStep context proof of
