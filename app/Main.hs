@@ -1,10 +1,9 @@
 module Main where
 
-import Data.Foldable (asum, for_, toList)
+import Data.Foldable (for_)
 import Data.Result
 import Data.Version (showVersion)
 import Judgement
-import Module
 import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
@@ -35,14 +34,12 @@ main = do
     Run path -> do
       result <- parseFromFile source path
       printResult $ do
-        mod <- result
-        sequenceA (asum (checkModule <$> toList mod))
-  where checkModule (Module name declarations) = mapErrors ((name ++ ".") ++) . checkDeclaration <$> declarations
-        checkDeclaration (Declaration name ty term) = ((name ++ ": ") ++) `mapErrors` run (check term ty)
+        modules <- result
+        for_ modules (run . checkModule)
 
-printResult :: (Foldable f, Pretty a) => Result (f a) -> IO ()
+printResult :: Pretty a => Result a -> IO ()
 printResult result = case result of
-  Result a -> for_ a prettyPrint
+  Result a -> prettyPrint a
   Error es -> for_ es putStr
 
 versionString :: String
