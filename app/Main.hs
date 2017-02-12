@@ -3,15 +3,20 @@ module Main where
 import Data.Foldable (for_)
 import Data.Result
 import Data.Version (showVersion)
+import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
-import Options.Applicative
+import qualified REPL
 import Text.Pretty
 
-newtype Command = Run FilePath
+data Command
+  = Run FilePath
+  | Interactive
 
 command :: Parser Command
-command = Run <$> strArgument (metavar "FILE")
+command
+  =  flag' Interactive (long "--interactive" <> short 'i')
+ <|> Run <$> strArgument (metavar "FILE")
 
 arguments :: ParserInfo Command
 arguments = info
@@ -24,6 +29,7 @@ main :: IO ()
 main = do
   command <- execParser arguments
   case command of
+    Interactive -> REPL.runREPL REPL.repl
     Run path -> do
       result <- parseFromFile module' path
       case result of
