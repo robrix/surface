@@ -11,7 +11,7 @@ import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import Data.List (delete, nub)
 import Data.Result
-import Expr hiding (freeVariables)
+import Expr
 import Module
 import Prelude hiding (fail)
 import Text.Pretty
@@ -37,47 +37,28 @@ data Judgement a where
 
 class Binder a where
   (<?) :: Name -> a -> Bool
-  (<?) name = notElem name . freeVariables
-
-  freeVariables :: a -> [Name]
 
 class Binder1 f where
   liftIn :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
-  liftFreeVariables :: (a -> [Name]) -> f a -> [Name]
-
 instance (Foldable t, Binder a) => Binder (t a) where
   (<?) name = any (name <?)
 
-  freeVariables = foldMap freeVariables
-
 instance Binder Name where
   (<?) = (==)
-
-  freeVariables = (:[])
 
 instance Binder Binding where
   (<?) name (_ := Just t) = name <? t
   _ <? _ = False
 
-  freeVariables (_ := Just t) = freeVariables t
-  freeVariables _ = []
-
 instance Binder1 f => Binder (Fix f) where
    (<?) name = liftIn (<?) name . unfix
-
-   freeVariables = liftFreeVariables freeVariables . unfix
 
 instance Binder1 ExprF where
   liftIn occurs name expr = case expr of
     Abs n _ | n == name -> False
     Var v | v == name -> True
     _ -> any (occurs name) expr
-
-  liftFreeVariables fvs expr = case expr of
-    Abs n b -> delete n (fvs b)
-    Var v -> [v]
-    _ -> nub (foldMap fvs expr)
 
 
 applyContext :: Expr -> Context -> Expr
