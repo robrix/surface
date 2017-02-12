@@ -300,9 +300,9 @@ bind a = fmap help
                | otherwise = Context.S b
 
 (==>) :: Suffix -> Type -> Scheme
-[]                     ==> ty = Type ty
+[]                        ==> ty = Type ty
 ((a := Nothing) : rest)   ==> ty = All (bind a (rest ==> ty))
-((a := Just v) : rest) ==> ty = LetS v (bind a (rest ==> ty))
+((a := Just v) : rest)    ==> ty = LetS v (bind a (rest ==> ty))
 
 generalizeOver :: Proof Type -> Proof Scheme
 generalizeOver mt = do
