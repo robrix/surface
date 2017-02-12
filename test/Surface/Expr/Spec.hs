@@ -11,3 +11,6 @@ spec = do
 
     it "does not rename bound variables" $
       rename (N "a") (N "b") (makeLambda (N "a") (varN "a")) `shouldBe` makeLambda (N "a") (varN "a")
+
+    it "renames through other syntax" $
+      rename (N "a") (N "b") (makeLambda (N "c") (varN "a" # varN "c")) `shouldBe` makeLambda (N "c") (varN "b" # varN "c")
