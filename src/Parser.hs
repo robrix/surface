@@ -91,8 +91,8 @@ lambda = foldr ((.) . makeLambda) id <$  op "\\"
                                      <*> term
                                      <?> "lambda"
 
-application :: (Monad m, TokenParsing m) => m Term
-application = termAtom `chainl1` pure (#) <?> "function application"
+application :: (Monad m, TokenParsing m) => m Expr -> m Expr
+application expr = expr `chainl1` pure (#) <?> "function application"
 
 inL :: (Monad m, TokenParsing m) => m Term
 inL = Expr.inL <$ preword "inL" <*> term
@@ -118,7 +118,7 @@ let' = makeLet <$  preword "let"
 
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
-        app <- application
+        app <- application termAtom
         ty <- optional (op ":" *> type')
         return (maybe app (app `as`) ty)
         <?> "type annotation"
