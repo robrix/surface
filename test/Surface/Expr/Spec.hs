@@ -18,3 +18,6 @@ spec = do
   describe "substitute" $ do
     it "replaces free variables" $
       substitute unit (N "a") (varN "b" # varN "a")  `shouldBe` varN "b" # unit
+
+    it "renames bound variables" $
+      substitute unit (N "a") (makeLambda (N "a") (varN "b" # varN "a"))  `shouldBe` makeLambda (N "b'") (varN "b" # varN "b'")
