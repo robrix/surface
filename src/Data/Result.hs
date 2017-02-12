@@ -10,6 +10,10 @@ import Text.Pretty
 data Result a = Result a | Error [String]
   deriving (Eq, Functor, Show)
 
+contextualize :: String -> Result a -> Result a
+contextualize _       (Result a) = Result a
+contextualize context (Error e)  = Error (((context ++ ": ") ++) <$> e)
+
 
 -- Instances
 
