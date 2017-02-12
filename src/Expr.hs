@@ -157,6 +157,7 @@ rename from to = para $ \ expr -> case expr of
 freeVariables :: Expr -> [Name]
 freeVariables = nub . sort . cata alg
   where alg expr = case expr of
+          Pi n t b -> t ++ filter (/=n) b
           Abs n b -> filter (/=n) b
           Var v -> [v]
           _ -> concat expr
