@@ -14,3 +14,7 @@ spec = do
 
     it "renames through other syntax" $
       rename (N "a") (N "b") (makeLambda (N "c") (varN "a" # varN "c")) `shouldBe` makeLambda (N "c") (varN "b" # varN "c")
+
+  describe "substitute" $ do
+    it "replaces free variables" $
+      substitute unit (N "a") (varN "b" # varN "a")  `shouldBe` varN "b" # unit
