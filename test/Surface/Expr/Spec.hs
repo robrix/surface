@@ -21,3 +21,6 @@ spec = do
 
     it "renames bound variables" $
       substitute unit (N "a") (makeLambda (N "a") (varN "b" # varN "a"))  `shouldBe` makeLambda (N "b'") (varN "b" # varN "b'")
+
+    it "picks a variable fresh in both the substitute and substitutee" $
+      substitute (varI 1) (I 0) (makeLambda (I 0) (varI 0)) `shouldBe` makeLambda (I 2) (varI 2)
