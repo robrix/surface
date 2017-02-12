@@ -3,7 +3,7 @@ module Expr where
 
 import Data.Functor.Classes
 import Data.Functor.Foldable
-import Data.List (nub)
+import Data.List (nub, sort)
 import Text.Pretty
 
 data ExprF a where
@@ -154,10 +154,11 @@ rename from to = para $ \ expr -> case expr of
   _ -> Fix (fmap snd expr)
 
 freeVariables :: Expr -> [Name]
-freeVariables = cata $ \ expr -> case expr of
-  Abs n b -> filter (/=n) b
-  Var v -> [v]
-  _ -> nub (concat expr)
+freeVariables = nub . sort . cata alg
+  where alg expr = case expr of
+          Abs n b -> filter (/=n) b
+          Var v -> [v]
+          _ -> concat expr
 
 
 -- Conveniences
