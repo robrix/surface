@@ -205,16 +205,18 @@ fresh declaration = J (Fresh declaration) `andThen` return
 
 onTop :: (Binding -> Proof Extension) -> Proof ()
 onTop f = do
-  context :< vd <- getContext
-  putContext context
-  case vd of
-    Ty d -> do
-      m <- f d
-      case m of
-        Context.Replace with -> modifyContext (<>< with)
-        Context.Restore -> modifyContext (:< vd)
-
-    _ -> onTop f >> modifyContext (:< vd)
+  current <- getContext
+  case current of
+    context :< vd -> do
+      putContext context
+      case vd of
+        Ty d -> do
+          m <- f d
+          case m of
+            Context.Replace with -> modifyContext (<>< with)
+            Context.Restore -> modifyContext (:< vd)
+        _ -> onTop f >> modifyContext (:< vd)
+    Nil -> fail "onTop called with empty context."
 
 restore :: Proof Extension
 restore = J Judgement.Restore `andThen` return
