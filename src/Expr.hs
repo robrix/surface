@@ -161,8 +161,8 @@ freeVariables = nub . sort . cata alg
           Var v -> [v]
           _ -> concat expr
 
-freshNameIn :: Expr -> Name
-freshNameIn = maybe (I 0) (succ' . getMax) . sfoldMap Max . freeVariables
+freshNameIn :: [Name] -> Name
+freshNameIn = maybe (I 0) (succ' . getMax) . sfoldMap Max
   where succ' (I i) = I (succ i)
         succ' (N n) = N (n ++ "'")
 
@@ -173,7 +173,7 @@ substitute to from = para $ \ expr -> case expr of
     | name == from -> to
     | otherwise    -> var name
   Abs name (original, substituted)
-    | name == from -> let fresh = freshNameIn original in
+    | name == from -> let fresh = freshNameIn (freeVariables original) in
                       Fix (Abs fresh (substitute to from (rename name fresh original)))
     | otherwise    -> Fix (Abs name substituted)
   _ -> Fix (fmap snd expr)
