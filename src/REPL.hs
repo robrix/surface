@@ -76,7 +76,7 @@ plain = "\ESC[0m\STX"
 
 runREPL :: REPL a -> IO a
 runREPL repl = do
-  prefs <- readPrefs "~/.local/surface/interactive_prefs"
+  prefs <- readPrefs "~/.local/surface/repl_prefs"
   runInputTWithPrefs prefs settings (iterFreer alg (fmap pure repl))
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
@@ -86,7 +86,7 @@ runREPL repl = do
             Error es -> for_ es outputStrLn >>= cont
         settings = Settings
           { complete = noCompletion
-          , historyFile = Just "~/.local/surface/interactive_history"
+          , historyFile = Just "~/.local/surface/repl_history"
           , autoAddHistory = True }
 
 
