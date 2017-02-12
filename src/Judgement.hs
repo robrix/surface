@@ -83,7 +83,7 @@ instance Binder1 ExprF where
 applyContext :: Expr -> Context -> Expr
 applyContext expr context = case context of
   Nil -> expr
-  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute name t expr) rest
+  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
   (rest :< _) -> applyContext expr rest
 
 unify :: Type -> Type -> Proof ()
