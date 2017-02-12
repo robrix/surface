@@ -48,6 +48,7 @@ test-suite test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       Parser.Spec
+                     , Surface.Expr.Spec
                      , Test.Hspec.LeanCheck
   build-depends:       base
                      , hspec
