@@ -75,13 +75,17 @@ plain :: String
 plain = "\ESC[0m\STX"
 
 runREPL :: REPL a -> IO a
-runREPL = runInputT defaultSettings . iterFreer alg . fmap pure
+runREPL = runInputT settings . iterFreer alg . fmap pure
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
           Prompt s -> getInputLine (green ++ s ++ plain) >>= cont
           Output r -> case r of
             Result a -> outputStrLn (pretty a) >>= cont
             Error es -> for_ es outputStrLn >>= cont
+        settings = Settings
+          { complete = noCompletion
+          , historyFile = Just "~/.local/surface/interactive_history"
+          , autoAddHistory = True }
 
 
 -- Instances
