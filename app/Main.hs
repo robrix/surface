@@ -1,6 +1,6 @@
 module Main where
 
-import Data.Foldable (for_, toList)
+import Data.Foldable (asum, for_, toList)
 import Data.Result
 import Data.Version (showVersion)
 import Judgement
@@ -36,8 +36,9 @@ main = do
       result <- parseFromFile source path
       printResult $ do
         mod <- result
-        (`traverse` (toList mod >>= moduleDeclarations)) $
-          \ (Declaration _ ty term) -> run (check term ty)
+        sequenceA (asum (checkModule <$> toList mod))
+  where checkModule (Module name declarations) = mapErrors ((name ++ ".") ++) . checkDeclaration <$> declarations
+        checkDeclaration (Declaration name ty term) = ((name ++ ": ") ++) `mapErrors` run (check term ty)
 
 printResult :: (Foldable f, Pretty a) => Result (f a) -> IO ()
 printResult result = case result of
