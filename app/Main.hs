@@ -1,8 +1,10 @@
 module Main where
 
-import Data.Foldable (for_)
+import Data.Foldable (for_, toList)
 import Data.Result
 import Data.Version (showVersion)
+import Judgement
+import Module
 import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
@@ -32,7 +34,10 @@ main = do
     Interactive -> REPL.runREPL REPL.repl
     Run path -> do
       result <- parseFromFile source path
-      printResult result
+      printResult $ do
+        mod <- result
+        (`traverse` (toList mod >>= moduleDeclarations)) $
+          \ (Declaration _ ty term) -> run (check term ty)
 
 printResult :: (Traversable f, Pretty a) => Result (f a) -> IO ()
 printResult result = case result of
