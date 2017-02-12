@@ -556,8 +556,8 @@ instance Show a => Show (ProofF a) where
 
 instance Pretty1 Judgement where
   liftPrettyPrec _ d judgement = case judgement of
-    CheckModule module' -> showsUnaryWith showsPrec "checkModule" d module'
-    CheckDeclaration declaration -> showsUnaryWith showsPrec "checkDeclaration" d declaration
+    CheckModule module' -> showsUnaryWith prettyPrec "checkModule" d module'
+    CheckDeclaration declaration -> showsUnaryWith prettyPrec "checkDeclaration" d declaration
 
     Check term ty -> showsBinaryWith prettyPrec prettyType "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
