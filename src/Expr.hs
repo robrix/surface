@@ -3,6 +3,7 @@ module Expr where
 
 import Data.Functor.Classes
 import Data.Functor.Foldable
+import Data.List (nub)
 import Text.Pretty
 
 data ExprF a where
@@ -151,6 +152,12 @@ rename from to = para $ \ expr -> case expr of
   Var v | v == from -> var to
   Abs v (original, substituted) -> makeLambda v (if v == from then original else substituted)
   _ -> Fix (fmap snd expr)
+
+freeVariables :: Expr -> [Name]
+freeVariables = cata $ \ expr -> case expr of
+  Abs n b -> filter (/=n) b
+  Var v -> [v]
+  _ -> nub (concat expr)
 
 
 -- Conveniences

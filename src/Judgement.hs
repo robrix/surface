@@ -11,7 +11,7 @@ import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import Data.List (delete, nub)
 import Data.Result
-import Expr
+import Expr hiding (freeVariables)
 import Module
 import Prelude hiding (fail)
 import Text.Pretty
