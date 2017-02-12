@@ -61,6 +61,12 @@ instance Binder1 ExprF where
     Var v | v == name -> True
     _ -> any (occurs name) expr
 
+instance Binder Entry where
+  n <? t = case t of
+    Ty d -> n <? d
+    Tm d -> n <? d
+    Sep -> False
+
 
 applyContext :: Expr -> Context -> Expr
 applyContext expr context = case context of
