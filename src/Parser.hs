@@ -53,8 +53,7 @@ term = annotation <?> "term"
 
 termAtom :: (Monad m, TokenParsing m) => m Term
 termAtom
-   =  Parser.unit
-  <|> tuple
+   =  tuple
   <|> Parser.fst'
   <|> Parser.snd'
   <|> Parser.inL
@@ -63,10 +62,6 @@ termAtom
   <|> lambda
   <|> Parser.var
   <|> Parser.let'
-
-unit :: (Monad m, TokenParsing m) => m Term
-unit = Expr.unit <$  preword "unit"
-                 <?> "unit"
 
 var :: (Monad m, TokenParsing m) => m Expr
 var = Expr.var <$> name
