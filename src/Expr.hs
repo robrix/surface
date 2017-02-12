@@ -93,7 +93,7 @@ var :: Name -> Expr
 var = Fix . Var
 
 
-infixl 0 #
+infixl 9 #
 (#) :: Term -> Term -> Term
 a # b = Fix (App a b)
 
