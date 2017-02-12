@@ -398,6 +398,9 @@ decompose judgement = case judgement of
 
     (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
+    (InL l, Sum t1 _) -> check l t1
+    (InR r, Sum _ t2) -> check r t2
+
     _ -> do
       ty' <- infer term
       unify ty ty'
