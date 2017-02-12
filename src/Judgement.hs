@@ -364,10 +364,9 @@ decompose judgement = case judgement of
       return (var a .->. v)
 
     App f arg -> do
-      ty <- infer f
       a <- infer arg
       b <- fresh Nothing
-      unify ty (a .->. var b)
+      check f (a .->. var b)
       return (var b)
 
     -- Types
