@@ -75,7 +75,9 @@ plain :: String
 plain = "\ESC[0m\STX"
 
 runREPL :: REPL a -> IO a
-runREPL = runInputT settings . iterFreer alg . fmap pure
+runREPL repl = do
+  prefs <- readPrefs "~/.local/surface/interactive_prefs"
+  runInputTWithPrefs prefs settings (iterFreer alg (fmap pure repl))
   where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
         alg cont repl = case repl of
           Prompt s -> getInputLine (green ++ s ++ plain) >>= cont
