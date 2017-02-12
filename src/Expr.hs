@@ -166,6 +166,18 @@ freshNameIn = maybe (I 0) (succ' . getMax) . sfoldMap Max . freeVariables
   where succ' (I i) = I (succ i)
         succ' (N n) = N (n ++ "'")
 
+-- | Capture-avoiding substitution of an Expr for variables with a given Name in an Expr.
+substitute :: Name -> Expr -> Expr -> Expr
+substitute from to = para $ \ expr -> case expr of
+  Var name
+    | name == from -> to
+    | otherwise    -> var name
+  Abs name (original, substituted)
+    | name == from -> let fresh = freshNameIn original in
+                      Fix (Abs fresh (substitute from to (rename name fresh original)))
+    | otherwise    -> Fix (Abs name substituted)
+  _ -> Fix (fmap snd expr)
+
 
 -- Conveniences
 

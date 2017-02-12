@@ -86,14 +86,6 @@ applyContext expr context = case context of
   (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute name t expr) rest
   (rest :< _) -> applyContext expr rest
 
--- | Capture-avoidng substitution of an Expr for variables with a given Name in an Expr.
-substitute :: Name -> Expr -> Expr -> Expr
-substitute name with = para $ \ expr -> case expr of
-  Var v | v == name -> with
-  Abs v (original, substituted) | v == name -> makeLambda v original
-                                | otherwise -> makeLambda v substituted
-  _ -> Fix (fmap snd expr)
-
 unify :: Type -> Type -> Proof ()
 unify t1 t2 = J (Unify t1 t2) `andThen` return
 
