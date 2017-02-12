@@ -19,7 +19,7 @@ spec = do
       Parser.expr `parseString` "Unit + Unit" `shouldBe` Result (unitT .+. unitT)
 
   describe "functionType" $ do
-    it "associates to the right" $
+    it "parses right-associatively" $
       Parser.functionType `parseString` "a -> b -> c" `shouldBe` Parser.functionType `parseString` "a -> (b -> c)"
 
     it "can take type applications" $
