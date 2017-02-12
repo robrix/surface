@@ -22,6 +22,9 @@ spec = do
     it "parses right-associatively" $
       Parser.functionType `parseString` "a -> b -> c" `shouldBe` Parser.functionType `parseString` "a -> (b -> c)"
 
+    it "constructs right-associated functions" $
+      Parser.functionType `parseString` "a -> b -> c" `shouldBe` Result (varN "a" .->. (varN "b" .->. varN "c"))
+
     it "can take type applications" $
       Parser.functionType `parseString` "a b -> c" `shouldBe` Result (varN "a" # varN "b" .->. varN "c")
 
