@@ -17,9 +17,9 @@ data Command
 
 command :: Parser Command
 command
-  =  flag' Interactive (long "interactive" <> short 'i')
- <|> Run <$> switch (long "verbose" <> short 'v')
-         <*> strArgument (metavar "FILE")
+  =  flag' Interactive (long "interactive" <> short 'i' <> help "Launch the interactive REPL.")
+ <|> Run <$> switch (long "verbose" <> short 'v' <> help "Verbose output, showing all refinement steps on error.")
+         <*> strArgument (metavar "FILE" <> help "The program to run.")
 
 arguments :: ParserInfo Command
 arguments = info
@@ -50,4 +50,4 @@ versionString :: String
 versionString = "Surface version " <> showVersion Library.version
 
 version :: Parser (a -> a)
-version = infoOption versionString (long "version" <> short 'V' <> help "output the version of the program")
+version = infoOption versionString (long "version" <> short 'V' <> help "Output version info.")
