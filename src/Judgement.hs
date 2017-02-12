@@ -47,8 +47,7 @@ instance Binder Name where
   (<?) = (==)
 
 instance Binder Binding where
-  (<?) name (_ := Just t) = name <? t
-  _ <? _ = False
+  name <? (_ := m) = name <? m
 
 instance Binder1 f => Binder (Fix f) where
    (<?) name = liftIn (<?) name . unfix
