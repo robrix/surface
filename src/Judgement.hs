@@ -431,6 +431,11 @@ decompose judgement = case judgement of
         Left (_ := Nothing)  -> fail ("Expected a type for variable but got a hole: " ++ pretty ty)
         Right (_ ::: scheme) -> specialize scheme >>= isType
 
+    App f arg -> do
+      a <- infer arg
+      b <- fresh Nothing
+      check f (a .->. var b)
+
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   Unify t1 t2 -> unify' t1 t2
