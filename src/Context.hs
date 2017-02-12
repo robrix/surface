@@ -59,7 +59,7 @@ instance Pretty Binding where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyPrec 10) declaration
 
 instance Pretty TermEntry where
-  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
+  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
   liftPrettyPrec _ d (Type ty) = prettyPrec d ty

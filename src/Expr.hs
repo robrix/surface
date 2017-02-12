@@ -182,45 +182,6 @@ substitute to from = para $ \ expr -> case expr of
 
 -- Conveniences
 
-termNames :: String
-termNames = "abcdefghijklmnopqrstuvwxyz"
-
-prettyTermName :: Name -> ShowS
-prettyTermName = prettyName termNames
-
-prettyName :: String -> Name -> ShowS
-prettyName alphabet name = case name of
-  I i -> showChar (alphabet !! fromInteger i)
-  N s -> showString s
-
-prettyExpr :: String -> Int -> Expr -> ShowS
-prettyExpr alphabet d = liftPrettyExpr alphabet prettyPrec d . unfix
-
-prettyTerm :: Int -> Expr -> ShowS
-prettyTerm = prettyExpr termNames
-
-liftPrettyExpr :: String -> (Int -> a -> ShowS) -> Int -> ExprF a -> ShowS
-liftPrettyExpr alphabet pp d expr = case expr of
-  App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
-  Abs v b -> showParen (d > 0) $ showChar '\\' . prettyName alphabet v . showString " . " . pp 0 b
-  Var v -> prettyName alphabet v
-  InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
-  InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
-  Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
-  Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
-  Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
-  Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
-  Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
-  Pi n t b -> showParen (d > 0) $ showParen True (prettyName alphabet n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
-  Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
-  Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
-  UnitT -> showString "Unit"
-  Unit -> showString "()"
-  TypeT -> showString "Type"
-  Let n v b -> showParen (d > 10) $ showString "let " . prettyName alphabet n . showString " = " . pp 0 v . showString " in " . pp 0 b
-  As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
-
-
 sfoldMap :: (Semigroup s, Foldable t) => (a -> s) -> t a -> Maybe s
 sfoldMap f = getOption . foldMap (Option . Just . f)
 
@@ -228,7 +189,25 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 -- Instances
 
 instance Pretty1 ExprF where
-  liftPrettyPrec = liftPrettyExpr termNames
+  liftPrettyPrec pp d expr = case expr of
+    App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
+    Abs v b -> showParen (d > 0) $ showChar '\\' . prettyPrec 0 v . showString " . " . pp 0 b
+    Var v -> prettyPrec 0 v
+    InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
+    InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
+    Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
+    Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
+    Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
+    Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
+    Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
+    Pi n t b -> showParen (d > 0) $ showParen True (prettyPrec 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
+    Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
+    Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
+    UnitT -> showString "Unit"
+    Unit -> showString "()"
+    TypeT -> showString "Type"
+    Let n v b -> showParen (d > 10) $ showString "let " . prettyPrec 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
+    As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
 
 instance Pretty Name where
   prettyPrec _ name = case name of
