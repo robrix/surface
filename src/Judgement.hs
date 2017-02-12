@@ -370,7 +370,9 @@ decompose judgement = case judgement of
       name ::: t >- infer body
 
     As term ty -> do
-      check term ty
+      a <- fresh (Some ty)
+      inferred <- infer term
+      unify inferred (var a)
       return ty
 
   Check term ty -> do
