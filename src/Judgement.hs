@@ -559,12 +559,12 @@ instance Pretty1 Judgement where
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) (Declaration name _ _) -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ name)
 
-    Check term ty -> showsBinaryWith prettyPrec prettyType "check" d term ty
+    Check term ty -> showsBinaryWith prettyPrec prettyPrec "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
-    IsType ty -> showsUnaryWith prettyType "isType" d ty
+    IsType ty -> showsUnaryWith prettyPrec "isType" d ty
 
-    Unify t1 t2 -> showsBinaryWith prettyType prettyType "unify" d t1 t2
-    Solve n s ty -> showsTernaryWith (const prettyTypeName) prettyPrec prettyType "solve" d n s ty
+    Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
+    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyPrec "solve" d n s ty
 
     Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyPrec) "fresh" d declaration
     Judgement.Restore -> showString "restore"

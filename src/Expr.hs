@@ -182,17 +182,11 @@ substitute to from = para $ \ expr -> case expr of
 
 -- Conveniences
 
-typeNames :: String
-typeNames = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 termNames :: String
 termNames = "abcdefghijklmnopqrstuvwxyz"
 
 prettyTermName :: Name -> ShowS
 prettyTermName = prettyName termNames
-
-prettyTypeName :: Name -> ShowS
-prettyTypeName = prettyName typeNames
 
 prettyName :: String -> Name -> ShowS
 prettyName alphabet name = case name of
@@ -201,9 +195,6 @@ prettyName alphabet name = case name of
 
 prettyExpr :: String -> Int -> Expr -> ShowS
 prettyExpr alphabet d = liftPrettyExpr alphabet prettyPrec d . unfix
-
-prettyType :: Int -> Expr -> ShowS
-prettyType = prettyExpr typeNames
 
 prettyTerm :: Int -> Expr -> ShowS
 prettyTerm = prettyExpr termNames
