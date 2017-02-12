@@ -32,9 +32,12 @@ main = do
     Interactive -> REPL.runREPL REPL.repl
     Run path -> do
       result <- parseFromFile source path
-      case result of
-        Result a -> for_ a prettyPrint
-        Error es -> for_ es putStr
+      printResult result
+
+printResult :: (Traversable f, Pretty a) => Result (f a) -> IO ()
+printResult result = case result of
+  Result a -> for_ a prettyPrint
+  Error es -> for_ es putStr
 
 versionString :: String
 versionString = "Surface version " <> showVersion Library.version
