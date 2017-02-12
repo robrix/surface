@@ -90,8 +90,8 @@ applyContext expr context = case context of
 substitute :: Name -> Expr -> Expr -> Expr
 substitute name with = para $ \ expr -> case expr of
   Var v | v == name -> with
-  Abs v (original, substituted) | v == name -> original
-                                | otherwise -> substituted
+  Abs v (original, substituted) | v == name -> makeLambda v original
+                                | otherwise -> makeLambda v substituted
   _ -> Fix (fmap snd expr)
 
 unify :: Type -> Type -> Proof ()
