@@ -92,6 +92,12 @@ bindVariable f = (n, body)
 var :: Name -> Expr
 var = Fix . Var
 
+varN :: String -> Expr
+varN = var . N
+
+varI :: Integer -> Expr
+varI = var . I
+
 
 infixl 9 #
 (#) :: Term -> Term -> Term
