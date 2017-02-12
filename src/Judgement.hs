@@ -394,6 +394,8 @@ decompose judgement = case judgement of
       return ty
 
   Check term ty -> case (unfix term, unfix ty) of
+    (Abs n body, Function t1 t2) -> n ::: Type t1 >- check body t2
+
     _ -> do
       ty' <- infer term
       unify ty ty'
