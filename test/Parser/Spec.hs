@@ -25,6 +25,9 @@ spec = do
     it "can take type applications" $
       Parser.functionType `parseString` "a b -> c" `shouldBe` Result (varN "a" # varN "b" .->. varN "c")
 
+    it "can return type applications" $
+      Parser.functionType `parseString` "a -> b c" `shouldBe` Result (varN "a" .->. varN "b" # varN "c")
+
   describe "lambda" $ do
     it "can take single params" $
       Parser.lambda `parseString` "\\ a . a" `shouldBe` Result (makeLambda (N "a") (varN "a"))
