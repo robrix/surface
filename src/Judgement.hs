@@ -525,8 +525,8 @@ runStep context proof = case runFreer proof of
 
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
-    CheckModule module' -> showsUnaryWith showsPrec "Module" d module'
-    CheckDeclaration declaration -> showsUnaryWith showsPrec "Declaration" d declaration
+    CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
+    CheckDeclaration declaration -> showsUnaryWith showsPrec "CheckDeclaration" d declaration
 
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
     Infer term -> showsUnaryWith showsPrec "Infer" d term
