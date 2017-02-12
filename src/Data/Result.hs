@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
 module Data.Result where
 
 import qualified Control.Monad.Fail as Fail
@@ -8,7 +8,7 @@ import Data.Functor.Classes
 import Text.Pretty
 
 data Result a = Result a | Error [String]
-  deriving (Eq, Functor, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 mapErrors :: (String -> String) -> Result a -> Result a
 mapErrors _ (Result a) = Result a
