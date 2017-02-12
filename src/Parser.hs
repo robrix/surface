@@ -92,7 +92,7 @@ lambda = foldr ((.) . makeLambda) id <$  op "\\"
                                      <?> "lambda"
 
 application :: (Monad m, TokenParsing m) => m Term
-application = termAtom `chainr1` pure (#) <?> "function application"
+application = termAtom `chainl1` pure (#) <?> "function application"
 
 inL :: (Monad m, TokenParsing m) => m Term
 inL = Expr.inL <$ preword "inL" <*> term
