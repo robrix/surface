@@ -144,6 +144,15 @@ makePi :: Name -> Type -> Type -> Type
 makePi name ty body = Fix (Pi name ty body)
 
 
+-- Substitution
+
+rename :: Name -> Name -> Expr -> Expr
+rename from to = para $ \ expr -> case expr of
+  Var v | v == from -> var to
+  Abs v (original, substituted) -> makeLambda v (if v == from then original else substituted)
+  _ -> Fix (fmap snd expr)
+
+
 -- Conveniences
 
 typeNames :: String
