@@ -42,8 +42,8 @@ type TermF = ExprF
 type Term = Fix TermF
 
 
-data Name = I Integer
-          | N String
+data Name = N String
+          | I Integer
   deriving (Eq, Ord, Show)
 
 
