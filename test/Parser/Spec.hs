@@ -22,6 +22,9 @@ spec = do
     it "associates to the right" $
       Parser.functionType `parseString` "a -> b -> c" `shouldBe` Parser.functionType `parseString` "a -> (b -> c)"
 
+    it "can take type applications" $
+      Parser.functionType `parseString` "a b -> c" `shouldBe` Result (var (N "a") # var (N "b") .->. var (N "c"))
+
   describe "lambda" $ do
     it "can take single params" $
       Parser.lambda `parseString` "\\ a . a" `shouldBe` Result (makeLambda (N "a") (Expr.var (N "a")))
