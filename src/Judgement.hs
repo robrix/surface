@@ -16,6 +16,7 @@ import Prelude hiding (fail)
 import Text.Pretty
 
 data Judgement a where
+  CheckModule :: Module -> Judgement ()
   CheckDeclaration :: Declaration -> Judgement ()
 
   Check :: Term -> Type -> Judgement ()
@@ -234,6 +235,9 @@ replace' :: Suffix -> Proof Extension
 replace' = return . Context.Replace
 
 
+checkModule :: Module -> Proof ()
+checkModule module' = J (CheckModule module') `andThen` return
+
 checkDeclaration :: Declaration -> Proof ()
 checkDeclaration declaration = J (CheckDeclaration declaration) `andThen` return
 
@@ -318,6 +322,7 @@ generalizeOver mt = do
 
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
+  CheckModule _ -> return ()
   CheckDeclaration _ -> return ()
 
   Infer term -> case unfix term of
@@ -520,6 +525,7 @@ runStep context proof = case runFreer proof of
 
 instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
+    CheckModule module' -> showsUnaryWith showsPrec "Module" d module'
     CheckDeclaration declaration -> showsUnaryWith showsPrec "Declaration" d declaration
 
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
@@ -550,6 +556,7 @@ instance Show a => Show (ProofF a) where
 
 instance Pretty1 Judgement where
   liftPrettyPrec _ d judgement = case judgement of
+    CheckModule module' -> showsUnaryWith showsPrec "checkModule" d module'
     CheckDeclaration declaration -> showsUnaryWith showsPrec "checkDeclaration" d declaration
 
     Check term ty -> showsBinaryWith prettyPrec prettyType "check" d term ty
