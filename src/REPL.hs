@@ -6,11 +6,9 @@ import Control.Monad.Free.Freer
 import Data.Foldable (for_)
 import Data.Functor.Classes (showsUnaryWith)
 import Data.Result
-import Data.Version (showVersion)
 import Expr
 import Judgement
 import Parser
-import qualified Paths_surface as Library (version)
 import System.Console.Haskeline
 import Text.Pretty
 import Text.Trifecta hiding (Result)
@@ -26,7 +24,6 @@ data Command
   | TypeOf Expr
   | Help
   | Quit
-  | Version
 
 prompt :: String -> REPL (Maybe String)
 prompt s = Prompt s `andThen` return
@@ -46,10 +43,8 @@ handleInput input =
     Result Help -> output (Error
       [ ":help, :h, :?     - print this help text"
       , ":quit, :q         - exit the REPL"
-      , ":version          - print version information"
       , ":type, :t <expr>  - print the type of <expr>"
       ] :: Result ()) >> repl
-    Result Version -> output (Error [ showVersion Library.version ] :: Result ()) >> repl
     Result Quit -> pure ()
     Result (Run expr) -> output (run (infer expr >> normalize expr)) >> repl
     Result (TypeOf expr) -> do
@@ -65,7 +60,6 @@ command :: Parser Command
 command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
-           <|> (Version <$ (long "version" <|> short 'v') <?> "version")
            <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
            <?> "command; use :? for help"
 
@@ -98,4 +92,3 @@ instance Pretty Command where
     TypeOf expr -> showsUnaryWith prettyPrec ":type" d expr
     Help -> showString ":help"
     Quit -> showString ":quit"
-    Version -> showString ":version"
