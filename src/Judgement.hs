@@ -24,6 +24,8 @@ data Judgement a where
 
   IsType :: Term -> Judgement ()
 
+  Equals :: Expr -> Expr -> Judgement ()
+
   Unify :: Type -> Type -> Judgement ()
   Solve :: Name -> Suffix -> Type -> Judgement ()
 
@@ -234,6 +236,10 @@ isType :: Term -> Proof ()
 isType term = J (IsType term) `andThen` return
 
 
+equals :: Expr -> Expr -> Proof ()
+equals e1 e2 = J (Equals e1 e2) `andThen` return
+
+
 define :: Name -> Type -> Proof ()
 define name ty = declare (name := Just ty)
 
@@ -434,6 +440,11 @@ decompose judgement = case judgement of
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
+  Equals e1 e2 -> case (unfix e1, unfix e2) of
+    (Unit, Unit) -> return ()
+
+    _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
+
   Unify t1 t2 -> unify' t1 t2
   Solve name suffix ty -> solve' name suffix ty
 
@@ -548,6 +559,8 @@ instance Show1 Judgement where
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
+    Equals e1 e2 -> showsBinaryWith showsPrec showsPrec "Equals" d e1 e2
+
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
     Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
 
@@ -577,6 +590,8 @@ instance Pretty1 Judgement where
     Check term ty -> showsBinaryWith prettyPrec prettyPrec "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
     IsType ty -> showsUnaryWith prettyPrec "isType" d ty
+
+    Equals e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equals" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
     Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyPrec "solve" d n s ty
