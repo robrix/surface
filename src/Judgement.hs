@@ -422,8 +422,11 @@ decompose judgement = case judgement of
       name ::: Type ty >- isType body
 
     Var name -> do
-      ty <- find name >>= specialize
-      isType ty
+      entry <- findEntry name
+      case entry of
+        Left (_ := Just ty') -> isType ty'
+        Left (_ := Nothing)  -> fail ("Expected a type for variable but got a hole: " ++ pretty ty)
+        Right (_ ::: scheme) -> specialize scheme >>= isType
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
