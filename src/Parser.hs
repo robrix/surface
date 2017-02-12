@@ -31,7 +31,7 @@ toResult r = case r of
 module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
   where mod = Module <$  preword "module"
-                     <*> typeIdentifier <* preword "where" <* some newline
+                     <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
                      <*> (declaration `sepEndBy` some newline)
                      <?> "module"
 
