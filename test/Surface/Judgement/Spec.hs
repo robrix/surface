@@ -15,5 +15,12 @@ spec = do
     prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> eraseErrors (run (a `equals` b)) `shouldBe` eraseErrors (run (b `equals` a))
 
+    prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
+      \ a b c -> isResult (run (a `equals` b)) == isResult (run (b `equals` c)) `shouldBe` isResult (run (a `equals` c))
+
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
+
+isResult :: Result a -> Bool
+isResult r | Result _ <- r = True
+           | otherwise = False
