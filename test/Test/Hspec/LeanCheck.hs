@@ -2,6 +2,7 @@
 module Test.Hspec.LeanCheck
 ( prop
 , forAll
+, suchThat
 ) where
 
 import Control.Exception
