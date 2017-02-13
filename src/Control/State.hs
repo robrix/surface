@@ -23,3 +23,9 @@ instance Pretty2 State where
   liftPrettyPrec2 pp _ d state = case state of
     Get -> showString "get"
     Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
+
+instance Eq2 State where
+  liftEq2 eq _ a b = case (a, b) of
+    (Get, Get) -> True
+    (Put a, Put b) -> eq a b
+    _ -> False
