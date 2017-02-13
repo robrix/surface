@@ -15,6 +15,7 @@ module Data.Functor.Listable
 , liftCons1
 , liftCons2
 , liftCons3
+, ListableF(..)
 ) where
 
 import Expr
@@ -43,6 +44,11 @@ liftCons2 tiers1 tiers2 f = mapT (uncurry f) (productWith (,) tiers1 tiers2) `ad
 liftCons3 :: [[a]] -> [[b]] -> [[c]] -> (a -> b -> c -> d) -> [[d]]
 liftCons3 tiers1 tiers2 tiers3 f = mapT (uncurry3 f) (productWith (\ x (y, z) -> (x, y, z)) tiers1 (liftCons2 tiers2 tiers3 (,)) ) `addWeight` 1
   where uncurry3 f (a, b, c) = f a b c
+
+
+-- | Convenient wrapper for 'Listable1' type constructors and 'Listable' types, where a 'Listable' instance would necessarily be orphaned.
+newtype ListableF f a = ListableF { unListableF :: f a }
+  deriving Show
 
 
 -- Instances
@@ -77,3 +83,6 @@ instance Listable1 ExprF where
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
     where nameTiers = cons1 I \/ cons1 N
+
+instance (Listable1 f, Listable a) => Listable (ListableF f a) where
+  tiers = ListableF `mapT` tiers1
