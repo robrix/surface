@@ -64,7 +64,7 @@ instance IOTestable (IO ()) where
   ioResultTiers action = [[ (action >> pure ([], True)) `catch` (throw . LeanCheckException []) ]]
 
 instance (IOTestable b, Show a, Listable a) => IOTestable (a -> b) where
-  ioResultTiers p = ioconcatMapT resultiersFor tiers
+  ioResultTiers p = concatMapT resultiersFor tiers
     where resultiersFor x = fmap (evaluate x) <$> ioResultTiers (p x)
           prepend x = (showsPrec 11 x "":)
           evaluate x action = first (prepend x) <$> action
@@ -76,10 +76,6 @@ instance IOTestable Bool where
 instance IOTestable (ForAll a) where
   ioResultTiers (ForAll tiers property) = concatMapT (ioResultTiers . property) tiers
 
-
--- | 'concatMapT', lifted into 'IO'.
-ioconcatMapT :: (a -> [[IO b]]) -> [[a]] -> [[IO b]]
-ioconcatMapT f = (>>= (>>= f))
 
 -- | 'counterExamples', lifted into 'IO'.
 iocounterExamples :: IOTestable a => Int -> a -> IO [[String]]
