@@ -231,6 +231,7 @@ instance Eq1 ExprF where
     (Unit, Unit) -> True
 
     (Function a1 b1, Function a2 b2) -> eq a1 a2 && eq b1 b2
+    (Pi n1 t1 b1, Pi n2 t2 b2) -> n1 == n2 && eq t1 t2 && eq b1 b2
     (Sum a1 b1, Sum a2 b2) -> eq a1 a2 && eq b1 b2
     (Product a1 b1, Product a2 b2) -> eq a1 a2 && eq b1 b2
     (UnitT, UnitT) -> True
