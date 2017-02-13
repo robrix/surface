@@ -28,6 +28,11 @@ spec = do
     prop "has functionality" . forAll ((nameTiers >< embedTiers >< embedTiers >< embedTiers) `suchThat` uncurryr4 (\ _ a1 a2 _ -> run (a1 `equals` a2) == return ())) . uncurryr4 $
       \ n a1 a2 b -> run (substitute a1 n b `equals` substitute a2 n b) `shouldBe` return ()
 
+  describe "whnf" $ do
+    prop "does not normalize inside of lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
+      \ n b -> run (whnf (makeLambda n b)) `shouldBe` return (makeLambda n b)
+
+
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
 
