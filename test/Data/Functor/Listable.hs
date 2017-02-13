@@ -21,6 +21,7 @@ module Data.Functor.Listable
 , embedTiers
 , nameTiers
 , uncurryr3
+, uncurryr4
 ) where
 
 import Data.Functor.Foldable
@@ -64,6 +65,9 @@ nameTiers = cons1 I \/ cons1 N
 
 uncurryr3 :: (a -> b -> c -> d) -> (a, (b, c)) -> d
 uncurryr3 f (a, (b, c)) = f a b c
+
+uncurryr4 :: (a -> b -> c -> d -> e) -> (a, (b, (c, d))) -> e
+uncurryr4 f (a, (b, (c, d))) = f a b c d
 
 
 -- Instances
