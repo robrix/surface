@@ -64,15 +64,16 @@ instance IOTestable (IO ()) where
   ioResultTiers action = [[ action >> pure ([], True) ]]
 
 instance (IOTestable b, Show a, Listable a) => IOTestable (a -> b) where
-  ioResultTiers p = concatMapT resultiersFor tiers
-    where resultiersFor x = fmap (eval x) <$> ioResultTiers (p x)
+  ioResultTiers p = concatMapT (resultiersFor p) tiers
 
 instance IOTestable Bool where
   ioResultTiers p = [[ pure ([], p) ]]
 
 instance Show a => IOTestable (ForAll a) where
-  ioResultTiers (ForAll tiers property) = concatMapT resultiersFor tiers
-    where resultiersFor x = fmap (eval x) <$> ioResultTiers (property x)
+  ioResultTiers (ForAll tiers property) = concatMapT (resultiersFor property) tiers
+
+resultiersFor :: (IOTestable b, Show a) => (a -> b) -> a -> [[IO ([String], Bool)]]
+resultiersFor p x = fmap (eval x) <$> ioResultTiers (p x)
 
 eval :: Show a => a -> IO ([String], Bool) -> IO ([String], Bool)
 eval x action = first (prepend x) <$> action
