@@ -32,6 +32,9 @@ spec = do
     prop "does not normalize inside of lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
       \ n b -> run (whnf (makeLambda n b)) `shouldBe` return (makeLambda n b)
 
+    prop "does not normalize inside of π-types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
+      \ n t b -> run (whnf (makePi n t b)) `shouldBe` return (makePi n t b)
+
 
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
