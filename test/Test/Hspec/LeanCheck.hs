@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GADTs, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, GADTs, TypeFamilies #-}
 module Test.Hspec.LeanCheck
 ( prop
 , forAll
@@ -6,11 +6,14 @@ module Test.Hspec.LeanCheck
 
 import Control.Exception
 import Data.Bifunctor (first)
+import Data.List (intercalate)
 import Data.Maybe
 import Data.String (String)
+import Data.Typeable
 import GHC.Stack
 import Test.Hspec
-import Test.Hspec.Core.Spec
+import Test.Hspec.Core.Spec as Hspec
+import qualified Test.HUnit.Lang as HUnit
 import Test.LeanCheck.Core
 
 data Property where
@@ -40,21 +43,36 @@ forAll = ForAll
 instance Example Property where
   type Arg Property = ()
   evaluateExample (Property prop) (Params _ bound) _ _ = do
-    result <- iocounterExample bound prop
+    result <- try (iocounterExample bound prop)
     case result of
-      Just messages -> pure $ Fail Nothing (concat messages)
-      Nothing -> pure Success
+      Left e
+        | Just (LeanCheckException messages e') <- fromException e -> throw (addMessages messages e')
+        | otherwise -> throw e
+      Right (Just messages) -> pure $ Failure Nothing (Reason (concat messages))
+      Right Nothing -> pure Success
+    where addMessages messages (HUnit.HUnitFailure loc r) = HUnit.HUnitFailure loc $ case r of
+            HUnit.Reason s -> HUnit.Reason (intercalate "\n" messages ++ s)
+            HUnit.ExpectedButGot Nothing expected actual -> HUnit.ExpectedButGot (Just (concat messages)) expected actual
+            HUnit.ExpectedButGot (Just preface) expected actual -> HUnit.ExpectedButGot (Just (intercalate "\n" messages ++ preface)) expected actual
+
 
 class IOTestable t where
   -- 'resultiers', lifted into 'IO'.
   ioResultTiers :: t -> [[IO ([String], Bool)]]
 
 instance IOTestable (IO ()) where
-  ioResultTiers action = [[ (action >> pure ([], True)) `catch` (\ e -> pure ([ displayException (e :: SomeException) ], False)) ]]
+  ioResultTiers action = [[ (action >> pure ([], True)) `catch` (throw . LeanCheckException []) ]]
 
 instance (IOTestable b, Show a, Listable a) => IOTestable (a -> b) where
   ioResultTiers p = ioconcatMapT resultiersFor tiers
-    where resultiersFor x = fmap (fmap (first (showsPrec 11 x "":))) <$> ioResultTiers (p x)
+    where resultiersFor x = do
+            resultiers <- ioResultTiers (p x)
+            fmap (evaluate x) <$> return resultiers
+          prepend x = first (showsPrec 11 x "":)
+          evaluate x action = do
+            results <- action
+              `catch` (\ (LeanCheckException messages failure) -> throw (LeanCheckException (showsPrec 11 x "" : messages) failure))
+            return $ prepend x results
 
 instance IOTestable Bool where
   ioResultTiers p = [[ pure ([], p) ]]
@@ -74,3 +92,9 @@ iocounterExamples n = fmap (fmap fst . filter (not . snd)) . sequenceA . take n 
 -- | 'counterExample', lifted into 'IO'.
 iocounterExample :: IOTestable a => Int -> a -> IO (Maybe [String])
 iocounterExample n = fmap listToMaybe . iocounterExamples n
+
+
+data LeanCheckException = LeanCheckException [String] HUnit.HUnitFailure
+  deriving (Show, Typeable)
+
+instance Exception LeanCheckException
