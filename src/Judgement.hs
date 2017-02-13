@@ -239,6 +239,12 @@ isType term = J (IsType term) `andThen` return
 equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
 
+equals' :: Expr -> Expr -> Proof ()
+equals' e1 e2 = case (unfix e1, unfix e2) of
+  (Unit, Unit) -> return ()
+
+  _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
+
 
 define :: Name -> Type -> Proof ()
 define name ty = declare (name := Just ty)
@@ -440,10 +446,7 @@ decompose judgement = case judgement of
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
-  Equals e1 e2 -> case (unfix e1, unfix e2) of
-    (Unit, Unit) -> return ()
-
-    _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
+  Equals e1 e2 -> equals' e1 e2
 
   Unify t1 t2 -> unify' t1 t2
   Solve name suffix ty -> solve' name suffix ty
