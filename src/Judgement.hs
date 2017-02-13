@@ -218,6 +218,7 @@ whnf expr = J (WHNF expr) `andThen` return
 
 whnf' :: Expr -> Proof Expr
 whnf' expr = case unfix expr of
+  Pi{} -> return expr
   Abs{} -> return expr
   _ -> return expr
 
