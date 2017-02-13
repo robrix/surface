@@ -22,6 +22,9 @@ spec = do
     prop "congruence" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> run ((a .->. b) `equals` (a .->. b)) `shouldBe` return ()
 
+    prop "contains beta-equivalence" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
+      \ n a b -> run ((makeLambda n (pair a (var n)) # b) `equals` substitute b n (pair a (var n))) `shouldBe` return ()
+
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
 
