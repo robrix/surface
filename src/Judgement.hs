@@ -34,6 +34,7 @@ data Judgement a where
   Replace :: Suffix -> Judgement Extension
 
   Normalize :: Expr -> Judgement Expr
+  WHNF :: Expr -> Judgement Expr
 
 
 class Binder a where
@@ -149,6 +150,12 @@ specialize s = do
 
 normalize :: Expr -> Proof Expr
 normalize expr = J (Normalize expr) `andThen` return
+
+whnf :: Expr -> Proof Expr
+whnf expr = J (WHNF expr) `andThen` return
+
+whnf' :: Expr -> Proof Expr
+whnf' = return
 
 
 data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
@@ -513,6 +520,8 @@ decompose judgement = case judgement of
       normalize body
 
     _ -> pure expr
+
+  WHNF expr -> whnf' expr
   where inferPair term = do
           ty <- infer term
           a <- fresh Nothing
@@ -572,6 +581,7 @@ instance Show1 Judgement where
     Judgement.Replace suffix -> showsUnaryWith showsPrec "Replace" d suffix
 
     Normalize expr -> showsUnaryWith showsPrec "Normalize" d expr
+    WHNF expr -> showsUnaryWith showsPrec "WHNF" d expr
 
 instance Show a => Show (Judgement a) where
   showsPrec = showsPrec1
@@ -604,6 +614,7 @@ instance Pretty1 Judgement where
     Judgement.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
 
     Normalize expr -> showsUnaryWith prettyPrec "normalize" d expr
+    WHNF expr -> showsUnaryWith prettyPrec "whnf" d expr
 
 instance Pretty1 ProofF where
   liftPrettyPrec pp d proof = case proof of
@@ -637,6 +648,7 @@ instance Eq1 Judgement where
     (Judgement.Replace s1, Judgement.Replace s2) -> s1 == s2
 
     (Normalize tm1, Normalize tm2) -> tm1 == tm2
+    (WHNF tm1, WHNF tm2) -> tm1 == tm2
 
     _ -> False
 
