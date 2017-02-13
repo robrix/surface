@@ -639,3 +639,6 @@ instance Eq1 Judgement where
     (Normalize tm1, Normalize tm2) -> tm1 == tm2
 
     _ -> False
+
+instance Eq (Judgement a) where
+  (==) = liftEq (const (const False))
