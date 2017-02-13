@@ -20,6 +20,7 @@ module Data.Functor.Listable
 , ListableF(..)
 , embedTiers
 , nameTiers
+, uncurryr3
 ) where
 
 import Data.Functor.Foldable
@@ -60,6 +61,9 @@ embedTiers = liftCons1 (liftTiers embedTiers) embed
 
 nameTiers :: [[Name]]
 nameTiers = cons1 I \/ cons1 N
+
+uncurryr3 :: (a -> b -> c -> d) -> (a, (b, c)) -> d
+uncurryr3 f (a, (b, c)) = f a b c
 
 
 -- Instances
