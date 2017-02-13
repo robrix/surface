@@ -45,3 +45,9 @@ instance Show1 Result where
   liftShowsPrec sp _ d result = case result of
     Error s -> showsUnaryWith showsPrec "Error" d s
     Result a -> showsUnaryWith sp "Result" d a
+
+instance Eq1 Result where
+  liftEq eq a b = case (a, b) of
+    (Result a, Result b) -> eq a b
+    (Error a, Error b) -> a == b
+    _ -> False
