@@ -25,6 +25,9 @@ spec = do
     prop "contains beta-equivalence" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
       \ n a b -> run ((makeLambda n (pair a (var n)) # b) `equals` substitute b n (pair a (var n))) `shouldBe` return ()
 
+    prop "has functionality" . forAll ((nameTiers >< embedTiers >< embedTiers >< embedTiers) `suchThat` uncurryr4 (\ _ a1 a2 _ -> run (a1 `equals` a2) == return ())) . uncurryr4 $
+      \ n a1 a2 b -> run (substitute a1 n b `equals` substitute a2 n b) `shouldBe` return ()
+
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
 
