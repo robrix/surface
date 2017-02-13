@@ -34,3 +34,6 @@ spec = do
 
     prop "does not contain variables bound by pi types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurry $
       \ name (ty, body) -> freeVariables (makePi name ty body) `shouldBe` delete name (freeVariables body)
+
+    prop "contains free variables from type of pi types" . forAll (nameTiers >< embedTiers) . uncurry $
+      \ name expr -> freeVariables (makePi name expr expr) `shouldBe` freeVariables expr
