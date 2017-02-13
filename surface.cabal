@@ -47,7 +47,8 @@ test-suite test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
-  other-modules:       Parser.Spec
+  other-modules:       Data.Functor.Listable
+                     , Parser.Spec
                      , Surface.Expr.Spec
                      , Test.Hspec.LeanCheck
   build-depends:       base
