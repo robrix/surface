@@ -148,8 +148,70 @@ specialize s = do
         fromS b Z = b
         fromS _ (Context.S a) = a
 
+
 normalize :: Expr -> Proof Expr
 normalize expr = J (Normalize expr) `andThen` return
+
+normalize' :: Expr -> Proof Expr
+normalize' expr = case unfix expr of
+  Var name -> do
+    binding <- findBinding name
+    case binding of
+      Just term -> return term
+      Nothing -> return (var name)
+
+  Abs name body -> do
+    declare (name := Nothing)
+    makeLambda name <$> normalize body
+
+  App op arg -> do
+    Fix o <- normalize op
+    a <- normalize arg
+    case o of
+      Abs name body -> do
+        declare (name := Just a)
+        normalize body
+      Var v -> return (var v # a)
+      _ -> error ("Application of non-abstraction value: " ++ pretty o)
+
+  InL l -> inL <$> normalize l
+  InR r -> inR <$> normalize r
+  Case subject ifL ifR -> do
+    Fix s <- normalize subject
+    case s of
+      InL l -> do
+        i <- normalize ifL
+        normalize (i # l)
+      InR r -> do
+        i <- normalize ifR
+        normalize (i # r)
+      _ -> error ("Case expression on non-sum value: " ++ pretty s)
+
+  Pair a b -> pair <$> normalize a <*> normalize b
+
+  Fst p -> do
+    Fix p' <- normalize p
+    case p' of
+      Pair a _ -> return a
+      _ -> error ("fst applied to non-product value: " ++ pretty p')
+
+  Snd p -> do
+    Fix p' <- normalize p
+    case p' of
+      Pair _ b -> return b
+      _ -> error ("snd applied to non-product value: " ++ pretty p')
+
+  Function a b -> (.->.) <$> normalize a <*> normalize b
+  Product a b -> (.*.) <$> normalize a <*> normalize b
+  Sum a b -> (.+.) <$> normalize a <*> normalize b
+
+  Let name value body -> do
+    v <- normalize value
+    define name v
+    normalize body
+
+  _ -> return expr
+
 
 whnf :: Expr -> Proof Expr
 whnf expr = J (WHNF expr) `andThen` return
@@ -462,64 +524,7 @@ decompose judgement = case judgement of
   Judgement.Restore -> restore'
   Judgement.Replace suffix -> replace' suffix
 
-  Normalize expr -> case unfix expr of
-    Var name -> do
-      binding <- findBinding name
-      case binding of
-        Just term -> return term
-        Nothing -> return (var name)
-
-    Abs name body -> do
-      declare (name := Nothing)
-      makeLambda name <$> normalize body
-
-    App op arg -> do
-      Fix o <- normalize op
-      a <- normalize arg
-      case o of
-        Abs name body -> do
-          declare (name := Just a)
-          normalize body
-        Var v -> return (var v # a)
-        _ -> error ("Application of non-abstraction value: " ++ pretty o)
-
-    InL l -> inL <$> normalize l
-    InR r -> inR <$> normalize r
-    Case subject ifL ifR -> do
-      Fix s <- normalize subject
-      case s of
-        InL l -> do
-          i <- normalize ifL
-          normalize (i # l)
-        InR r -> do
-          i <- normalize ifR
-          normalize (i # r)
-        _ -> error ("Case expression on non-sum value: " ++ pretty s)
-
-    Pair a b -> pair <$> normalize a <*> normalize b
-
-    Fst p -> do
-      Fix p' <- normalize p
-      case p' of
-        Pair a _ -> return a
-        _ -> error ("fst applied to non-product value: " ++ pretty p')
-
-    Snd p -> do
-      Fix p' <- normalize p
-      case p' of
-        Pair _ b -> return b
-        _ -> error ("snd applied to non-product value: " ++ pretty p')
-
-    Function a b -> (.->.) <$> normalize a <*> normalize b
-    Product a b -> (.*.) <$> normalize a <*> normalize b
-    Sum a b -> (.+.) <$> normalize a <*> normalize b
-
-    Let name value body -> do
-      v <- normalize value
-      define name v
-      normalize body
-
-    _ -> pure expr
+  Normalize expr -> normalize' expr
 
   WHNF expr -> whnf' expr
   where inferPair term = do
