@@ -37,3 +37,7 @@ spec = do
 
     prop "contains free variables from type of pi types" . forAll (nameTiers >< embedTiers) . uncurry $
       \ name expr -> freeVariables (makePi name expr expr) `shouldBe` freeVariables expr
+
+  describe "==" $ do
+    prop "reflexivity" . forAll embedTiers $
+      \ expr -> expr == (expr :: Expr) `shouldBe` True
