@@ -32,3 +32,6 @@ instance Eq2 State where
 
 instance Eq s => Eq1 (State s) where
   liftEq = liftEq2 (==)
+
+instance Eq s => Eq (State s a) where
+  (==) = liftEq (const (const False))
