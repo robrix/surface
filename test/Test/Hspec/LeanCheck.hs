@@ -65,14 +65,10 @@ instance IOTestable (IO ()) where
 
 instance (IOTestable b, Show a, Listable a) => IOTestable (a -> b) where
   ioResultTiers p = ioconcatMapT resultiersFor tiers
-    where resultiersFor x = do
-            resultiers <- ioResultTiers (p x)
-            fmap (evaluate x) <$> return resultiers
+    where resultiersFor x = fmap (evaluate x) <$> ioResultTiers (p x)
           prepend x = first (showsPrec 11 x "":)
-          evaluate x action = do
-            results <- action
-              `catch` (\ (LeanCheckException messages failure) -> throw (LeanCheckException (showsPrec 11 x "" : messages) failure))
-            return $ prepend x results
+          evaluate x action = prepend x <$> action
+            `catch` (\ (LeanCheckException messages failure) -> throw (LeanCheckException (showsPrec 11 x "" : messages) failure))
 
 instance IOTestable Bool where
   ioResultTiers p = [[ pure ([], p) ]]
