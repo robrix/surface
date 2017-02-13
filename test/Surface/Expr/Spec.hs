@@ -1,7 +1,10 @@
 module Surface.Expr.Spec where
 
+import Data.Functor.Listable
+import Data.List (delete)
 import Expr
 import Test.Hspec
+import Test.Hspec.LeanCheck
 
 spec :: Spec
 spec = do
@@ -24,3 +27,7 @@ spec = do
 
     it "picks a variable fresh in both the substitute and substitutee" $
       substitute (varI 1) (I 0) (makeLambda (I 0) (varI 0)) `shouldBe` makeLambda (I 2) (varI 2)
+
+  describe "freeVariables" $ do
+    prop "does not contain variables bound by lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
+      \ name body -> freeVariables (makeLambda name body) `shouldBe` delete name (freeVariables body)
