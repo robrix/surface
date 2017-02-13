@@ -610,3 +610,25 @@ instance Pretty1 ProofF where
     J judgement -> liftPrettyPrec pp d judgement
     S state -> liftPrettyPrec pp d state
     R result -> liftPrettyPrec pp d result
+
+instance Eq1 Judgement where
+  liftEq _ a b = case (a, b) of
+    (CheckModule m1, CheckModule m2) -> m1 == m2
+    (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2
+
+    (Check tm1 ty1, Check tm2 ty2) -> tm1 == tm2 && ty1 == ty2
+    (Infer tm1, Infer tm2) -> tm1 == tm2
+    (IsType tm1, IsType tm2) -> tm1 == tm2
+
+    (Equals a1 b1, Equals a2 b2) -> a1 == a2 && b1 == b2
+
+    (Unify a1 b1, Unify a2 b2) -> a1 == a2 && b1 == b2
+    (Solve n1 s1 t1, Solve n2 s2 t2) -> n1 == n2 && s1 == s2 && t1 == t2
+
+    (Fresh a1, Fresh a2) -> a1 == a2
+    (Judgement.Restore, Judgement.Restore) -> True
+    (Judgement.Replace s1, Judgement.Replace s2) -> s1 == s2
+
+    (Normalize tm1, Normalize tm2) -> tm1 == tm2
+
+    _ -> False
