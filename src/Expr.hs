@@ -190,7 +190,7 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 instance Pretty1 ExprF where
   liftPrettyPrec pp d expr = case expr of
-    App a b -> showParen (d > 0) $ pp 0 a . showChar ' ' . pp 0 b
+    App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
     Abs v b -> showParen (d > 0) $ showChar '\\' . prettyPrec 0 v . showString " . " . pp 0 b
     Var v -> prettyPrec 0 v
     InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
