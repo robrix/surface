@@ -611,6 +611,13 @@ instance Pretty1 ProofF where
     S state -> liftPrettyPrec pp d state
     R result -> liftPrettyPrec pp d result
 
+instance Eq1 ProofF where
+  liftEq eq a b = case (a, b) of
+    (J a, J b) -> liftEq eq a b
+    (S a, S b) -> liftEq eq a b
+    (R a, R b) -> liftEq eq a b
+    _ -> False
+
 instance Eq1 Judgement where
   liftEq _ a b = case (a, b) of
     (CheckModule m1, CheckModule m2) -> m1 == m2
