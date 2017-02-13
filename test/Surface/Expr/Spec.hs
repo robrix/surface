@@ -31,3 +31,6 @@ spec = do
   describe "freeVariables" $ do
     prop "does not contain variables bound by lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
       \ name body -> freeVariables (makeLambda name body) `shouldBe` delete name (freeVariables body)
+
+    prop "does not contain variables bound by pi types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurry $
+      \ name (ty, body) -> freeVariables (makePi name ty body) `shouldBe` delete name (freeVariables body)
