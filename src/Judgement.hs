@@ -240,10 +240,10 @@ equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
 
 equals' :: Expr -> Expr -> Proof ()
-equals' e1 e2 = case (unfix e1, unfix e2) of
-  (Unit, Unit) -> return ()
-
-  _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
+equals' e1 e2
+  | e1 == e2 = return ()
+  | otherwise = case (unfix e1, unfix e2) of
+    _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
 
 
 define :: Name -> Type -> Proof ()
