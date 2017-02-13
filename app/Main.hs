@@ -2,6 +2,7 @@ module Main where
 
 import Data.Foldable (for_)
 import Data.Result
+import Data.Semigroup
 import Data.Version (showVersion)
 import Judgement
 import Options.Applicative
