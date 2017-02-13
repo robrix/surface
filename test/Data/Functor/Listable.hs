@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Data.Functor.Listable
 ( Listable(..)
 , cons0
@@ -16,8 +17,10 @@ module Data.Functor.Listable
 , liftCons2
 , liftCons3
 , ListableF(..)
+, embedTiers
 ) where
 
+import Data.Functor.Foldable
 import Expr
 import Test.LeanCheck
 
@@ -49,6 +52,9 @@ liftCons3 tiers1 tiers2 tiers3 f = mapT (uncurry3 f) (productWith (\ x (y, z) ->
 -- | Convenient wrapper for 'Listable1' type constructors and 'Listable' types, where a 'Listable' instance would necessarily be orphaned.
 newtype ListableF f a = ListableF { unListableF :: f a }
   deriving Show
+
+embedTiers :: (Listable1 (Base t), Corecursive t) => [[t]]
+embedTiers = liftCons1 (liftTiers embedTiers) embed
 
 
 -- Instances
