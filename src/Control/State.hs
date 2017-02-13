@@ -29,3 +29,6 @@ instance Eq2 State where
     (Get, Get) -> True
     (Put a, Put b) -> eq a b
     _ -> False
+
+instance Eq s => Eq1 (State s) where
+  liftEq = liftEq2 (==)
