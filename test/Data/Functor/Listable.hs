@@ -19,6 +19,7 @@ module Data.Functor.Listable
 , liftCons3
 , ListableF(..)
 , embedTiers
+, nameTiers
 ) where
 
 import Data.Functor.Foldable
@@ -57,6 +58,9 @@ newtype ListableF f a = ListableF { unListableF :: f a }
 embedTiers :: (Listable1 (Base t), Corecursive t) => [[t]]
 embedTiers = liftCons1 (liftTiers embedTiers) embed
 
+nameTiers :: [[Name]]
+nameTiers = cons1 I \/ cons1 N
+
 
 -- Instances
 
@@ -89,7 +93,6 @@ instance Listable1 ExprF where
     \/ cons0 Unit
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
-    where nameTiers = cons1 I \/ cons1 N
 
 instance (Listable1 f, Listable a) => Listable (ListableF f a) where
   tiers = ListableF `mapT` tiers1
