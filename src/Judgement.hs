@@ -217,7 +217,8 @@ whnf :: Expr -> Proof Expr
 whnf expr = J (WHNF expr) `andThen` return
 
 whnf' :: Expr -> Proof Expr
-whnf' = return
+whnf' expr = case unfix expr of
+  _ -> return expr
 
 
 data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
