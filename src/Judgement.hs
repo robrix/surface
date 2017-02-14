@@ -326,8 +326,10 @@ alphaEquivalent' e1 e2
     (Let n1 v1 b1, Let n2 v2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
       alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
 
-    (App a1 b1, App a2 b2) -> alphaEquivalent a1 a2 >> alphaEquivalent b1 b2
-    _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
+    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of
+      Just equivalences -> sequence_ equivalences
+      _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
+
 
 equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
