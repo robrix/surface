@@ -36,6 +36,13 @@ spec = do
     prop "does not normalize inside of π-types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
       \ n t b -> run (whnf (makePi n t b)) `shouldBe` return (makePi n t b)
 
+  describe "alphaEquivalent" $ do
+    prop "reflexivity" . forAll embedTiers $
+      \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return ()
+
+    prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
+      \ a b -> eraseErrors (run (a `alphaEquivalent` b)) `shouldBe` eraseErrors (run (b `alphaEquivalent` a))
+
 
 eraseErrors :: Result a -> Result a
 eraseErrors = mapErrors (const [])
