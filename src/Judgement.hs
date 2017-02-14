@@ -368,10 +368,14 @@ equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
 
 equals' :: Expr -> Expr -> Proof ()
-equals' e1 e2
-  | e1 == e2 = return ()
-  | otherwise = case (unfix e1, unfix e2) of
-    _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " and " ++ pretty e2)
+equals' e1 e2 = do
+  equivalent <- alphaEquivalent e1 e2
+  unless equivalent $ do
+    nf1 <- whnf e1
+    nf2 <- whnf e2
+    case (unfix nf1, unfix nf2) of
+      (App a1 b1, App a2 b2) -> equals a1 a2 >> equals b1 b2
+      _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
 
 
 define :: Name -> Type -> Proof ()
