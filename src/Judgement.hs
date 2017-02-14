@@ -315,7 +315,8 @@ alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `andThen` return
 alphaEquivalent' :: Expr -> Expr -> Proof ()
 alphaEquivalent' e1 e2
   | e1 == e2 = return ()
-  | otherwise = fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
+  | otherwise = case (e1, e2) of
+    _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
 
 equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
