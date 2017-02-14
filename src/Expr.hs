@@ -236,6 +236,9 @@ instance Eq1 ExprF where
     (Product a1 b1, Product a2 b2) -> eq a1 a2 && eq b1 b2
     (UnitT, UnitT) -> True
     (TypeT, TypeT) -> True
+
+    (As a1 b1, As a2 b2) -> eq a1 a2 && eq b1 b2
+
     _ -> False
 
 instance Show1 ExprF where
