@@ -42,7 +42,7 @@ module' = runUnlined mod
                      <?> "module"
 
 declaration :: (Monad m, TokenParsing m) => m Declaration
-declaration = do
+declaration = runUnlined $ do
   name <- identifier
   Declaration name <$  colon
                    <*> type' <* some newline
