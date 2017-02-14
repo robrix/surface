@@ -182,6 +182,39 @@ substitute to from = para $ \ expr -> case expr of
   _ -> Fix (fmap snd expr)
 
 
+-- Traversal
+
+zipExprFWith :: (a -> b -> c) -> ExprF a -> ExprF b -> Maybe (ExprF c)
+zipExprFWith f a b = case (a, b) of
+  (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
+  (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
+  (Function a1 b1, Function a2 b2) -> Just (Function (f a1 a2) (f b1 b2))
+
+  (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi n1 (f t1 t2) (f b1 b2))
+  (UnitT, UnitT) -> Just UnitT
+  (TypeT, TypeT) -> Just TypeT
+
+  (Abs n1 b1, Abs n2 b2) -> Just (Abs n1 (f b1 b2))
+  (Var n1, Var n2) -> Just (Var n1)
+  (App a1 b1, App a2 b2) -> Just (App (f a1 a2) (f b1 b2))
+
+  (InL a1, InL a2) -> Just (InL (f a1 a2))
+  (InR a1, InR a2) -> Just (InR (f a1 a2))
+  (Case c1 l1 r1, Case c2 l2 r2) -> Just (Case (f c1 c2) (f l1 l2) (f r1 r2))
+
+  (Pair a1 b1, Pair a2 b2) -> Just (Pair (f a1 a2) (f b1 b2))
+  (Fst a1, Fst a2) -> Just (Fst (f a1 a2))
+  (Snd a1, Snd a2) -> Just (Snd (f a1 a2))
+
+  (Unit, Unit) -> Just Unit
+
+  (Let n1 v1 b1, Let n2 v2 b2) -> Just (Let n1 (f v1 v2) (f b1 b2))
+
+  (As a1 b1, As a2 b2) -> Just (As (f a1 a2) (f b1 b2))
+
+  _ -> Nothing
+
+
 -- Conveniences
 
 sfoldMap :: (Semigroup s, Foldable t) => (a -> s) -> t a -> Maybe s
