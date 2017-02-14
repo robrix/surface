@@ -25,7 +25,7 @@ data Judgement a where
 
   IsType :: Term -> Judgement ()
 
-  AlphaEquivalent :: Expr -> Expr -> Judgement ()
+  AlphaEquivalent :: Expr -> Expr -> Judgement Bool
   Equals :: Expr -> Expr -> Judgement ()
 
   Unify :: Type -> Type -> Judgement ()
@@ -310,12 +310,12 @@ isType :: Term -> Proof ()
 isType term = J (IsType term) `andThen` return
 
 
-alphaEquivalent :: Expr -> Expr -> Proof ()
+alphaEquivalent :: Expr -> Expr -> Proof Bool
 alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `andThen` return
 
-alphaEquivalent' :: Expr -> Expr -> Proof ()
+alphaEquivalent' :: Expr -> Expr -> Proof Bool
 alphaEquivalent' e1 e2
-  | e1 == e2 = return ()
+  | e1 == e2 = return True
   | otherwise = case (unfix e1, unfix e2) of
     (Abs n1 b1, Abs n2 b2)
       | n1 == n2 -> alphaEquivalent b1 b2
@@ -326,11 +326,13 @@ alphaEquivalent' e1 e2
     (Let n1 v1 b1, Let n2 v2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
       alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
 
-    (Var n1, Var n2) -> when (n1 == n2) (return ())
+    (Var n1, Var n2) -> return (n1 == n2)
 
     (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of
-      Just equivalences -> sequence_ equivalences
-      _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
+      Just equivalences -> do
+        eq <- sequenceA equivalences
+        return (and eq)
+      _ -> return False
 
 
 equals :: Expr -> Expr -> Proof ()

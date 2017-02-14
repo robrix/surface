@@ -38,7 +38,7 @@ spec = do
 
   describe "alphaEquivalent" $ do
     prop "reflexivity" . forAll embedTiers $
-      \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return ()
+      \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return True
 
     prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> eraseErrors (run (a `alphaEquivalent` b)) `shouldBe` eraseErrors (run (b `alphaEquivalent` a))
