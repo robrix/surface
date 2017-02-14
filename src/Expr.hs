@@ -239,6 +239,8 @@ instance Eq1 ExprF where
 
     (As a1 b1, As a2 b2) -> eq a1 a2 && eq b1 b2
 
+    (Let n1 v1 b1, Let n2 v2 b2) -> n1 == n2 && eq v1 v2 && eq b1 b2
+
     _ -> False
 
 instance Show1 ExprF where
