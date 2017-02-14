@@ -1,7 +1,7 @@
 module Surface.Expr.Spec where
 
 import Data.Functor.Listable
-import Data.List (delete)
+import Data.List (delete, sort, union)
 import Expr
 import Test.Hspec
 import Test.Hspec.LeanCheck
@@ -33,8 +33,9 @@ spec = do
     prop "does not contain variables bound by lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
       \ name body -> freeVariables (makeLambda name body) `shouldBe` delete name (freeVariables body)
 
-    prop "does not contain variables bound by pi types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
-      \ name ty body -> freeVariables (makePi name ty body) `shouldBe` delete name (freeVariables body)
+    prop "does not contain variables bound by pi types" . forAll (embedTiers >< embedTiers) . uncurry $
+      \ ty body -> let name = freshNameIn (freeVariables ty) in
+        freeVariables (makePi name ty body) `shouldBe` sort (freeVariables ty `union` delete name (freeVariables body))
 
     prop "contains free variables from type of pi types" . forAll (nameTiers >< embedTiers) . uncurry $
       \ name expr -> freeVariables (makePi name expr expr) `shouldBe` freeVariables expr
