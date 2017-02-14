@@ -37,3 +37,7 @@ spec = do
 
     it "can take multiple params" $
       Parser.lambda `parseString` "\\ a b . a b" `shouldBe` Result (makeLambda (N "a") (makeLambda (N "b") (varN "a" # varN "b")))
+
+  describe "pi" $ do
+    it "binds a variable" $
+      Parser.piType `parseString` "(a : Type) -> a -> a" `shouldBe` Result (makePi (N "a") typeT (varN "a" .->. varN "a"))
