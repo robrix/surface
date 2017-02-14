@@ -41,3 +41,6 @@ spec = do
   describe "==" $ do
     prop "reflexivity" . forAll embedTiers $
       \ expr -> expr == (expr :: Expr) `shouldBe` True
+
+    prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
+      \ a b -> a == b `shouldBe` b == (a :: Expr)
