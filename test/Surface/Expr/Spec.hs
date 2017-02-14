@@ -5,6 +5,7 @@ import Data.List (delete)
 import Expr
 import Test.Hspec
 import Test.Hspec.LeanCheck
+import Test.LeanCheck
 
 spec :: Spec
 spec = do
@@ -44,3 +45,6 @@ spec = do
 
     prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> a == b `shouldBe` b == (a :: Expr)
+
+    prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
+      \ a b c -> (a == b && b == c ==> a == (c :: Expr)) `shouldBe` True
