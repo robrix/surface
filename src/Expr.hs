@@ -163,9 +163,11 @@ freeVariables = nub . sort . cata alg
           _ -> concat expr
 
 freshNameIn :: [Name] -> Name
-freshNameIn = maybe (I 0) (succ' . getMax) . sfoldMap Max
-  where succ' (I i) = I (succ i)
-        succ' (N n) = N (n ++ "'")
+freshNameIn = maybe (I 0) (succName . getMax) . sfoldMap Max
+
+succName :: Name -> Name
+succName (I i) = I (succ i)
+succName (N n) = N (n ++ "'")
 
 -- | Capture-avoiding substitution of an Expr for variables with a given Name in an Expr.
 substitute :: Expr -> Name -> Expr -> Expr
