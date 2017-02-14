@@ -41,3 +41,6 @@ spec = do
   describe "pi" $ do
     it "binds a variable" $
       Parser.piType `parseString` "(a : Type) -> a -> a" `shouldBe` Result (makePi (N "a") typeT (varN "a" .->. varN "a"))
+
+    it "can occur in the body of lambdas" $
+      Parser.lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` Result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
