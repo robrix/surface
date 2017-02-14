@@ -319,6 +319,8 @@ alphaEquivalent' e1 e2
   | otherwise = case (unfix e1, unfix e2) of
     (Abs n1 b1, Abs n2 b2)
       | n1 == n2 -> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
     _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
 
 equals :: Expr -> Expr -> Proof ()
