@@ -306,7 +306,7 @@ instance Pretty Name where
     I i -> showChar '_' . shows i
 
 instance Eq n => Eq1 (ExprF n) where
-  liftEq eq = (all and .) . zipExprFWith (==) eq
+  liftEq eq = (all biand .) . zipExprFWith (==) eq
 
 instance Show n => Show1 (ExprF n) where
   liftShowsPrec sp _ d t = case t of
