@@ -3,9 +3,10 @@ module Surface.Judgement.Spec where
 import Data.Functor.Listable
 import Data.Result
 import Expr
-import Judgement
+import Judgement hiding ((==>))
 import Test.Hspec
 import Test.Hspec.LeanCheck
+import Test.LeanCheck
 
 spec :: Spec
 spec = do
@@ -17,7 +18,7 @@ spec = do
       \ a b -> eraseErrors (run (a `equals` b)) `shouldBe` eraseErrors (run (b `equals` a))
 
     prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
-      \ a b c -> isResult (run (a `equals` b)) == isResult (run (b `equals` c)) `shouldBe` isResult (run (a `equals` c))
+      \ a b c -> (isResult (run (a `equals` b)) && isResult (run (b `equals` c)) ==> isResult (run (a `equals` c))) `shouldBe` True
 
     prop "congruence" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> run ((a .->. b) `equals` (a .->. b)) `shouldBe` return ()
