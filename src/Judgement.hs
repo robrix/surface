@@ -220,8 +220,37 @@ whnf expr = J (WHNF expr) `andThen` return
 
 whnf' :: Expr -> Proof Expr
 whnf' expr = case unfix expr of
-  Pi{} -> return expr
-  Abs{} -> return expr
+  Var v -> do
+    binding <- findBinding v
+    case binding of
+      Just a -> whnf a
+      _ -> return (var v)
+
+  App a b -> do
+    op <- whnf a
+    case unfix op of
+      Abs name body -> whnf (substitute b name body)
+      _ -> return (op # b)
+
+  Fst p -> do
+    pair <- whnf p
+    case unfix pair of
+      Pair a _ -> whnf a
+      _ -> return (fst' pair)
+
+  Snd p -> do
+    pair <- whnf p
+    case unfix pair of
+      Pair _ b -> whnf b
+      _ -> return (snd' pair)
+
+  Case subject ifL ifR -> do
+    sum <- whnf subject
+    case unfix sum of
+      InL l -> whnf (ifL # l)
+      InR r -> whnf (ifR # r)
+      _ -> return (makeCase subject ifL ifR)
+
   _ -> return expr
 
 
@@ -373,7 +402,7 @@ findBinding name = do
   where help (_ :< Ty (found := decl))
           | name == found = return decl
         help (context :< _) = help context
-        help _ = fail ("Missing variable " ++ pretty name ++ " in environment.")
+        help _ = return Nothing
 
 
 fail :: String -> Proof a
