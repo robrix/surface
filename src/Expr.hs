@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GADTs #-}
 module Expr where
 
+import Data.Bifoldable
 import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable
@@ -250,6 +251,33 @@ instance Bifunctor ExprF where
     Let n v b -> Let (g n) (f v) (f b)
 
     As a b -> As (f a) (f b)
+
+instance Bifoldable ExprF where
+  bifoldMap g f expr = case expr of
+    Product a b -> mappend (f a) (f b)
+    Sum a b -> mappend (f a) (f b)
+    Function a b -> mappend (f a) (f b)
+    Pi n t b -> mappend (g n) (mappend (f t) (f b))
+    UnitT -> mempty
+    TypeT -> mempty
+
+    Abs n b -> mappend (g n) (f b)
+    Var n -> g n
+    App a b -> mappend (f a) (f b)
+
+    InL a -> f a
+    InR a -> f a
+    Case c l r -> mappend (f c) (mappend (f l) (f r))
+
+    Pair a b -> mappend (f a) (f b)
+    Fst a -> f a
+    Snd a -> f a
+
+    Unit -> mempty
+
+    Let n v b -> mappend (g n) (mappend (f v) (f b))
+
+    As a b -> mappend (f a) (f b)
 
 instance Pretty2 ExprF where
   liftPrettyPrec2 pn pp d expr = case expr of
