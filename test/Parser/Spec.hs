@@ -2,6 +2,7 @@ module Parser.Spec where
 
 import Data.Result
 import Expr
+import Module
 import Parser (parseString)
 import qualified Parser
 import Test.Hspec
@@ -44,3 +45,7 @@ spec = do
 
     it "can occur in the body of lambdas" $
       Parser.lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` Result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
+
+  describe "declaration" $ do
+    it "parses a type and value" $
+      Parser.declaration `parseString` "and : Type -> Type -> Type\nand = \\p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` Result (Declaration "and" (typeT .->. typeT .->. typeT) (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c")))))
