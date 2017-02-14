@@ -24,6 +24,7 @@ data Judgement a where
 
   IsType :: Term -> Judgement ()
 
+  AlphaEquivalent :: Expr -> Expr -> Judgement ()
   Equals :: Expr -> Expr -> Judgement ()
 
   Unify :: Type -> Type -> Judgement ()
@@ -308,6 +309,14 @@ isType :: Term -> Proof ()
 isType term = J (IsType term) `andThen` return
 
 
+alphaEquivalent :: Expr -> Expr -> Proof ()
+alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `andThen` return
+
+alphaEquivalent' :: Expr -> Expr -> Proof ()
+alphaEquivalent' e1 e2
+  | e1 == e2 = return ()
+  | otherwise = fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
+
 equals :: Expr -> Expr -> Proof ()
 equals e1 e2 = J (Equals e1 e2) `andThen` return
 
@@ -518,6 +527,7 @@ decompose judgement = case judgement of
 
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
+  AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
   Equals e1 e2 -> equals' e1 e2
 
   Unify t1 t2 -> unify' t1 t2
@@ -579,6 +589,7 @@ instance Show1 Judgement where
 
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
+    AlphaEquivalent e1 e2 -> showsBinaryWith showsPrec showsPrec "AlphaEquivalent" d e1 e2
     Equals e1 e2 -> showsBinaryWith showsPrec showsPrec "Equals" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
@@ -612,6 +623,7 @@ instance Pretty1 Judgement where
     Infer term -> showsUnaryWith prettyPrec "infer" d term
     IsType ty -> showsUnaryWith prettyPrec "isType" d ty
 
+    AlphaEquivalent e1 e2 -> showsBinaryWith prettyPrec prettyPrec "alphaEquivalent" d e1 e2
     Equals e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equals" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
@@ -646,6 +658,7 @@ instance Eq1 Judgement where
     (Infer tm1, Infer tm2) -> tm1 == tm2
     (IsType tm1, IsType tm2) -> tm1 == tm2
 
+    (AlphaEquivalent a1 b1, AlphaEquivalent a2 b2) -> a1 == a2 && b1 == b2
     (Equals a1 b1, Equals a2 b2) -> a1 == a2 && b1 == b2
 
     (Unify a1 b1, Unify a2 b2) -> a1 == a2 && b1 == b2
