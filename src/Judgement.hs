@@ -9,6 +9,7 @@ import Control.State
 import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
+import Data.List (union)
 import Data.Result
 import Expr
 import Module
@@ -315,7 +316,9 @@ alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `andThen` return
 alphaEquivalent' :: Expr -> Expr -> Proof ()
 alphaEquivalent' e1 e2
   | e1 == e2 = return ()
-  | otherwise = case (e1, e2) of
+  | otherwise = case (unfix e1, unfix e2) of
+    (Abs n1 b1, Abs n2 b2)
+      | n1 == n2 -> alphaEquivalent b1 b2
     _ -> fail ("Could not judge α-equivalence of " ++ pretty e1 ++ " and " ++ pretty e2)
 
 equals :: Expr -> Expr -> Proof ()
