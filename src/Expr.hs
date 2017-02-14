@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, GADTs #-}
 module Expr where
 
+import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.List (nub, sort, union)
@@ -222,6 +223,33 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 
 -- Instances
+
+instance Bifunctor ExprF where
+  bimap g f expr = case expr of
+    Product a b -> Product (f a) (f b)
+    Sum a b -> Sum (f a) (f b)
+    Function a b -> Function (f a) (f b)
+    Pi n t b -> Pi (g n) (f t) (f b)
+    UnitT -> UnitT
+    TypeT -> TypeT
+
+    Abs n b -> Abs (g n) (f b)
+    Var n -> Var (g n)
+    App a b -> App (f a) (f b)
+
+    InL a -> InL (f a)
+    InR a -> InR (f a)
+    Case c l r -> Case (f c) (f l) (f r)
+
+    Pair a b -> Pair (f a) (f b)
+    Fst a -> Fst (f a)
+    Snd a -> Snd (f a)
+
+    Unit -> Unit
+
+    Let n v b -> Let (g n) (f v) (f b)
+
+    As a b -> As (f a) (f b)
 
 instance Pretty2 ExprF where
   liftPrettyPrec2 pn pp d expr = case expr of
