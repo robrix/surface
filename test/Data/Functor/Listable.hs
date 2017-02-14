@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 module Data.Functor.Listable
 ( Listable(..)
 , cons0
@@ -81,8 +81,8 @@ instance Listable2 (,) where
 instance Listable a => Listable1 ((,) a) where
   liftTiers = liftTiers2 tiers
 
-instance Listable1 ExprF where
-  liftTiers ts
+instance Listable2 ExprF where
+  liftTiers2 nameTiers ts
     =  liftCons2 ts ts Product
     \/ liftCons2 ts ts Sum
     \/ liftCons2 ts ts Function
@@ -101,6 +101,9 @@ instance Listable1 ExprF where
     \/ cons0 Unit
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
+
+instance Listable1 (ExprF Name) where
+  liftTiers = liftTiers2 nameTiers
 
 instance (Listable1 f, Listable a) => Listable (ListableF f a) where
   tiers = ListableF `mapT` tiers1

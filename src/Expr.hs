@@ -7,40 +7,40 @@ import Data.List (nub, sort, union)
 import Data.Semigroup (Semigroup, Max(..), Option(..))
 import Text.Pretty
 
-data ExprF a where
-  Product :: a -> a -> ExprF a
-  Sum :: a -> a -> ExprF a
-  Function :: a -> a -> ExprF a
-  Pi :: Name -> a -> a -> ExprF a
-  UnitT :: ExprF a
-  TypeT :: ExprF a
+data ExprF n a where
+  Product :: a -> a -> ExprF n a
+  Sum :: a -> a -> ExprF n a
+  Function :: a -> a -> ExprF n a
+  Pi :: n -> a -> a -> ExprF n a
+  UnitT :: ExprF n a
+  TypeT :: ExprF n a
 
-  Abs :: Name -> a -> ExprF a
-  Var :: Name -> ExprF a
-  App :: a -> a -> ExprF a
+  Abs :: n -> a -> ExprF n a
+  Var :: n -> ExprF n a
+  App :: a -> a -> ExprF n a
 
-  InL :: a -> ExprF a
-  InR :: a -> ExprF a
-  Case :: a -> a -> a -> ExprF a
+  InL :: a -> ExprF n a
+  InR :: a -> ExprF n a
+  Case :: a -> a -> a -> ExprF n a
 
-  Pair :: a -> a -> ExprF a
-  Fst :: a -> ExprF a
-  Snd :: a -> ExprF a
+  Pair :: a -> a -> ExprF n a
+  Fst :: a -> ExprF n a
+  Snd :: a -> ExprF n a
 
-  Unit :: ExprF a
+  Unit :: ExprF n a
 
-  Let :: Name -> a -> a -> ExprF a
+  Let :: n -> a -> a -> ExprF n a
 
-  As :: a -> a -> ExprF a
+  As :: a -> a -> ExprF n a
   deriving (Eq, Foldable, Functor, Show)
 
-type Expr = Fix ExprF
+type Expr = Fix (ExprF Name)
 
 type TypeF = ExprF
-type Type = Fix TypeF
+type Type = Fix (TypeF Name)
 
 type TermF = ExprF
-type Term = Fix TermF
+type Term = Fix (TermF Name)
 
 
 data Name = N String
@@ -184,18 +184,18 @@ substitute to from = para $ \ expr -> case expr of
 
 -- Traversal
 
-zipExprFWith :: (a -> b -> c) -> ExprF a -> ExprF b -> Maybe (ExprF c)
-zipExprFWith f a b = case (a, b) of
+zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Maybe (ExprF o c)
+zipExprFWith g f a b = case (a, b) of
   (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
   (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
   (Function a1 b1, Function a2 b2) -> Just (Function (f a1 a2) (f b1 b2))
 
-  (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi n1 (f t1 t2) (f b1 b2))
+  (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (UnitT, UnitT) -> Just UnitT
   (TypeT, TypeT) -> Just TypeT
 
-  (Abs n1 b1, Abs n2 b2) -> Just (Abs n1 (f b1 b2))
-  (Var n1, Var n2) -> Just (Var n1)
+  (Abs n1 b1, Abs n2 b2) -> Just (Abs (g n1 n2) (f b1 b2))
+  (Var n1, Var n2) -> Just (Var (g n1 n2))
   (App a1 b1, App a2 b2) -> Just (App (f a1 a2) (f b1 b2))
 
   (InL a1, InL a2) -> Just (InL (f a1 a2))
@@ -208,7 +208,7 @@ zipExprFWith f a b = case (a, b) of
 
   (Unit, Unit) -> Just Unit
 
-  (Let n1 v1 b1, Let n2 v2 b2) -> Just (Let n1 (f v1 v2) (f b1 b2))
+  (Let n1 v1 b1, Let n2 v2 b2) -> Just (Let (g n1 n2) (f v1 v2) (f b1 b2))
 
   (As a1 b1, As a2 b2) -> Just (As (f a1 a2) (f b1 b2))
 
@@ -223,11 +223,11 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 -- Instances
 
-instance Pretty1 ExprF where
-  liftPrettyPrec pp d expr = case expr of
+instance Pretty2 ExprF where
+  liftPrettyPrec2 pn pp d expr = case expr of
     App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
-    Abs v b -> showParen (d > 0) $ showChar '\\' . prettyPrec 0 v . showString " . " . pp 0 b
-    Var v -> prettyPrec 0 v
+    Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
+    Var v -> pn 0 v
     InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
     InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
     Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
@@ -235,13 +235,13 @@ instance Pretty1 ExprF where
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
     Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
-    Pi n t b -> showParen (d > 0) $ showParen True (prettyPrec 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
+    Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
     UnitT -> showString "Unit"
     Unit -> showString "()"
     TypeT -> showString "Type"
-    Let n v b -> showParen (d > 10) $ showString "let " . prettyPrec 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
+    Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
 
 instance Pretty Name where
@@ -249,7 +249,7 @@ instance Pretty Name where
     N s -> showString s
     I i -> showChar '_' . shows i
 
-instance Eq1 ExprF where
+instance Eq n => Eq1 (ExprF n) where
   liftEq eq a b = case (a, b) of
     (App o1 a1, App o2 a2) -> eq o1 o2 && eq a1 a2
     (Abs v1 r1, Abs v2 r2) -> v1 == v2 && eq r1 r2
@@ -278,7 +278,7 @@ instance Eq1 ExprF where
 
     _ -> False
 
-instance Show1 ExprF where
+instance Show n => Show1 (ExprF n) where
   liftShowsPrec sp _ d t = case t of
     App a b -> showsBinaryWith sp sp "App" d a b
     Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b

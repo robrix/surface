@@ -60,7 +60,7 @@ instance Binder TermEntry where
 instance Binder1 f => Binder (Fix f) where
    (<?) name = liftIn (<?) name . unfix
 
-instance Binder1 ExprF where
+instance Binder1 (ExprF Name) where
   liftIn occurs name expr = case expr of
     Abs n _ | n == name -> False
     Var v | v == name -> True
