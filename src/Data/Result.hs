@@ -39,7 +39,7 @@ instance Alternative Result where
 
 instance Pretty1 Result where
   liftPrettyPrec pp d (Result a) = pp d a
-  liftPrettyPrec _ _ (Error errors) = showString "[ " . foldr (.) id (intersperse (showChar '\n') (showString <$> errors)) . showString " ]"
+  liftPrettyPrec _ _ (Error errors) = foldr (.) id (intersperse (showChar '\n') (showString <$> errors))
 
 instance Show1 Result where
   liftShowsPrec sp _ d result = case result of
