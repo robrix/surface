@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, GADTs #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GADTs #-}
 module Expr where
 
 import Data.Bifunctor
@@ -33,7 +33,7 @@ data ExprF n a where
   Let :: n -> a -> a -> ExprF n a
 
   As :: a -> a -> ExprF n a
-  deriving (Eq, Foldable, Functor, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Expr = Fix (ExprF Name)
 
