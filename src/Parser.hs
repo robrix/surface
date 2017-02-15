@@ -54,60 +54,45 @@ declaration = runUnlined $ do
                    <?> "declaration"
 
 expr :: (Monad m, TokenParsing m) => m Expr
-expr = term <|> type'
+expr = type'
 
-
-term :: (Monad m, TokenParsing m) => m Term
-term = annotation <?> "term"
-
-termAtom :: (Monad m, TokenParsing m) => m Term
-termAtom
-   =  tuple
-  <|> Parser.fst'
-  <|> Parser.snd'
-  <|> Parser.inL
-  <|> Parser.inR
-  <|> Parser.case'
-  <|> lambda
-  <|> Parser.var
-  <|> Parser.let'
 
 var :: (Monad m, TokenParsing m) => m Expr
 var = Expr.var <$> name
                <?> "variable"
 
 tuple :: (Monad m, TokenParsing m) => m Term
-tuple = parens (chainr term (pair <$ comma) Expr.unit)
+tuple = parens (chainr expr (pair <$ comma) Expr.unit)
                <?> "tuple"
 
 fst' :: (Monad m, TokenParsing m) => m Term
-fst' = Expr.fst' <$ preword "fst" <*> term
+fst' = Expr.fst' <$ preword "fst" <*> expr
                                   <?> "fst"
 
 snd' :: (Monad m, TokenParsing m) => m Term
-snd' = Expr.snd' <$ preword "snd" <*> term
+snd' = Expr.snd' <$ preword "snd" <*> expr
                                   <?> "snd"
 
 lambda :: (Monad m, TokenParsing m) => m Term
 lambda = foldr ((.) . makeLambda) id <$  op "\\"
                                      <*> some name <* dot
-                                     <*> term
+                                     <*> expr
                                      <?> "lambda"
 
-application :: (Monad m, TokenParsing m) => m Expr -> m Expr
-application expr = expr `chainl1` pure (#) <?> "function application"
+application :: (Monad m, TokenParsing m) => m Expr
+application = atom `chainl1` pure (#) <?> "function application"
 
 inL :: (Monad m, TokenParsing m) => m Term
-inL = Expr.inL <$ preword "inL" <*> term
+inL = Expr.inL <$ preword "inL" <*> expr
                                 <?> "inL"
 
 inR :: (Monad m, TokenParsing m) => m Term
-inR = Expr.inR <$ preword "inR" <*> term
+inR = Expr.inR <$ preword "inR" <*> expr
                                 <?> "inR"
 
 case' :: (Monad m, TokenParsing m) => m Term
 case' = makeCase <$  preword "case"
-                 <*> term <* preword "of"
+                 <*> expr <* preword "of"
                  <*> parens lambda
                  <*> parens lambda
                  <?> "case analysis"
@@ -115,13 +100,13 @@ case' = makeCase <$  preword "case"
 let' :: (Monad m, TokenParsing m) => m Term
 let' = makeLet <$  preword "let"
                <*> name <* op "="
-               <*> term <* preword "in"
-               <*> term
+               <*> expr <* preword "in"
+               <*> expr
                <?> "let"
 
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
-        app <- application termAtom
+        app <- application
         ty <- optional (op ":" *> type')
         return (maybe app (app `as`) ty)
         <?> "type annotation"
@@ -130,12 +115,20 @@ annotation = do
 type' :: (Monad m, TokenParsing m) => m Type
 type' = piType <?> "type"
 
-typeAtom :: (Monad m, TokenParsing m) => m Type
-typeAtom
+atom :: (Monad m, TokenParsing m) => m Type
+atom
    =  typeType
   <|> unitType
   <|> Parser.var
-  <|> parens type'
+  <|> tuple
+  <|> Parser.fst'
+  <|> Parser.snd'
+  <|> Parser.inL
+  <|> Parser.inR
+  <|> Parser.case'
+  <|> lambda
+  <|> Parser.var
+  <|> Parser.let'
 
 unitType :: (Monad m, TokenParsing m) => m Type
 unitType = unitT <$  preword "Unit"
@@ -146,8 +139,8 @@ typeType = typeT <$  preword "Type"
                  <?> "Type"
 
 sumType :: (Monad m, TokenParsing m) => m Type
-sumType = application typeAtom `chainl1` ((.+.) <$ op "+")
-                               <?> "sum type"
+sumType = application `chainl1` ((.+.) <$ op "+")
+                      <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
 productType = sumType `chainl1` ((.*.) <$ op "*")
