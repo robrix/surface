@@ -3,8 +3,7 @@ module Parser.Spec where
 import Data.Result
 import Expr
 import Module
-import Parser (parseString)
-import qualified Parser
+import Parser
 import Test.Hspec
 
 spec :: Spec
