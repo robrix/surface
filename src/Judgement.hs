@@ -373,8 +373,8 @@ equate' e1 e2 = do
   unless equivalent $ do
     nf1 <- whnf e1
     nf2 <- whnf e2
-    case (unfix nf1, unfix nf2) of
-      (App a1 b1, App a2 b2) -> equate a1 a2 >> equate b1 b2
+    case zipExprFWith (,) equate (unfix nf1) (unfix nf2) of
+      Just _ -> return () 
       _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
 
 
