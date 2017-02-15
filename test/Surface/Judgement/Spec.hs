@@ -36,6 +36,10 @@ spec = do
     prop "does not normalize inside of π-types" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
       \ n t b -> run (whnf (makePi n t b)) `shouldBe` return (makePi n t b)
 
+    prop "normalizes applications of lambdas" . forAll embedTiers $
+      \ a -> run (whnf (lam id # a)) `shouldBe` run (whnf a)
+
+
   describe "alphaEquivalent" $ do
     prop "reflexivity" . forAll embedTiers $
       \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return True
