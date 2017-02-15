@@ -6,6 +6,7 @@ import Expr
 import Test.Hspec
 import Test.Hspec.LeanCheck
 import Test.LeanCheck
+import Test.LeanCheck.Utils.Operators
 
 spec :: Spec
 spec = do
@@ -49,3 +50,6 @@ spec = do
 
     prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
       \ a b c -> (a == b && b == c ==> a == (c :: Expr)) `shouldBe` True
+
+    prop "equivalence" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
+      \ a b c -> equivalence (==) a b (c :: Expr) `shouldBe` True
