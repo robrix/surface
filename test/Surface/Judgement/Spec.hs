@@ -10,24 +10,24 @@ import Test.LeanCheck
 
 spec :: Spec
 spec = do
-  describe "equals" $ do
+  describe "equate" $ do
     prop "reflexivity" . forAll embedTiers $
-      \ expr -> run (expr `equals` expr) `shouldBe` return ()
+      \ expr -> run (expr `equate` expr) `shouldBe` return ()
 
     prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
-      \ a b -> eraseErrors (run (a `equals` b)) `shouldBe` eraseErrors (run (b `equals` a))
+      \ a b -> eraseErrors (run (a `equate` b)) `shouldBe` eraseErrors (run (b `equate` a))
 
     prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
-      \ a b c -> (isResult (run (a `equals` b)) && isResult (run (b `equals` c)) ==> isResult (run (a `equals` c))) `shouldBe` True
+      \ a b c -> (isResult (run (a `equate` b)) && isResult (run (b `equate` c)) ==> isResult (run (a `equate` c))) `shouldBe` True
 
     prop "congruence" . forAll (embedTiers >< embedTiers) . uncurry $
-      \ a b -> run ((a .->. b) `equals` (a .->. b)) `shouldBe` return ()
+      \ a b -> run ((a .->. b) `equate` (a .->. b)) `shouldBe` return ()
 
     prop "contains beta-equivalence" . forAll (nameTiers >< embedTiers >< embedTiers) . uncurryr3 $
-      \ n a b -> run ((makeLambda n (pair a (var n)) # b) `equals` substitute b n (pair a (var n))) `shouldBe` return ()
+      \ n a b -> run ((makeLambda n (pair a (var n)) # b) `equate` substitute b n (pair a (var n))) `shouldBe` return ()
 
-    prop "has functionality" . forAll ((nameTiers >< embedTiers >< embedTiers >< embedTiers) `suchThat` uncurryr4 (\ _ a1 a2 _ -> run (a1 `equals` a2) == return ())) . uncurryr4 $
-      \ n a1 a2 b -> run (substitute a1 n b `equals` substitute a2 n b) `shouldBe` return ()
+    prop "has functionality" . forAll ((nameTiers >< embedTiers >< embedTiers >< embedTiers) `suchThat` uncurryr4 (\ _ a1 a2 _ -> run (a1 `equate` a2) == return ())) . uncurryr4 $
+      \ n a1 a2 b -> run (substitute a1 n b `equate` substitute a2 n b) `shouldBe` return ()
 
   describe "whnf" $ do
     prop "does not normalize inside of lambdas" . forAll (nameTiers >< embedTiers) . uncurry $

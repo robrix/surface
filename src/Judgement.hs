@@ -26,7 +26,7 @@ data Judgement a where
   IsType :: Term -> Judgement ()
 
   AlphaEquivalent :: Expr -> Expr -> Judgement Bool
-  Equals :: Expr -> Expr -> Judgement ()
+  Equate :: Expr -> Expr -> Judgement ()
 
   Unify :: Type -> Type -> Judgement ()
   Solve :: Name -> Suffix -> Type -> Judgement ()
@@ -364,17 +364,17 @@ alphaEquivalent' e1 e2
       _ -> return False
 
 
-equals :: Expr -> Expr -> Proof ()
-equals e1 e2 = J (Equals e1 e2) `andThen` return
+equate :: Expr -> Expr -> Proof ()
+equate e1 e2 = J (Equate e1 e2) `andThen` return
 
-equals' :: Expr -> Expr -> Proof ()
-equals' e1 e2 = do
+equate' :: Expr -> Expr -> Proof ()
+equate' e1 e2 = do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
     nf1 <- whnf e1
     nf2 <- whnf e2
     case (unfix nf1, unfix nf2) of
-      (App a1 b1, App a2 b2) -> equals a1 a2 >> equals b1 b2
+      (App a1 b1, App a2 b2) -> equate a1 a2 >> equate b1 b2
       _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
 
 
@@ -579,7 +579,7 @@ decompose judgement = case judgement of
     _ -> fail ("Expected a Type but got " ++ pretty ty)
 
   AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
-  Equals e1 e2 -> equals' e1 e2
+  Equate e1 e2 -> equate' e1 e2
 
   Unify t1 t2 -> unify' t1 t2
   Solve name suffix ty -> solve' name suffix ty
@@ -641,7 +641,7 @@ instance Show1 Judgement where
     IsType ty -> showsUnaryWith showsPrec "IsType" d ty
 
     AlphaEquivalent e1 e2 -> showsBinaryWith showsPrec showsPrec "AlphaEquivalent" d e1 e2
-    Equals e1 e2 -> showsBinaryWith showsPrec showsPrec "Equals" d e1 e2
+    Equate e1 e2 -> showsBinaryWith showsPrec showsPrec "Equate" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
     Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
@@ -675,7 +675,7 @@ instance Pretty1 Judgement where
     IsType ty -> showsUnaryWith prettyPrec "isType" d ty
 
     AlphaEquivalent e1 e2 -> showsBinaryWith prettyPrec prettyPrec "alphaEquivalent" d e1 e2
-    Equals e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equals" d e1 e2
+    Equate e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equate" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
     Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyPrec "solve" d n s ty
@@ -710,7 +710,7 @@ instance Eq1 Judgement where
     (IsType tm1, IsType tm2) -> tm1 == tm2
 
     (AlphaEquivalent a1 b1, AlphaEquivalent a2 b2) -> a1 == a2 && b1 == b2
-    (Equals a1 b1, Equals a2 b2) -> a1 == a2 && b1 == b2
+    (Equate a1 b1, Equate a2 b2) -> a1 == a2 && b1 == b2
 
     (Unify a1 b1, Unify a2 b2) -> a1 == a2 && b1 == b2
     (Solve n1 s1 t1, Solve n2 s2 t2) -> n1 == n2 && s1 == s2 && t1 == t2
