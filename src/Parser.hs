@@ -13,16 +13,19 @@ import Text.Parser.Token.Highlight
 import Text.Trifecta as Trifecta
 
 parseExpr :: String -> Result.Result Expr
-parseExpr = Parser.parseString (whiteSpace *> expr <* eof)
+parseExpr = Parser.parseString (whole expr)
 
 parseModule :: String -> Result.Result Module
-parseModule = Parser.parseString (whiteSpace *> module' <* eof)
+parseModule = Parser.parseString (whole module')
 
 parseString :: Parser a -> String -> Result.Result a
 parseString p = toResult . Trifecta.parseString p mempty
 
 parseFromFile :: MonadIO m => Parser a -> FilePath -> m (Result.Result a)
 parseFromFile p = fmap toResult . parseFromFileEx p
+
+whole :: (Monad m, TokenParsing m) => m a -> m a
+whole p = whiteSpace *> p <* eof
 
 toResult :: Trifecta.Result a -> Result.Result a
 toResult r = case r of
