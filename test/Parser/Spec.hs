@@ -38,6 +38,12 @@ spec = do
     it "can occur in the body of lambdas" $
       whole lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
 
+    it "binds looser than sums" $
+      whole piType `parseString` "a -> b + c -> d" `shouldBe` result (varN "a" .->. (varN "b" .+. varN "c") .->. varN "d")
+
+    it "binds looser than products" $
+      whole piType `parseString` "a -> b * c -> d" `shouldBe` result (varN "a" .->. (varN "b" .*. varN "c") .->. varN "d")
+
   describe "lambda" $ do
     it "can take single params" $
       whole lambda `parseString` "\\ a . a" `shouldBe` result (makeLambda (N "a") (varN "a"))
