@@ -35,6 +35,9 @@ spec = do
     it "binds a variable" $
       whole piType `parseString` "(a : Type) -> a -> a" `shouldBe` result (makePi (N "a") typeT (varN "a" .->. varN "a"))
 
+    it "can end in an annotated variable" $
+      whole piType `parseString` "(a : Type) -> (b : Type)" `shouldBe` result (makePi (N "a") typeT (varN "b" `as` typeT))
+
     it "can occur in the body of lambdas" $
       whole lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
 
