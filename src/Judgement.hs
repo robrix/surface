@@ -385,12 +385,12 @@ declare :: Binding -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
 findEntry :: Name -> Proof (Either Binding TermEntry)
-findEntry name = do
-  context <- getContext
-  case context of
-    (_ :< Tm entry@(found ::: _)) | name == found -> return (Right entry)
-    (_ :< Ty entry@(found := _))  | name == found -> return (Left entry)
-    _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
+findEntry name = getContext >>= go
+  where go context = case context of
+          (_ :< Tm entry@(found ::: _)) | name == found -> return (Right entry)
+          (_ :< Ty entry@(found := _))  | name == found -> return (Left entry)
+          (context :< _)                                -> go context
+          _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
 
 find :: Name -> Proof Scheme
 find name = getContext >>= help
