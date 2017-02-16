@@ -374,7 +374,7 @@ equate' e1 e2 = do
     nf1 <- whnf e1
     nf2 <- whnf e2
     case zipExprFWith (,) equate (unfix nf1) (unfix nf2) of
-      Just _ -> return () 
+      Just _ -> return ()
       _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
 
 
