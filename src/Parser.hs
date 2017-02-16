@@ -146,10 +146,6 @@ productType :: (Monad m, TokenParsing m) => m Type
 productType = application `chainl1` ((.*.) <$ op "*")
                       <?> "product type"
 
-functionType :: (Monad m, TokenParsing m) => m Type
-functionType = sumType `chainr1` ((.->.) <$ op "->")
-                           <?> "function type"
-
 piType :: (Monad m, TokenParsing m) => m Type
 piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
   pure $! foldr exponential (codomain (Prelude.last components)) (Prelude.init components)

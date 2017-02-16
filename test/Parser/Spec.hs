@@ -19,18 +19,24 @@ spec = do
     it "parses sum types" $
       whole expr `parseString` "Unit + Unit" `shouldBe` result (unitT .+. unitT)
 
-  describe "functionType" $ do
+  describe "piType" $ do
     it "parses right-associatively" $
-      whole functionType `parseString` "a -> b -> c" `shouldBe` Parser.functionType `parseString` "a -> (b -> c)"
+      whole piType `parseString` "a -> b -> c" `shouldBe` piType `parseString` "a -> (b -> c)"
 
     it "constructs right-associated functions" $
-      whole functionType `parseString` "a -> b -> c" `shouldBe` result (varN "a" .->. (varN "b" .->. varN "c"))
+      whole piType `parseString` "a -> b -> c" `shouldBe` result (varN "a" .->. (varN "b" .->. varN "c"))
 
     it "can take type applications" $
-      whole functionType `parseString` "a b -> c" `shouldBe` result (varN "a" # varN "b" .->. varN "c")
+      whole piType `parseString` "a b -> c" `shouldBe` result (varN "a" # varN "b" .->. varN "c")
 
     it "can return type applications" $
-      whole functionType `parseString` "a -> b c" `shouldBe` result (varN "a" .->. varN "b" # varN "c")
+      whole piType `parseString` "a -> b c" `shouldBe` result (varN "a" .->. varN "b" # varN "c")
+
+    it "binds a variable" $
+      whole piType `parseString` "(a : Type) -> a -> a" `shouldBe` result (makePi (N "a") typeT (varN "a" .->. varN "a"))
+
+    it "can occur in the body of lambdas" $
+      whole lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
 
   describe "lambda" $ do
     it "can take single params" $
@@ -38,13 +44,6 @@ spec = do
 
     it "can take multiple params" $
       whole lambda `parseString` "\\ a b . a b" `shouldBe` result (makeLambda (N "a") (makeLambda (N "b") (varN "a" # varN "b")))
-
-  describe "pi" $ do
-    it "binds a variable" $
-      whole piType `parseString` "(a : Type) -> a -> a" `shouldBe` result (makePi (N "a") typeT (varN "a" .->. varN "a"))
-
-    it "can occur in the body of lambdas" $
-      whole lambda `parseString` "\\ p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c"))))
 
   describe "declaration" $ do
     it "parses a type and value" $
