@@ -6,16 +6,13 @@ import Data.Functor.Classes
 import Expr
 import Text.Pretty
 
-data Declaration = Some Expr | Hole
-  deriving (Eq, Show)
-
 data Entry
   = Ty Binding
   | Tm TermEntry
   | Sep
   deriving (Eq, Show)
 
-data Binding = Name := Declaration
+data Binding = Name := Maybe Expr
   deriving (Eq, Show)
 data TermEntry = Name ::: Scheme
   deriving (Eq, Show)
@@ -59,17 +56,13 @@ instance Pretty Entry where
   prettyPrec _ Sep = showChar ';'
 
 instance Pretty Binding where
-  prettyPrec d (name := declaration) = showParen (d > 9) $ prettyTypeName name . showString " := " . prettyPrec 10 declaration
-
-instance Pretty Declaration where
-  prettyPrec d (Some ty) = showChar '!' . prettyType d ty
-  prettyPrec _ _ = showChar '_'
+  prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyPrec 10) declaration
 
 instance Pretty TermEntry where
-  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyTermName name . showString " :: " . prettyPrec 10 scheme
+  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
-  liftPrettyPrec _ d (Type ty) = prettyType d ty
+  liftPrettyPrec _ d (Type ty) = prettyPrec d ty
   liftPrettyPrec pp d (All schm) = showsUnaryWith (liftPrettyPrec (liftPrettyPrec pp)) "All" d schm
   liftPrettyPrec pp d (LetS ty schm) = showsBinaryWith prettyPrec (liftPrettyPrec (liftPrettyPrec pp)) "LetS" d ty schm
 

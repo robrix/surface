@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable #-}
 module Data.Result where
 
 import qualified Control.Monad.Fail as Fail
@@ -8,7 +8,11 @@ import Data.Functor.Classes
 import Text.Pretty
 
 data Result a = Result a | Error [String]
-  deriving (Eq, Functor, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
+
+mapErrors :: (String -> String) -> Result a -> Result a
+mapErrors _ (Result a) = Result a
+mapErrors f (Error e)  = Error (fmap f e)
 
 
 -- Instances
@@ -35,9 +39,15 @@ instance Alternative Result where
 
 instance Pretty1 Result where
   liftPrettyPrec pp d (Result a) = pp d a
-  liftPrettyPrec _ _ (Error errors) = showString "[ " . foldr (.) id (intersperse (showChar '\n') (showString <$> errors)) . showString " ]"
+  liftPrettyPrec _ _ (Error errors) = foldr (.) id (intersperse (showChar '\n') (showString <$> errors))
 
 instance Show1 Result where
   liftShowsPrec sp _ d result = case result of
     Error s -> showsUnaryWith showsPrec "Error" d s
     Result a -> showsUnaryWith sp "Result" d a
+
+instance Eq1 Result where
+  liftEq eq a b = case (a, b) of
+    (Result a, Result b) -> eq a b
+    (Error a, Error b) -> a == b
+    _ -> False

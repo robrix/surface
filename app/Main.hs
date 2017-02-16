@@ -2,16 +2,23 @@ module Main where
 
 import Data.Foldable (for_)
 import Data.Result
+import Data.Semigroup
 import Data.Version (showVersion)
+import Judgement
+import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
-import Options.Applicative
+import qualified REPL
 import Text.Pretty
 
-newtype Command = Run FilePath
+data Command
+  = Run FilePath
+  | Interactive
 
 command :: Parser Command
-command = Run <$> strArgument (metavar "FILE")
+command
+  =  flag' Interactive (long "interactive" <> short 'i' <> help "Launch the interactive REPL.")
+ <|> Run <$> strArgument (metavar "FILE" <> help "The program to run.")
 
 arguments :: ParserInfo Command
 arguments = info
@@ -24,14 +31,20 @@ main :: IO ()
 main = do
   command <- execParser arguments
   case command of
+    Interactive -> REPL.runREPL REPL.repl
     Run path -> do
-      result <- parseFromFile module' path
-      case result of
-        Result a -> prettyPrint a
-        Error es -> for_ es putStr
+      result <- parseFromFile source path
+      printResult $ do
+        modules <- result
+        for_ modules (run . checkModule)
+
+printResult :: Pretty a => Result a -> IO ()
+printResult result = case result of
+  Result a -> prettyPrint a
+  Error es -> for_ es putStr
 
 versionString :: String
 versionString = "Surface version " <> showVersion Library.version
 
 version :: Parser (a -> a)
-version = infoOption versionString (long "version" <> short 'V' <> help "output the version of the program")
+version = infoOption versionString (long "version" <> short 'V' <> help "Output version info.")
