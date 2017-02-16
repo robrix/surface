@@ -151,15 +151,18 @@ functionType = sumType `chainr1` ((.->.) <$ op "->")
                            <?> "function type"
 
 piType :: (Monad m, TokenParsing m) => m Type
-piType
-  =  op "("
-  *> (try (makePi <$> name <* op ":"
-                  <*> type')
- <|> (.->.) <$> type')
- <*  op ")" <* op "->"
- <*> type'
- <|> functionType
- <?> "pi type"
+piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
+  pure $! foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
+  where argument =  try (parens (Named <$> name <* op ":" <*> type'))
+                <|>            Unnamed <$> sumType
+        exponential arg = case arg of
+          Named name ty -> makePi name ty
+          Unnamed ty -> (.->.) ty
+        codomain res = case res of
+          Named name ty -> Expr.var name `as` ty
+          Unnamed ty -> ty
+
+data Argument = Named Name Type | Unnamed Type
 
 
 name :: (Monad m, TokenParsing m) => m Name
