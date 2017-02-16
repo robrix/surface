@@ -139,15 +139,15 @@ typeType = typeT <$  preword "Type"
                  <?> "Type"
 
 sumType :: (Monad m, TokenParsing m) => m Type
-sumType = application `chainl1` ((.+.) <$ op "+")
+sumType = productType `chainl1` ((.+.) <$ op "+")
                       <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
-productType = sumType `chainl1` ((.*.) <$ op "*")
+productType = application `chainl1` ((.*.) <$ op "*")
                       <?> "product type"
 
 functionType :: (Monad m, TokenParsing m) => m Type
-functionType = productType `chainr1` ((.->.) <$ op "->")
+functionType = sumType `chainr1` ((.->.) <$ op "->")
                            <?> "function type"
 
 piType :: (Monad m, TokenParsing m) => m Type
