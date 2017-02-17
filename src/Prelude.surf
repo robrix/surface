@@ -2,3 +2,6 @@ module Prelude where
 
 id : (a : Type) -> a -> a
 id = \ _ b . b
+
+const : (a : Type) -> (b : Type) -> a -> b -> a
+const = \ _ _ a b . a
