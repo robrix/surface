@@ -47,8 +47,8 @@ prettyLines (x:xs) = PrettyOf (\ _ ->  showString "[ " . prettyPrec 0 x . foldr 
 
 showBracket :: Bool -> ShowS -> ShowS
 showBracket b s = if b
-                  then s
-                  else showString "[ " . s . showString " ]"
+                  then showString "[ " . s . showString " ]"
+                  else s
 
 
 -- Instances
