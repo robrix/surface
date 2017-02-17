@@ -85,7 +85,6 @@ unify t1 t2 = J (Unify t1 t2) `andThen` return
 
 unify' :: Type -> Type -> Proof ()
 unify' t1 t2 = case (unfix t1, unfix t2) of
-  (Function a1 b1, Function a2 b2) -> unify a1 a2 >> unify b1 b2
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
   (UnitT, UnitT) -> return ()
@@ -204,7 +203,6 @@ normalize' expr = case unfix expr of
       Pair _ b -> return b
       _ -> error ("snd applied to non-product value: " ++ pretty p')
 
-  Function a b -> (.->.) <$> normalize a <*> normalize b
   Product a b -> (.*.) <$> normalize a <*> normalize b
   Sum a b -> (.+.) <$> normalize a <*> normalize b
 
@@ -526,7 +524,6 @@ decompose judgement = case judgement of
     -- Types
     UnitT -> return typeT
     TypeT -> return typeT -- Impredicativity.
-    Function{} -> isType term >> return typeT
     Product{} -> isType term >> return typeT
     Sum{} -> isType term >> return typeT
 
@@ -546,7 +543,6 @@ decompose judgement = case judgement of
       return ty
 
   Check term ty -> case (unfix term, unfix ty) of
-    (Abs n body, Function t1 t2) -> n ::: Type t1 >- check body t2
     (Abs n body, Pi n1 t tbody) -> do
       ty <- n1 ::: Type t >- infer tbody
       n ::: Type t >- check body ty
@@ -567,9 +563,6 @@ decompose judgement = case judgement of
       isType a
       isType b
     Product a b -> do
-      isType a
-      isType b
-    Function a b -> do
       isType a
       isType b
 

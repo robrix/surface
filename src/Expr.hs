@@ -12,7 +12,6 @@ import Text.Pretty
 data ExprF n a where
   Product :: a -> a -> ExprF n a
   Sum :: a -> a -> ExprF n a
-  Function :: a -> a -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
   UnitT :: ExprF n a
   TypeT :: ExprF n a
@@ -181,7 +180,6 @@ zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Mayb
 zipExprFWith g f a b = case (a, b) of
   (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
   (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
-  (Function a1 b1, Function a2 b2) -> Just (Function (f a1 a2) (f b1 b2))
 
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (UnitT, UnitT) -> Just UnitT
@@ -220,7 +218,6 @@ instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product a b -> Product (f a) (f b)
     Sum a b -> Sum (f a) (f b)
-    Function a b -> Function (f a) (f b)
     Pi n t b -> Pi (g n) (f t) (f b)
     UnitT -> UnitT
     TypeT -> TypeT
@@ -247,7 +244,6 @@ instance Bifoldable ExprF where
   bifoldMap g f expr = case expr of
     Product a b -> mappend (f a) (f b)
     Sum a b -> mappend (f a) (f b)
-    Function a b -> mappend (f a) (f b)
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
     UnitT -> mempty
     TypeT -> mempty
@@ -281,7 +277,6 @@ instance Pretty2 ExprF where
     Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
-    Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
@@ -310,7 +305,6 @@ instance Show n => Show1 (ExprF n) where
     Pair a b -> showsBinaryWith sp sp "Pair" d a b
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
-    Function a b -> showsBinaryWith sp sp "Function" d a b
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
