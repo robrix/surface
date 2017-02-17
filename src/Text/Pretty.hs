@@ -4,8 +4,8 @@ module Text.Pretty where
 import Control.Monad.Free.Freer
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
-import Data.List.NonEmpty
-import Text.Show (showListWith)
+import Data.List (intersperse)
+import Data.List.NonEmpty hiding (intersperse)
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
@@ -49,6 +49,9 @@ showBracket :: Bool -> ShowS -> ShowS
 showBracket b s = if b
                   then showString "[ " . s . showString " ]"
                   else s
+
+showListWith :: (a -> ShowS) -> [a] -> ShowS
+showListWith f = showBracket True . foldr (.) id . intersperse (showString ", ") . fmap f
 
 
 -- Instances
