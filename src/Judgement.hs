@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, GADTs, RankNTypes #-}
+{-# LANGUAGE GADTs #-}
 module Judgement where
 
 import Context hiding (S)
