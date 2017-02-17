@@ -47,6 +47,10 @@ showBracket b s = if b
 
 -- Instances
 
+instance Pretty Char where
+  prettyPrec = showsPrec
+  prettyList = showList
+
 instance Pretty () where
   prettyPrec _ _ = showString "()"
 
