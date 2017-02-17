@@ -59,7 +59,7 @@ typeT = Fix TypeT
 
 infixr 0 .->.
 (.->.) :: Type -> Type -> Type
-a .->. b = Fix (Function a b)
+(.->.) = makePi (I (negate 1))
 
 infixl 6 .+.
 (.+.) :: Type -> Type -> Type
