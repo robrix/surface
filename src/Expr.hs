@@ -6,7 +6,7 @@ import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.List (nub, sort, union)
-import Data.Semigroup (Semigroup, Max(..), Option(..))
+import Data.Semigroup (Semigroup(..), Max(..), Option(..))
 import Text.Pretty
 
 data ExprF n a where
@@ -89,10 +89,9 @@ bindVariable f = (n, body)
   where body = f (var n)
         n = I (succ (maxBoundVariable body))
         maxBoundVariable = cata $ \ term -> case term of
-          App o a -> max o a
           Abs (I v) _ -> v
-          Pi (I v) t _ -> max t v 
-          _ -> -1
+          Pi (I v) t _ -> max t v
+          _ -> getMax (foldr ((<>) . Max) (Max (negate 1)) term)
 
 var :: Name -> Expr
 var = Fix . Var
