@@ -91,6 +91,7 @@ bindVariable f = (n, body)
         maxBoundVariable = cata $ \ term -> case term of
           App o a -> max o a
           Abs (I v) _ -> v
+          Pi (I v) t _ -> max t v 
           _ -> -1
 
 var :: Name -> Expr
