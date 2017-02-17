@@ -74,12 +74,6 @@ instance Binder Entry where
     Sep -> False
 
 
-applyContext :: Expr -> Context -> Expr
-applyContext expr context = case context of
-  Nil -> expr
-  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
-  (rest :< _) -> applyContext expr rest
-
 unify :: Type -> Type -> Proof ()
 unify t1 t2 = J (Unify t1 t2) `andThen` return
 

@@ -29,6 +29,13 @@ infixl 8 <><
 context <>< [] = context
 context <>< (entry : rest) = context :< Ty entry <>< rest
 
+applyContext :: Expr -> Context -> Expr
+applyContext expr context = case context of
+  Nil -> expr
+  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
+  (rest :< _) -> applyContext expr rest
+
+
 data Extension = Restore | Replace Suffix
   deriving (Eq, Show)
 
