@@ -19,7 +19,8 @@ data Command
 command :: Parser Command
 command
   =  flag' Interactive (long "interactive" <> short 'i' <> help "Launch the interactive REPL.")
- <|> Run <$> strArgument (metavar "FILE" <> help "The program to run.")
+ <|> flag Run Debug (long "debug" <> short 'd' <> help "Print debugging information.")
+    <*> strArgument (metavar "FILE" <> help "The program to run.")
 
 arguments :: ParserInfo Command
 arguments = info
