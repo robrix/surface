@@ -14,7 +14,6 @@ data Judgement a where
 
   Check :: Term -> Type -> Judgement ()
   Infer :: Term -> Judgement Type
-
   IsType :: Term -> Judgement ()
 
   AlphaEquivalent :: Expr -> Expr -> Judgement Bool

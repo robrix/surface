@@ -136,15 +136,10 @@ runStep context proof = case proof of
 decompose :: Judgement a -> Proof a
 decompose judgement = case judgement of
   CheckModule module' -> checkModule' module'
-
   CheckDeclaration m d -> checkDeclaration' m d
 
-
   Check term ty -> check' term ty
-
   Infer term -> infer' term
-
-
   IsType ty -> isType' ty
 
   AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
@@ -158,7 +153,6 @@ decompose judgement = case judgement of
   Judgement.Replace suffix -> replace' suffix
 
   Normalize expr -> normalize' expr
-
   WHNF expr -> whnf' expr
 
 
