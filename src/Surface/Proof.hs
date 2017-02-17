@@ -6,7 +6,7 @@ import qualified Context
 import Control.State
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
-import Data.Foldable (for_)
+import Data.Foldable (for_, toList)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import qualified Data.HashMap.Lazy as H
@@ -628,7 +628,7 @@ instance Pretty ProofState where
   prettyPrec _ (ProofState n c e)
     = showString "{ " . prettyPrec 0 n
     . showString ", " . prettyPrec 0 c
-    . showString ", " . prettyPrec 0 e . showString " }"
+    . showString ", " . prettyPrec 0 (N . declarationName <$> toList e) . showString " }"
 
 
 instance Eq1 ProofF where
