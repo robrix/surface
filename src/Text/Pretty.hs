@@ -53,6 +53,9 @@ showBracket b s = if b
 showListWith :: (a -> ShowS) -> [a] -> ShowS
 showListWith f = showBracket True . foldr (.) id . intersperse (showString ", ") . fmap f
 
+iff :: (a -> Bool) -> (a -> b) -> (a -> b) -> a -> b
+iff test con alt a = (if test a then con else alt) a
+
 
 -- Instances
 
