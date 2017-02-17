@@ -4,6 +4,7 @@ module Text.Pretty where
 import Control.Monad.Free.Freer
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
+import Data.List.NonEmpty
 import Text.Show (showListWith)
 
 class Pretty t where
@@ -71,6 +72,9 @@ instance Pretty1 f => Pretty1 (Freer f) where
 
 instance Pretty1 [] where
   liftPrettyPrec _ pl _ = pl
+
+instance Pretty1 NonEmpty where
+  liftPrettyPrec _ pl _ = pl . toList
 
 instance Pretty2 Either where
   liftPrettyPrec2 pl _ pr _ d = either (pl d) (pr d)
