@@ -2,10 +2,11 @@
 module Text.Pretty where
 
 import Control.Monad.Free.Freer
+import Data.Foldable (toList)
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
-import Data.List.NonEmpty hiding (intersperse)
+import Data.List.NonEmpty hiding (intersperse, toList)
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
@@ -52,6 +53,9 @@ showBracket b s = if b
 
 showListWith :: (a -> ShowS) -> [a] -> ShowS
 showListWith f = iff null (const (showString "[]")) (showBracket True . foldr (.) id . intersperse (showString ", ") . fmap f)
+
+showAsListWith :: Foldable t => (a -> ShowS) -> t a -> ShowS
+showAsListWith f = showListWith f . toList
 
 iff :: (a -> Bool) -> (a -> b) -> (a -> b) -> a -> b
 iff test con alt a = (if test a then con else alt) a
