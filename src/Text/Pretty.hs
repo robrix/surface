@@ -51,7 +51,7 @@ showBracket b s = if b
                   else s
 
 showListWith :: (a -> ShowS) -> [a] -> ShowS
-showListWith f = showBracket True . foldr (.) id . intersperse (showString ", ") . fmap f
+showListWith f = iff null (const (showString "[]")) (showBracket True . foldr (.) id . intersperse (showString ", ") . fmap f)
 
 iff :: (a -> Bool) -> (a -> b) -> (a -> b) -> a -> b
 iff test con alt a = (if test a then con else alt) a
@@ -75,10 +75,10 @@ instance Pretty1 f => Pretty1 (Freer f) where
           go d (Then r t) = liftPrettyPrec (\ i -> go i . t) (liftPrettyList pp pl . fmap t) d r
 
 instance Pretty1 [] where
-  liftPrettyPrec _ pl _ = pl
+  liftPrettyPrec _ pl _ = iff null (const (showString "[]")) pl
 
 instance Pretty1 NonEmpty where
-  liftPrettyPrec _ pl _ = pl . toList
+  liftPrettyPrec _ pl _ = iff null (const (showString "[]")) (pl . toList)
 
 instance Pretty2 Either where
   liftPrettyPrec2 pl _ pr _ d = either (pl d) (pr d)
