@@ -52,7 +52,7 @@ test-suite test
   other-modules:       Data.Functor.Listable
                      , Parser.Spec
                      , Surface.Expr.Spec
-                     , Surface.Judgement.Spec
+                     , Surface.Proof.Spec
                      , Test.Hspec.LeanCheck
   build-depends:       base
                      , hspec

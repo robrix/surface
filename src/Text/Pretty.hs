@@ -66,12 +66,10 @@ instance Pretty () where
 instance Pretty1 f => Pretty (Fix f) where
   prettyPrec d = liftPrettyPrec prettyPrec prettyList d . unfix
 
-instance Pretty1 f => Pretty2 (FreerF f) where
-  liftPrettyPrec2 pa _ _ _ d (Pure a) = pa d a
-  liftPrettyPrec2 _ _ pb pl d (Free cont r) = liftPrettyPrec (\ i -> pb i . cont) (pl . fmap cont) d r
-
 instance Pretty1 f => Pretty1 (Freer f) where
-  liftPrettyPrec pa pl = go where go d = liftPrettyPrec2 pa pl go (showListWith (go d)) d . runFreer
+  liftPrettyPrec pp pl = go
+    where go d (Return a) = pp d a
+          go d (Then r t) = liftPrettyPrec (\ i -> go i . t) (liftPrettyList pp pl . fmap t) d r
 
 instance Pretty1 [] where
   liftPrettyPrec _ pl _ = pl

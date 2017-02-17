@@ -43,7 +43,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/robrix/freer-cofreer.git
-    commit: 0e097b456ec1197e773e87c0bf56af37cf588033
+    commit: 8953df8be30c9bf7983b91a44c6d83108e204393
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver

@@ -1,9 +1,9 @@
-module Surface.Judgement.Spec where
+module Surface.Proof.Spec where
 
 import Data.Functor.Listable
 import Data.Result
 import Expr
-import Judgement hiding ((==>))
+import Surface.Proof hiding ((==>))
 import Test.Hspec
 import Test.Hspec.LeanCheck
 import Test.LeanCheck

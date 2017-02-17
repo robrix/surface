@@ -4,11 +4,11 @@ import Data.Foldable (for_, toList, traverse_)
 import Data.Result
 import Data.Semigroup
 import Data.Version (showVersion)
-import Judgement
 import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
 import qualified REPL
+import Surface.Proof
 import Text.Pretty
 
 data Command
