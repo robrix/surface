@@ -3,6 +3,7 @@ module Text.Pretty where
 
 import Control.Monad.Free.Freer
 import Data.Functor.Foldable
+import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
 
 class Pretty t where
@@ -70,6 +71,10 @@ instance Pretty2 Either where
 
 instance Pretty2 (,) where
   liftPrettyPrec2 pa pb _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
+
+instance Pretty2 H.HashMap where
+  liftPrettyPrec2 pk pv _ = showBracket True . liftPrettyPrec (const (uncurry pair)) 0 . H.toList
+    where pair k v = pk 0 k . showString " : " . pv 0 v
 
 instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
   liftPrettyPrec = liftPrettyPrec2 prettyPrec
