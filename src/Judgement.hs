@@ -547,9 +547,9 @@ decompose judgement = case judgement of
 
   Check term ty -> case (unfix term, unfix ty) of
     (Abs n body, Function t1 t2) -> n ::: Type t1 >- check body t2
-    (Abs n body, Pi n1 t1 t2) -> do
-      ty <- n1 ::: Type t1 >- infer t2
-      n ::: Type t1 >- check body ty
+    (Abs n body, Pi n1 t tbody) -> do
+      ty <- n1 ::: Type t >- infer tbody
+      n ::: Type t >- check body ty
 
     (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
