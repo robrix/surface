@@ -79,7 +79,7 @@ instance Pretty1 f => Pretty1 (Freer f) where
           go d (Then r t) = liftPrettyPrec (\ i -> go i . t) (liftPrettyList pp pl . fmap t) d r
 
 instance Pretty1 [] where
-  liftPrettyPrec pp _ _ = showAsListWith (pp 0)
+  liftPrettyPrec _ pl _ = pl
 
 instance Pretty1 NonEmpty where
   liftPrettyPrec pp _ _ = showAsListWith (pp 0)
