@@ -56,15 +56,6 @@ unitT = Fix UnitT
 typeT :: Type
 typeT = Fix TypeT
 
-boolT :: Type
-boolT = unitT .+. unitT
-
-maybeT :: Type -> Type
-maybeT = (unitT .+.)
-
-eitherT :: Type -> Type -> Type
-eitherT = (.+.)
-
 
 infixr 0 .->.
 (.->.) :: Type -> Type -> Type
