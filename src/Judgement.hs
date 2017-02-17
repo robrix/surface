@@ -701,6 +701,12 @@ instance Pretty1 ProofF where
     S state -> liftPrettyPrec pp pl d state
     R result -> liftPrettyPrec pp pl d result
 
+instance Pretty ProofState where
+  prettyPrec _ (ProofState n c e)
+    = showString "{ " . prettyPrec 0 n
+    . showString ", " . prettyPrec 0 c
+    . showString ", " . prettyPrec 0 e . showString " }"
+
 instance Eq1 ProofF where
   liftEq eq a b = case (a, b) of
     (J a, J b) -> liftEq eq a b
