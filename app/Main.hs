@@ -1,6 +1,6 @@
 module Main where
 
-import Data.Foldable (for_)
+import Data.Foldable (for_, toList, traverse_)
 import Data.Result
 import Data.Semigroup
 import Data.Version (showVersion)
@@ -13,6 +13,7 @@ import Text.Pretty
 
 data Command
   = Run FilePath
+  | Debug FilePath
   | Interactive
 
 command :: Parser Command
@@ -37,6 +38,13 @@ main = do
       printResult $ do
         modules <- result
         for_ modules (run . checkModule)
+    Debug path -> do
+      result <- parseFromFile source path
+      traverse_ (traverse_ prettyPrint) $ do
+        modules <- result
+        return $ do
+          m <- toList modules
+          runSteps initialState (checkModule m)
 
 printResult :: Pretty a => Result a -> IO ()
 printResult result = case result of
