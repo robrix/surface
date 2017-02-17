@@ -16,6 +16,7 @@ import Expr
 import Judgement
 import Module
 import Prelude hiding (fail)
+import Surface.Binder
 import Text.Pretty
 
 data ProofF a = J (Judgement a) | S (State ProofState a) | R (Result a)
