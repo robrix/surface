@@ -165,7 +165,9 @@ decompose judgement = case judgement of
 -- Judgement interpreters
 
 checkModule' :: Module -> Proof ()
-checkModule' module' = for_ (moduleDeclarations module') (checkDeclaration module')
+checkModule' module' = do
+  modify $ \ s -> s { proofEnvironment = moduleDeclarations module' }
+  for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
 checkDeclaration' (Module modName _) (Declaration name ty term) = do
