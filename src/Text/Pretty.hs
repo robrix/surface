@@ -5,9 +5,13 @@ import Control.Monad.Free.Freer
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
+import Text.Show (showListWith)
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
+
+  prettyList :: [t] -> ShowS
+  prettyList = showListWith (prettyPrec 0)
 
 class Pretty1 f where
   liftPrettyPrec :: (Int -> a -> ShowS) -> Int -> f a -> ShowS
