@@ -9,6 +9,7 @@ import Control.State
 import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
+import qualified Data.HashMap.Lazy as H
 import Data.List (union)
 import Data.Result
 import Expr
@@ -257,6 +258,13 @@ whnf' expr = case unfix expr of
 data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
 
 type Proof = Freer ProofF
+
+data ProofState = ProofState
+  { proofNextName :: Name
+  , proofContext :: Context
+  , proofEnvironment :: H.HashMap String Declaration }
+  deriving (Eq, Show)
+
 
 getContext :: Proof Context
 getContext = gets snd
