@@ -10,6 +10,13 @@ import Test.LeanCheck
 
 spec :: Spec
 spec = do
+  describe "alphaEquivalent" $ do
+    prop "reflexivity" . forAll embedTiers $
+      \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return True
+
+    prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
+      \ a b -> eraseErrors (run (a `alphaEquivalent` b)) `shouldBe` eraseErrors (run (b `alphaEquivalent` a))
+
   describe "equate" $ do
     prop "reflexivity" . forAll embedTiers $
       \ expr -> run (expr `equate` expr) `shouldBe` return ()
@@ -29,6 +36,7 @@ spec = do
     prop "has functionality" . forAll ((nameTiers >< embedTiers >< embedTiers >< embedTiers) `suchThat` uncurryr4 (\ _ a1 a2 _ -> run (a1 `equate` a2) == return ())) . uncurryr4 $
       \ n a1 a2 b -> run (substitute a1 n b `equate` substitute a2 n b) `shouldBe` return ()
 
+
   describe "whnf" $ do
     prop "does not normalize inside of lambdas" . forAll (nameTiers >< embedTiers) . uncurry $
       \ n b -> run (whnf (makeLambda n b)) `shouldBe` return (makeLambda n b)
@@ -38,14 +46,6 @@ spec = do
 
     prop "normalizes applications of lambdas" . forAll embedTiers $
       \ a -> run (whnf (lam id # a)) `shouldBe` run (whnf a)
-
-
-  describe "alphaEquivalent" $ do
-    prop "reflexivity" . forAll embedTiers $
-      \ expr -> run (expr `alphaEquivalent` expr) `shouldBe` return True
-
-    prop "symmetry" . forAll (embedTiers >< embedTiers) . uncurry $
-      \ a b -> eraseErrors (run (a `alphaEquivalent` b)) `shouldBe` eraseErrors (run (b `alphaEquivalent` a))
 
 
 eraseErrors :: Result a -> Result a
