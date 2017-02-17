@@ -289,7 +289,8 @@ instance Pretty2 ExprF where
 instance Pretty Name where
   prettyPrec _ name = case name of
     N s -> showString s
-    I i -> showChar '_' . shows i
+    I i | i >= 0 -> showChar '_' . shows i
+        | otherwise -> showChar '_'
 
 instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
