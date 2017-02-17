@@ -79,10 +79,10 @@ instance Pretty1 f => Pretty1 (Freer f) where
           go d (Then r t) = liftPrettyPrec (\ i -> go i . t) (liftPrettyList pp pl . fmap t) d r
 
 instance Pretty1 [] where
-  liftPrettyPrec _ pl _ = iff null (const (showString "[]")) pl
+  liftPrettyPrec pp _ _ = showAsListWith (pp 0)
 
 instance Pretty1 NonEmpty where
-  liftPrettyPrec _ pl _ = iff null (const (showString "[]")) (pl . toList)
+  liftPrettyPrec pp _ _ = showAsListWith (pp 0)
 
 instance Pretty2 Either where
   liftPrettyPrec2 pl _ pr _ d = either (pl d) (pr d)
@@ -91,7 +91,7 @@ instance Pretty2 (,) where
   liftPrettyPrec2 pa _ pb _ _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
 
 instance Pretty2 H.HashMap where
-  liftPrettyPrec2 pk _ pv _ _ = showListWith (uncurry pair) . H.toList
+  liftPrettyPrec2 pk _ pv _ _ = showAsListWith (uncurry pair) . H.toList
     where pair k v = pk 0 k . showString " : " . pv 0 v
 
 instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
