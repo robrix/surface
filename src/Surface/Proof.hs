@@ -92,6 +92,9 @@ gets f = fmap f get
 put :: ProofState -> Proof ()
 put s = S (Put s) `Then` return
 
+modify :: (ProofState -> ProofState) -> Proof ()
+modify f = get >>= put . f
+
 
 -- Result constructors
 
