@@ -23,6 +23,7 @@ library
                      , Module
                      , Parser
                      , REPL
+                     , Surface.Proof
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
