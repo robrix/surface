@@ -162,7 +162,9 @@ data Argument = Named Name Type | Unnamed Type
 
 
 name :: (Monad m, TokenParsing m) => m Name
-name = N <$> identifier
+name = identifier >>= \ ident -> return $ case ident of
+  "_" -> I (-1)
+  _ -> N ident
 
 op :: TokenParsing m => String -> m String
 op = token . highlight Operator . string
