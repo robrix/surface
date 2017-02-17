@@ -255,7 +255,7 @@ whnf' expr = case unfix expr of
   _ -> return expr
 
 
-data ProofF a = J (Judgement a) | S (State (Name, Context) a) | R (Result a)
+data ProofF a = J (Judgement a) | S (State ProofState a) | R (Result a)
 
 type Proof = Freer ProofF
 
@@ -267,23 +267,23 @@ data ProofState = ProofState
 
 
 getContext :: Proof Context
-getContext = gets snd
+getContext = gets proofContext
 
 putContext :: Context -> Proof ()
 putContext context = do
-  m <- gets fst
-  put (m, context)
+  s <- get
+  put s { proofContext = context }
 
 modifyContext :: (Context -> Context) -> Proof ()
 modifyContext f = getContext >>= putContext . f
 
-get :: Proof (Name, Context)
+get :: Proof ProofState
 get = S Get `andThen` return
 
-gets :: ((Name, Context) -> result) -> Proof result
+gets :: (ProofState -> result) -> Proof result
 gets f = fmap f get
 
-put :: (Name, Context) -> Proof ()
+put :: ProofState -> Proof ()
 put s = S (Put s) `andThen` return
 
 
@@ -292,8 +292,10 @@ andThen = (Freer .) . flip Free
 
 fresh' :: Maybe Expr -> Proof Name
 fresh' d = do
-  (m, context) <- get
-  put (increment m, context :< Ty (m := d))
+  s <- get
+  let m = proofNextName s
+  put s { proofNextName = increment m
+        , proofContext = proofContext s :< Ty (m := d) }
   return m
   where increment (I n) = I (succ n)
         increment (N s) = N (s ++ "'")
@@ -607,23 +609,23 @@ decompose judgement = case judgement of
           return (a, b)
 
 
-initialState :: (Name, Context)
-initialState = (I 0, Nil)
+initialState :: ProofState
+initialState = ProofState (I 0) Nil H.empty
 
 run :: Proof a -> Result a
 run = runAll initialState
 
-runAll :: (Name, Context) -> Proof a -> Result a
+runAll :: ProofState -> Proof a -> Result a
 runAll context proof = case runStep context proof of
   Left result -> result
   Right next -> uncurry runAll next
 
-runSteps :: (Name, Context) -> Proof a -> [Either (Result a) ((Name, Context), Proof a)]
+runSteps :: ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
 runSteps context proof = Right (context, proof) : case runStep context proof of
   Left result -> [ Left result ]
   Right next -> uncurry runSteps next
 
-runStep :: (Name, Context) -> Proof a -> Either (Result a) ((Name, Context), Proof a)
+runStep :: ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
 runStep context proof = case runFreer proof of
   Pure a -> Left $ Result a
   Free cont proof -> case proof of
