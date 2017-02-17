@@ -4,7 +4,6 @@ module Text.Pretty where
 import Control.Monad.Free.Freer
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
-import Data.List (intersperse)
 import Text.Show (showListWith)
 
 class Pretty t where
@@ -14,16 +13,22 @@ class Pretty t where
   prettyList = showListWith (prettyPrec 0)
 
 class Pretty1 f where
-  liftPrettyPrec :: (Int -> a -> ShowS) -> Int -> f a -> ShowS
+  liftPrettyPrec :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> Int -> f a -> ShowS
+
+  liftPrettyList :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> [f a] -> ShowS
+  liftPrettyList pp pl = showListWith (liftPrettyPrec pp pl 0)
 
 class Pretty2 p where
-  liftPrettyPrec2 :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> Int -> p a b -> ShowS
+  liftPrettyPrec2 :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> (Int -> b -> ShowS) -> ([b] -> ShowS) -> Int -> p a b -> ShowS
+
+  liftPrettyList2 :: (Int -> a -> ShowS) -> ([a] -> ShowS) -> (Int -> b -> ShowS) -> ([b] -> ShowS) -> [p a b] -> ShowS
+  liftPrettyList2 ppa pla ppb plb = showListWith (liftPrettyPrec2 ppa pla ppb plb 0)
 
 prettyPrec1 :: (Pretty a, Pretty1 f) => Int -> f a -> ShowS
-prettyPrec1 = liftPrettyPrec prettyPrec
+prettyPrec1 = liftPrettyPrec prettyPrec prettyList
 
 prettyPrec2 :: (Pretty a, Pretty b, Pretty2 p) => Int -> p a b -> ShowS
-prettyPrec2 = liftPrettyPrec2 prettyPrec prettyPrec
+prettyPrec2 = liftPrettyPrec2 prettyPrec prettyList prettyPrec prettyList
 
 prettyPrint :: Pretty a => a -> IO ()
 prettyPrint = putStrLn . pretty
@@ -55,31 +60,30 @@ instance Pretty () where
   prettyPrec _ _ = showString "()"
 
 instance Pretty1 f => Pretty (Fix f) where
-  prettyPrec d = liftPrettyPrec prettyPrec d . unfix
+  prettyPrec d = liftPrettyPrec prettyPrec prettyList d . unfix
 
 instance Pretty1 f => Pretty2 (FreerF f) where
-  liftPrettyPrec2 pa _ d (Pure a) = pa d a
-  liftPrettyPrec2 _ pb d (Free cont r) = liftPrettyPrec (\ i -> pb i . cont) d r
+  liftPrettyPrec2 pa _ _ _ d (Pure a) = pa d a
+  liftPrettyPrec2 _ _ pb pl d (Free cont r) = liftPrettyPrec (\ i -> pb i . cont) (pl . fmap cont) d r
 
 instance Pretty1 f => Pretty1 (Freer f) where
-  liftPrettyPrec pa = go where go d = liftPrettyPrec2 pa go d . runFreer
+  liftPrettyPrec pa pl = go where go d = liftPrettyPrec2 pa pl go (showListWith (go d)) d . runFreer
 
 instance Pretty1 [] where
-  liftPrettyPrec _ _ [] = showString "[]"
-  liftPrettyPrec pp _ xs = showBracket True $ foldr (.) id (intersperse (showString ", ") (pp 0 <$> xs))
+  liftPrettyPrec _ pl _ = pl
 
 instance Pretty2 Either where
-  liftPrettyPrec2 pl pr d = either (pl d) (pr d)
+  liftPrettyPrec2 pl _ pr _ d = either (pl d) (pr d)
 
 instance Pretty2 (,) where
-  liftPrettyPrec2 pa pb _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
+  liftPrettyPrec2 pa _ pb _ _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
 
 instance Pretty2 H.HashMap where
-  liftPrettyPrec2 pk pv _ = showBracket True . liftPrettyPrec (const (uncurry pair)) 0 . H.toList
+  liftPrettyPrec2 pk _ pv _ _ = showListWith (uncurry pair) . H.toList
     where pair k v = pk 0 k . showString " : " . pv 0 v
 
 instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
-  liftPrettyPrec = liftPrettyPrec2 prettyPrec
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
 
 instance (Pretty1 f, Pretty a) => Pretty (f a) where
   prettyPrec = prettyPrec1

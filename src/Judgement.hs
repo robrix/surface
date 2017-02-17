@@ -666,7 +666,7 @@ instance Show a => Show (ProofF a) where
   showsPrec = showsPrec1
 
 instance Pretty1 Judgement where
-  liftPrettyPrec _ d judgement = case judgement of
+  liftPrettyPrec _ _ d judgement = case judgement of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) (Declaration name _ _) -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ name)
 
@@ -688,10 +688,10 @@ instance Pretty1 Judgement where
     WHNF expr -> showsUnaryWith prettyPrec "whnf" d expr
 
 instance Pretty1 ProofF where
-  liftPrettyPrec pp d proof = case proof of
-    J judgement -> liftPrettyPrec pp d judgement
-    S state -> liftPrettyPrec pp d state
-    R result -> liftPrettyPrec pp d result
+  liftPrettyPrec pp pl d proof = case proof of
+    J judgement -> liftPrettyPrec pp pl d judgement
+    S state -> liftPrettyPrec pp pl d state
+    R result -> liftPrettyPrec pp pl d result
 
 instance Eq1 ProofF where
   liftEq eq a b = case (a, b) of

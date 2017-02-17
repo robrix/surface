@@ -280,7 +280,7 @@ instance Bifoldable ExprF where
     As a b -> mappend (f a) (f b)
 
 instance Pretty2 ExprF where
-  liftPrettyPrec2 pn pp d expr = case expr of
+  liftPrettyPrec2 pn _ pp _ d expr = case expr of
     App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
     Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
     Var v -> pn 0 v

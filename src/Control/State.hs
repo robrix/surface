@@ -20,7 +20,7 @@ instance (Show s, Show a) => Show (State s a) where
   showsPrec = showsPrec1
 
 instance Pretty2 State where
-  liftPrettyPrec2 pp _ d state = case state of
+  liftPrettyPrec2 pp _ _ _ d state = case state of
     Get -> showString "get"
     Put s -> showParen (d > 10) $ showsUnaryWith pp "put" 10 s
 
