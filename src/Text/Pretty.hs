@@ -34,6 +34,12 @@ prettyLines [ x ] = PrettyOf (\ _ -> showString "[ " . prettyPrec 0 x . showStri
 prettyLines (x:xs) = PrettyOf (\ _ ->  showString "[ " . prettyPrec 0 x . foldr (\ each into -> showString "\n, " . prettyPrec 0 each . into) id xs  . showString " ]")
 
 
+showBracket :: Bool -> ShowS -> ShowS
+showBracket b s = if b
+                  then s
+                  else showString "[ " . s . showString " ]"
+
+
 -- Instances
 
 instance Pretty () where
@@ -57,7 +63,7 @@ instance Pretty1 f => Pretty1 (Freer f) where
 
 instance Pretty1 [] where
   liftPrettyPrec _ _ [] = showString "[]"
-  liftPrettyPrec pp _ xs = showString "[ " . foldr (.) id (intersperse (showString ", ") (pp 0 <$> xs)) . showString " ]"
+  liftPrettyPrec pp _ xs = showBracket True $ foldr (.) id (intersperse (showString ", ") (pp 0 <$> xs))
 
 instance Pretty2 Either where
   liftPrettyPrec2 pl pr d = either (pl d) (pr d)
