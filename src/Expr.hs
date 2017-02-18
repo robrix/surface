@@ -153,6 +153,9 @@ asPi expr = case unfix expr of
   Pi n ty body -> Just (n, ty, body)
   _ -> Nothing
 
+codomain :: Type -> Type
+codomain expr = maybe expr (\ (_, _, b) -> b) (asPi expr)
+
 
 -- Substitution
 
