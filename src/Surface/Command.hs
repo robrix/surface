@@ -31,4 +31,4 @@ runCommand command = case command of
 printResult :: Pretty a => Result a -> IO ()
 printResult result = case result of
   Result a -> prettyPrint a
-  Error es -> for_ es putStr
+  Error es -> for_ es putStrLn
