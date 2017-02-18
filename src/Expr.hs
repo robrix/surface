@@ -163,6 +163,10 @@ codomain :: Type -> Type
 codomain expr = maybe expr (\ (_, _, b) -> b) (asPi expr)
 
 
+headExpr :: Expr -> Expr
+headExpr expr = maybe expr (headExpr . fst) (asApplication expr)
+
+
 -- Substitution
 
 rename :: Name -> Name -> Expr -> Expr
