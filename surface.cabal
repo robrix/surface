@@ -24,6 +24,7 @@ library
                      , Parser
                      , REPL
                      , Surface.Binder
+                     , Surface.Command
                      , Surface.Proof
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
