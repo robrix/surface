@@ -13,6 +13,8 @@ data ExprF n a where
   Product :: a -> a -> ExprF n a
   Sum :: a -> a -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
+  Sigma :: n -> a -> a -> ExprF n a
+
   UnitT :: ExprF n a
   TypeT :: ExprF n a
 
@@ -137,6 +139,12 @@ piT ty = uncurry (`makePi` ty) . bindVariable
 makePi :: Name -> Type -> Type -> Type
 makePi name ty body = Fix (Pi name ty body)
 
+sigmaT :: Type -> (Type -> Type) -> Type
+sigmaT ty = uncurry (`makeSigma` ty) . bindVariable
+
+makeSigma :: Name -> Type -> Type -> Type
+makeSigma name ty body = Fix (Sigma name ty body)
+
 
 -- Substitution
 
@@ -219,6 +227,8 @@ instance Bifunctor ExprF where
     Product a b -> Product (f a) (f b)
     Sum a b -> Sum (f a) (f b)
     Pi n t b -> Pi (g n) (f t) (f b)
+    Sigma n t b -> Sigma (g n) (f t) (f b)
+
     UnitT -> UnitT
     TypeT -> TypeT
 
@@ -245,6 +255,8 @@ instance Bifoldable ExprF where
     Product a b -> mappend (f a) (f b)
     Sum a b -> mappend (f a) (f b)
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
+    Sigma n t b -> mappend (g n) (mappend (f t) (f b))
+
     UnitT -> mempty
     TypeT -> mempty
 
@@ -278,6 +290,7 @@ instance Pretty2 ExprF where
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
+    Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
     UnitT -> showString "Unit"
@@ -285,6 +298,7 @@ instance Pretty2 ExprF where
     TypeT -> showString "Type"
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
+    where showBrace b s = if b then showString "{ " . s . showString " }" else s
 
 instance Pretty Name where
   prettyPrec _ name = case name of
@@ -307,6 +321,7 @@ instance Show n => Show1 (ExprF n) where
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
+    Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
     UnitT -> showString "UnitT"

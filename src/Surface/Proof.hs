@@ -234,10 +234,8 @@ infer' term = case unfix term of
   Product{} -> isType term >> return typeT
   Sum{} -> isType term >> return typeT
 
-  Pi name ty body -> do
-    result <- name ::: Type ty >- infer body
-    isType result
-    return typeT
+  Pi name ty body -> inferDType name ty body
+  Sigma name ty body -> inferDType name ty body
 
   Let name value body -> do
     t <- generalizeOver (infer value)
@@ -254,6 +252,11 @@ infer' term = case unfix term of
           b <- fresh Nothing
           unify ty (var a .*. var b)
           return (a, b)
+
+        inferDType name ty body = do
+          result <- name ::: Type ty >- infer body
+          isType result
+          return typeT
 
 
 isType' :: Term -> Proof ()

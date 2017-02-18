@@ -86,6 +86,7 @@ instance Listable2 ExprF where
     =  liftCons2 ts ts Product
     \/ liftCons2 ts ts Sum
     \/ liftCons3 nameTiers ts ts Pi
+    \/ liftCons3 nameTiers ts ts Sigma
     \/ cons0 UnitT
     \/ cons0 TypeT
     \/ liftCons2 nameTiers ts Abs
