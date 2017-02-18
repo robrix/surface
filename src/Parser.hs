@@ -197,7 +197,8 @@ op :: TokenParsing m => String -> m String
 op = token . highlight Operator . string
 
 identifier :: (Monad m, TokenParsing m) => m String
-identifier = ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+identifier =  ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+          <|> try ((:[]) <$> token (parens (highlight Operator (oneOf ".,"))))
 
 typeIdentifier :: (Monad m, TokenParsing m) => m String
 typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
