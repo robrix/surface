@@ -173,8 +173,9 @@ checkDeclaration' (Module modName _) decl = context [ declarationName decl ] $ c
   Data _ ty constructors -> do
     isType ty
     for_ constructors (\ (Constructor cname sig) -> context [ declarationName decl, cname ] $ do
-      isType sig)
-    return () -- FIXME: implement checking of datatype declarations.
+      isType sig
+      let (op, _) = applicationChain sig
+      check op ty)
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: Term -> Type -> Proof ()
