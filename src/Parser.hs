@@ -54,22 +54,16 @@ declaration =  (datatype <?> "datatype")
                            <*> type' <* some newline
                            <*  token (highlight Identifier (string name)) <* op "="
                            <*> expr
-        datatype = runUnlined $ do
-          name <- preword "data" *> typeIdentifier <* preword "where" <* newline
-          Data name <$> some (whiteSpace *> constructor name <* newline)
-        constructor dname =
-          Constructor <$> identifier <* op ":"
-                      <*> telescope dname
+        datatype = runUnlined $
+          Data <$ preword "data"
+               <*> typeIdentifier
+               <*> (fromMaybe typeT <$> optional signature) <* preword "where" <* newline
+               <*> some (whiteSpace *> constructor <* newline)
+        constructor =
+          Constructor <$> identifier
+                      <*> signature
                       <?> "constructor"
-        telescope dname =  try (toArg <$> argument <*> telescope dname)
-                       <|> try (Rec <$  string dname
-                                    <*> index
-                                    <*> telescope dname)
-                       <|> End <$ string dname
-                               <*> index
-        toArg (Named n ty) = Arg n ty
-        toArg (Unnamed ty) = Arg (I (-1)) ty
-        index = fromMaybe unit <$> optional atom
+        signature = colon *> type'
 
 expr :: (Monad m, TokenParsing m) => m Expr
 expr = type'
