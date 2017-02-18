@@ -146,6 +146,14 @@ makeSigma :: Name -> Type -> Type -> Type
 makeSigma name ty body = Fix (Sigma name ty body)
 
 
+-- Type elimination
+
+asPi :: Expr -> Maybe (Name, Expr, Expr)
+asPi expr = case unfix expr of
+  Pi n ty body -> Just (n, ty, body)
+  _ -> Nothing
+
+
 -- Substitution
 
 rename :: Name -> Name -> Expr -> Expr
