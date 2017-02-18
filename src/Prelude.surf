@@ -16,3 +16,6 @@ data Bool : Type where
 data Maybe : Type -> Type where
   just : a -> Maybe a
   nothing : Maybe a
+
+data Pair : Type -> Type -> Type where
+  (,) : a -> b -> Pair a b
