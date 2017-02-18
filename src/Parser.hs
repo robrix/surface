@@ -129,6 +129,7 @@ atom
   <|> lambda
   <|> Parser.var
   <|> Parser.let'
+  <|> Parser.sigma
 
 unitType :: (Monad m, TokenParsing m) => m Type
 unitType = unitT <$  preword "Unit"
@@ -159,6 +160,11 @@ piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
           Unnamed ty -> ty
 
 data Argument = Named Name Type | Unnamed Type
+
+sigma :: (Monad m, TokenParsing m) => m Type
+sigma = braces $ makeSigma <$> name <* colon
+                           <*> type' <* op "|"
+                           <*> expr
 
 
 name :: (Monad m, TokenParsing m) => m Name
