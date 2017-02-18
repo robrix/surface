@@ -8,13 +8,9 @@ import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
 import qualified REPL
+import Surface.Command
 import Surface.Proof
 import Text.Pretty
-
-data Command
-  = Run FilePath
-  | Debug FilePath
-  | Interactive
 
 command :: Parser Command
 command
