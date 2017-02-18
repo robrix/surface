@@ -148,14 +148,14 @@ productType = application `chainl1` ((.*.) <$ op "*")
                       <?> "product type"
 
 piType :: (Monad m, TokenParsing m) => m Type
-piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
-  pure $! foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
+piType = fmap toPi $ ((:[]) <$> argument) `chainr1` ((++) <$ op "->")
   where exponential arg = case arg of
           Named name ty -> makePi name ty
           Unnamed ty -> (.->.) ty
         codomain res = case res of
           Named name ty -> Expr.var name `as` ty
           Unnamed ty -> ty
+        toPi components = foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
 
 argument :: (Monad m, TokenParsing m) => m Argument
 argument =  try (parens (Named <$> name <* op ":" <*> type'))
