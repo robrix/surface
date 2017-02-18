@@ -125,7 +125,7 @@ let' = makeLet <$  preword "let"
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
         app <- application
-        ty <- optional (op ":" *> type')
+        ty <- optional (colon *> type')
         return (maybe app (app `as`) ty)
         <?> "type annotation"
 
@@ -176,7 +176,7 @@ piType = fmap toPi $ ((:[]) <$> argument) `chainr1` ((++) <$ op "->")
         toPi components = foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
 
 argument :: (Monad m, TokenParsing m) => m Argument
-argument =  try (parens (Named <$> name <* op ":" <*> type'))
+argument =  try (parens (Named <$> name <* colon <*> type'))
         <|>            Unnamed <$> sumType
         <?> "argument"
 
