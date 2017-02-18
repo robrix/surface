@@ -170,7 +170,9 @@ checkDeclaration' (Module modName _) decl = case decl of
       context <- getContext
       unless (name <? context) $ declare (name := Just typeT))
     contextualizeErrors (fmap ((modName ++ "." ++ name ++ ": ") ++)) $ check term ty
-  Data{} -> return () -- FIXME: implement checking of datatype declarations.
+  Data name ty constructors -> do
+    isType ty
+    return () -- FIXME: implement checking of datatype declarations.
 
 check' :: Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
