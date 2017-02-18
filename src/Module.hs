@@ -49,7 +49,7 @@ instance Pretty Declaration where
   prettyPrec _ (Data dname constructors)
     = showString "data " . showString dname . showString " where" . showChar '\n'
     . foldr ((.) . prettyConstructor) id constructors
-    where prettyConstructor (Constructor cname sig) = showString "  " . showString cname . showString " :: " . prettyTelescope sig
+    where prettyConstructor (Constructor cname sig) = showString "  " . showString cname . showString " : " . prettyTelescope sig
           prettyTelescope t = case t of
             Arg n ty rest -> case n of
               (I (-1)) -> prettyPrec 0 ty . showString " -> " . prettyTelescope rest
