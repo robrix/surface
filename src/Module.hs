@@ -24,6 +24,10 @@ makeModule name = Module name . foldr insert H.empty
   where insert decl = H.insert (declarationName decl) decl
 
 
+declarationBindings :: Declaration -> [(String, Type, Term)]
+declarationBindings (Declaration name ty term) = [ (name, ty, term) ]
+
+
 -- Instances
 
 instance Pretty Declaration where
