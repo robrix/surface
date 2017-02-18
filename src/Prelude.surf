@@ -12,3 +12,7 @@ and = \p q. (c: Type) -> (p -> q -> c) -> c
 data Bool : Type where
   true : Bool
   false : Bool
+
+data Maybe : Type -> Type where
+  just : a -> Maybe a
+  nothing : Maybe a
