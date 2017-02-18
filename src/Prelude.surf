@@ -10,5 +10,5 @@ and : Type -> Type -> Type
 and = \p q. (c: Type) -> (p -> q -> c) -> c
 
 data Bool where
-  true :: Bool
-  false :: Bool
+  true : Bool
+  false : Bool
