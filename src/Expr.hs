@@ -163,8 +163,9 @@ codomain :: Type -> Type
 codomain expr = maybe expr (\ (_, _, b) -> b) (asPi expr)
 
 
-headExpr :: Expr -> Expr
-headExpr expr = maybe expr (headExpr . fst) (asApplication expr)
+applicationChain :: Expr -> (Expr, [Expr])
+applicationChain = go . flip (,) []
+  where go (expr, args) = maybe (expr, args) (go . second (: args)) (asApplication expr)
 
 
 -- Substitution
