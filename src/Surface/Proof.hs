@@ -10,7 +10,7 @@ import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import qualified Data.HashMap.Lazy as H
-import Data.List (union)
+import Data.List (intercalate, union)
 import Data.Result
 import Expr
 import Judgement
@@ -164,15 +164,16 @@ checkModule' module' = do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = contextualizeErrors (fmap ((modName ++ "." ++ declarationName decl ++ ": ") ++)) $ case decl of
+checkDeclaration' (Module modName _) decl = context [ declarationName decl ] $ case decl of
   Declaration _ ty term -> do
     for_ (freeVariables ty) (\ name -> do
       context <- getContext
       unless (name <? context) $ declare (name := Just typeT))
     check term ty
-  Data _ ty constructors ->do
+  Data _ ty constructors -> do
     isType ty
     return () -- FIXME: implement checking of datatype declarations.
+  where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
