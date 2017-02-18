@@ -160,6 +160,7 @@ piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
 argument :: (Monad m, TokenParsing m) => m Argument
 argument =  try (parens (Named <$> name <* op ":" <*> type'))
         <|>            Unnamed <$> sumType
+        <?> "argument"
 
 data Argument = Named Name Type | Unnamed Type
 
