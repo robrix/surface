@@ -8,3 +8,7 @@ const = \ _ _ a b . a
 
 and : Type -> Type -> Type
 and = \p q. (c: Type) -> (p -> q -> c) -> c
+
+data Bool where
+  true :: Bool
+  false :: Bool
