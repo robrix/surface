@@ -319,7 +319,7 @@ equate' e1 e2 = do
 
 
 unify' :: Type -> Type -> Proof ()
-unify' t1 t2 = case (unfix t1, unfix t2) of
+unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
   (UnitT, UnitT) -> return ()
