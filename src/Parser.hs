@@ -5,11 +5,12 @@ import Control.Applicative
 import Control.Monad.IO.Class
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
 import Data.Result as Result
 import Expr
 import Module
 import Text.Parser.Token
-import Text.Parser.Token.Highlight
+import Text.Parser.Token.Highlight hiding (Constructor)
 import Text.Trifecta as Trifecta
 
 parseExpr :: String -> Result.Result Expr
@@ -45,13 +46,30 @@ module' = runUnlined mod
                          <?> "module"
 
 declaration :: (Monad m, TokenParsing m) => m Declaration
-declaration = runUnlined $ do
-  name <- identifier
-  Declaration name <$  colon
-                   <*> type' <* some newline
-                   <*  token (highlight Identifier (string name)) <* op "="
-                   <*> expr
-                   <?> "declaration"
+declaration =  (datatype <?> "datatype")
+           <|> (binding  <?> "declaration")
+  where binding = runUnlined $ do
+          name <- identifier
+          Declaration name <$  colon
+                           <*> type' <* some newline
+                           <*  token (highlight Identifier (string name)) <* op "="
+                           <*> expr
+        datatype = runUnlined $ do
+          name <- preword "data" *> typeIdentifier <* preword "where" <* newline
+          Data name <$> some (whiteSpace *> constructor name <* newline)
+        constructor dname =
+          Constructor <$> identifier <* op ":"
+                      <*> telescope dname
+                      <?> "constructor"
+        telescope dname =  try (toArg <$> argument <*> telescope dname)
+                       <|> try (Rec <$  string dname
+                                    <*> index
+                                    <*> telescope dname)
+                       <|> End <$ string dname
+                               <*> index
+        toArg (Named n ty) = Arg n ty
+        toArg (Unnamed ty) = Arg (I (-1)) ty
+        index = fromMaybe unit <$> optional atom
 
 expr :: (Monad m, TokenParsing m) => m Expr
 expr = type'
