@@ -5,3 +5,6 @@ id = \ _ b . b
 
 const : (a : Type) -> (b : Type) -> a -> b -> a
 const = \ _ _ a b . a
+
+and : Type -> Type -> Type
+and = \p q. (c: Type) -> (p -> q -> c) -> c
