@@ -173,9 +173,7 @@ checkDeclaration' (Module modName _) (Declaration name ty term) = do
 
 check' :: Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
-  (Abs n body, Pi n1 t tbody) -> do
-    ty <- n1 ::: Type t >- infer tbody
-    n ::: Type t >- check body ty
+  (Abs n body, Pi n1 t tbody) -> n1 ::: Type t >- (n ::: Type t >- check body tbody)
 
   (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
