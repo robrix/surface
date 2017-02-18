@@ -185,7 +185,7 @@ typeIdentifier :: (Monad m, TokenParsing m) => m String
 typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
 reservedWords :: HashSet.HashSet String
-reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
+reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in", "data" ]
 
 preword :: TokenParsing m => String -> m String
 preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))
