@@ -19,3 +19,6 @@ data Maybe : Type -> Type where
 
 data Pair : Type -> Type -> Type where
   (,) : a -> b -> Pair a b
+
+data Sigma : (A : Type) -> (B : A -> b) -> Type where
+  Sigma : (a : A) -> B a -> Sigma A B
