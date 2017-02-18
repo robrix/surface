@@ -29,6 +29,13 @@ infixl 8 <><
 context <>< [] = context
 context <>< (entry : rest) = context :< Ty entry <>< rest
 
+applyContext :: Expr -> Context -> Expr
+applyContext expr context = case context of
+  Nil -> expr
+  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
+  (rest :< _) -> applyContext expr rest
+
+
 data Extension = Restore | Replace Suffix
   deriving (Eq, Show)
 
@@ -48,7 +55,7 @@ type Scheme = Schm Name
 -- Instances
 
 instance Pretty1 Backward where
-  liftPrettyPrec pp d = liftPrettyPrec pp d . toList
+  liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
 
 instance Pretty Entry where
   prettyPrec d (Ty ty) = prettyPrec d ty
@@ -62,10 +69,10 @@ instance Pretty TermEntry where
   prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyPrec 10 scheme
 
 instance Pretty1 Schm where
-  liftPrettyPrec _ d (Type ty) = prettyPrec d ty
-  liftPrettyPrec pp d (All schm) = showsUnaryWith (liftPrettyPrec (liftPrettyPrec pp)) "All" d schm
-  liftPrettyPrec pp d (LetS ty schm) = showsBinaryWith prettyPrec (liftPrettyPrec (liftPrettyPrec pp)) "LetS" d ty schm
+  liftPrettyPrec _ _ d (Type ty) = prettyPrec d ty
+  liftPrettyPrec pp pl d (All schm) = showsUnaryWith (liftPrettyPrec (liftPrettyPrec pp pl) (liftPrettyList pp pl)) "All" d schm
+  liftPrettyPrec pp pl d (LetS ty schm) = showsBinaryWith prettyPrec (liftPrettyPrec (liftPrettyPrec pp pl) (liftPrettyList pp pl)) "LetS" d ty schm
 
 instance Pretty1 Index where
-  liftPrettyPrec _ _ Z = id
-  liftPrettyPrec pp d (S a) = pp d a . showChar '\''
+  liftPrettyPrec _ _ _ Z = id
+  liftPrettyPrec pp _ d (S a) = pp d a . showChar '\''

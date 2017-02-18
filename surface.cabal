@@ -23,6 +23,8 @@ library
                      , Module
                      , Parser
                      , REPL
+                     , Surface.Binder
+                     , Surface.Proof
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
@@ -51,7 +53,7 @@ test-suite test
   other-modules:       Data.Functor.Listable
                      , Parser.Spec
                      , Surface.Expr.Spec
-                     , Surface.Judgement.Spec
+                     , Surface.Proof.Spec
                      , Test.Hspec.LeanCheck
   build-depends:       base
                      , hspec

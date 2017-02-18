@@ -1,24 +1,26 @@
 module Main where
 
-import Data.Foldable (for_)
+import Data.Foldable (for_, toList, traverse_)
 import Data.Result
 import Data.Semigroup
 import Data.Version (showVersion)
-import Judgement
 import Options.Applicative
 import Parser
 import qualified Paths_surface as Library (version)
 import qualified REPL
+import Surface.Proof
 import Text.Pretty
 
 data Command
   = Run FilePath
+  | Debug FilePath
   | Interactive
 
 command :: Parser Command
 command
   =  flag' Interactive (long "interactive" <> short 'i' <> help "Launch the interactive REPL.")
- <|> Run <$> strArgument (metavar "FILE" <> help "The program to run.")
+ <|> flag Run Debug (long "debug" <> short 'd' <> help "Print debugging information.")
+    <*> strArgument (metavar "FILE" <> help "The program to run.")
 
 arguments :: ParserInfo Command
 arguments = info
@@ -37,6 +39,13 @@ main = do
       printResult $ do
         modules <- result
         for_ modules (run . checkModule)
+    Debug path -> do
+      result <- parseFromFile source path
+      traverse_ (traverse_ prettyPrint) $ do
+        modules <- result
+        return $ do
+          m <- toList modules
+          runSteps initialState (checkModule m)
 
 printResult :: Pretty a => Result a -> IO ()
 printResult result = case result of

@@ -1,14 +1,15 @@
 {-# LANGUAGE GADTs #-}
 module REPL where
 
+import Context
 import Control.Applicative
 import Control.Monad.Free.Freer
 import Data.Foldable (for_)
 import Data.Functor.Classes (showsUnaryWith)
 import Data.Result
 import Expr
-import Judgement
 import Parser
+import Surface.Proof
 import System.Console.Haskeline
 import Text.Pretty
 import Text.Trifecta hiding (Result)
@@ -26,10 +27,10 @@ data Command
   | Quit
 
 prompt :: String -> REPL (Maybe String)
-prompt s = Prompt s `andThen` return
+prompt s = Prompt s `Then` return
 
 output :: Pretty a => Result a -> REPL ()
-output a = Output a `andThen` return
+output a = Output a `Then` return
 
 
 repl :: REPL ()
@@ -78,8 +79,8 @@ runREPL :: REPL a -> IO a
 runREPL repl = do
   prefs <- readPrefs "~/.local/surface/repl_prefs"
   runInputTWithPrefs prefs settings (iterFreer alg (fmap pure repl))
-  where alg :: (x -> InputT IO a) -> REPLF x -> InputT IO a
-        alg cont repl = case repl of
+  where alg :: REPLF x -> (x -> InputT IO a) -> InputT IO a
+        alg repl cont = case repl of
           Prompt s -> getInputLine (green ++ s ++ plain) >>= cont
           Output r -> case r of
             Result a -> outputStrLn (pretty a) >>= cont

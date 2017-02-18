@@ -35,14 +35,14 @@ toResult r = case r of
 source :: (Monad m, TokenParsing m) => m (NonEmpty Module)
 source = (:|) <$> module'
               <*> many module'
-      <|> runUnlined (pure . Module "Main" <$> declaration `sepEndBy` some newline)
+      <|> runUnlined (pure . makeModule "Main" <$> declaration `sepEndBy` some newline)
 
 module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
-  where mod = Module <$  preword "module"
-                     <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
-                     <*> (declaration `sepEndBy` some newline)
-                     <?> "module"
+  where mod = makeModule <$  preword "module"
+                         <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
+                         <*> (declaration `sepEndBy` some newline)
+                         <?> "module"
 
 declaration :: (Monad m, TokenParsing m) => m Declaration
 declaration = runUnlined $ do
@@ -162,7 +162,9 @@ data Argument = Named Name Type | Unnamed Type
 
 
 name :: (Monad m, TokenParsing m) => m Name
-name = N <$> identifier
+name = identifier >>= \ ident -> return $ case ident of
+  "_" -> I (-1)
+  _ -> N ident
 
 op :: TokenParsing m => String -> m String
 op = token . highlight Operator . string

@@ -6,13 +6,12 @@ import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable
 import Data.List (nub, sort, union)
-import Data.Semigroup (Semigroup, Max(..), Option(..))
+import Data.Semigroup (Semigroup(..), Max(..), Option(..))
 import Text.Pretty
 
 data ExprF n a where
   Product :: a -> a -> ExprF n a
   Sum :: a -> a -> ExprF n a
-  Function :: a -> a -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
   UnitT :: ExprF n a
   TypeT :: ExprF n a
@@ -56,19 +55,10 @@ unitT = Fix UnitT
 typeT :: Type
 typeT = Fix TypeT
 
-boolT :: Type
-boolT = unitT .+. unitT
-
-maybeT :: Type -> Type
-maybeT = (unitT .+.)
-
-eitherT :: Type -> Type -> Type
-eitherT = (.+.)
-
 
 infixr 0 .->.
 (.->.) :: Type -> Type -> Type
-a .->. b = Fix (Function a b)
+(.->.) = makePi (I (negate 1))
 
 infixl 6 .+.
 (.+.) :: Type -> Type -> Type
@@ -89,9 +79,9 @@ bindVariable f = (n, body)
   where body = f (var n)
         n = I (succ (maxBoundVariable body))
         maxBoundVariable = cata $ \ term -> case term of
-          App o a -> max o a
           Abs (I v) _ -> v
-          _ -> -1
+          Pi (I v) t _ -> max t v
+          _ -> getMax (foldr ((<>) . Max) (Max (negate 1)) term)
 
 var :: Name -> Expr
 var = Fix . Var
@@ -190,7 +180,6 @@ zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Mayb
 zipExprFWith g f a b = case (a, b) of
   (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
   (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
-  (Function a1 b1, Function a2 b2) -> Just (Function (f a1 a2) (f b1 b2))
 
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (UnitT, UnitT) -> Just UnitT
@@ -229,7 +218,6 @@ instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product a b -> Product (f a) (f b)
     Sum a b -> Sum (f a) (f b)
-    Function a b -> Function (f a) (f b)
     Pi n t b -> Pi (g n) (f t) (f b)
     UnitT -> UnitT
     TypeT -> TypeT
@@ -256,7 +244,6 @@ instance Bifoldable ExprF where
   bifoldMap g f expr = case expr of
     Product a b -> mappend (f a) (f b)
     Sum a b -> mappend (f a) (f b)
-    Function a b -> mappend (f a) (f b)
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
     UnitT -> mempty
     TypeT -> mempty
@@ -280,7 +267,7 @@ instance Bifoldable ExprF where
     As a b -> mappend (f a) (f b)
 
 instance Pretty2 ExprF where
-  liftPrettyPrec2 pn pp d expr = case expr of
+  liftPrettyPrec2 pn _ pp _ d expr = case expr of
     App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
     Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
     Var v -> pn 0 v
@@ -290,7 +277,6 @@ instance Pretty2 ExprF where
     Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
-    Function a b -> showParen (d > 0) $ pp 1 a . showString " -> " . pp 0 b
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
@@ -303,7 +289,8 @@ instance Pretty2 ExprF where
 instance Pretty Name where
   prettyPrec _ name = case name of
     N s -> showString s
-    I i -> showChar '_' . shows i
+    I i | i >= 0 -> showChar '_' . shows i
+        | otherwise -> showChar '_'
 
 instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
@@ -319,7 +306,6 @@ instance Show n => Show1 (ExprF n) where
     Pair a b -> showsBinaryWith sp sp "Pair" d a b
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
-    Function a b -> showsBinaryWith sp sp "Function" d a b
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
