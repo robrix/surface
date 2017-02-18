@@ -164,13 +164,13 @@ checkModule' module' = do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = case decl of
-  Declaration name ty term -> do
+checkDeclaration' (Module modName _) decl = contextualizeErrors (fmap ((modName ++ "." ++ declarationName decl ++ ": ") ++)) $ case decl of
+  Declaration _ ty term -> do
     for_ (freeVariables ty) (\ name -> do
       context <- getContext
       unless (name <? context) $ declare (name := Just typeT))
-    contextualizeErrors (fmap ((modName ++ "." ++ name ++ ": ") ++)) $ check term ty
-  Data name ty constructors -> do
+    check term ty
+  Data _ ty constructors ->do
     isType ty
     return () -- FIXME: implement checking of datatype declarations.
 
