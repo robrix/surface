@@ -503,14 +503,6 @@ define name ty = declare (name := Just ty)
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
-findConstraint :: Name -> Proof (Either DefinitionConstraint TypeConstraint)
-findConstraint name = getContext >>= go
-  where go context = case context of
-          (_ :< T entry@(found ::: _)) | name == found -> return (Right entry)
-          (_ :< D entry@(found := _))  | name == found -> return (Left entry)
-          (context :< _)                                -> go context
-          _ -> fail ("Missing constraint for " ++ pretty name ++ " in context.")
-
 find :: Name -> Proof Type
 find name = getContext >>= help
   where help (_ :< T (found ::: decl))
