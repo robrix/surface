@@ -60,7 +60,7 @@ handleInput input =
 
 
 command :: Parser Command
-command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
+command = whiteSpace *> (colon *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
            <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
