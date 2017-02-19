@@ -191,6 +191,9 @@ succName :: Name -> Name
 succName (I i) = I (succ i)
 succName (N n) = N (n ++ "'")
 
+generalize :: Expr -> Expr
+generalize expr = foldr makeLambda expr (freeVariables expr)
+
 -- | Capture-avoiding substitution of an Expr for variables with a given Name in an Expr.
 substitute :: Expr -> Name -> Expr -> Expr
 substitute to from = para $ \ expr -> case expr of
