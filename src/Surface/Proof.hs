@@ -160,11 +160,10 @@ decompose judgement = case judgement of
 checkModule' :: Module -> Proof ()
 checkModule' module' = do
   modify $ \ s -> s { proofEnvironment = moduleDeclarations module' }
-  for_ (moduleDeclarations module') (\ declaration ->
-    checkDeclaration module' declaration { declarationType = generalize (declarationType declaration) })
+  for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = context [ pretty (declarationName decl) ] $ case decl of
+checkDeclaration' (Module modName _) decl = context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (declarationType decl) } of
   Declaration _ ty term -> check term ty
   Data _ ty constructors -> do
     isType ty
