@@ -281,7 +281,7 @@ isType' ty = case unfix ty of
     name ::: ty >- isType body
 
   Var name -> do
-    entry <- findEntry name
+    entry <- findConstraint name
     case entry of
       Left (_ := Just ty') -> isType ty'
       Left (_ := Nothing)  -> fail ("Expected a type for variable but got a hole: " ++ pretty ty)
@@ -504,8 +504,8 @@ define name ty = declare (name := Just ty)
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
-findEntry :: Name -> Proof (Either DefinitionConstraint TypeConstraint)
-findEntry name = getContext >>= go
+findConstraint :: Name -> Proof (Either DefinitionConstraint TypeConstraint)
+findConstraint name = getContext >>= go
   where go context = case context of
           (_ :< T entry@(found ::: _)) | name == found -> return (Right entry)
           (_ :< D entry@(found := _))  | name == found -> return (Left entry)
