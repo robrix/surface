@@ -510,14 +510,14 @@ findConstraint name = getContext >>= go
           (_ :< T entry@(found ::: _)) | name == found -> return (Right entry)
           (_ :< D entry@(found := _))  | name == found -> return (Left entry)
           (context :< _)                                -> go context
-          _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
+          _ -> fail ("Missing constraint for " ++ pretty name ++ " in context.")
 
 find :: Name -> Proof Type
 find name = getContext >>= help
   where help (_ :< T (found ::: decl))
           | name == found = return decl
         help (context :< _) = help context
-        help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
+        help _ = fail ("Missing type constraint for " ++ pretty name ++ " in context.")
 
 findDefinition :: Name -> Proof (Maybe Expr)
 findDefinition name = do
