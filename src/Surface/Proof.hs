@@ -437,7 +437,7 @@ normalize' expr = case unfix expr of
 
   Let name value body -> do
     v <- normalize value
-    define name v
+    declare (name := Just v)
     normalize body
 
   _ -> return expr
@@ -491,9 +491,6 @@ putContext context = do
 
 modifyContext :: (Context -> Context) -> Proof ()
 modifyContext f = getContext >>= putContext . f
-
-define :: Name -> Type -> Proof ()
-define name ty = declare (name := Just ty)
 
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
