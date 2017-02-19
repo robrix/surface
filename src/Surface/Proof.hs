@@ -1,8 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Surface.Proof where
 
-import Context hiding (S)
-import qualified Context
+import Context
 import Control.State
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
@@ -180,7 +179,7 @@ checkDeclaration' (Module modName _) decl = context [ declarationName decl ] $ c
 
 check' :: Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
-  (Abs n body, Pi n1 t tbody) -> n1 ::: Type t >- (n ::: Type t >- check body tbody)
+  (Abs n body, Pi n1 t tbody) -> n1 ::: t >- (n ::: t >- check body tbody)
 
   (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
@@ -226,7 +225,7 @@ infer' term = case unfix term of
 
   Abs name body -> do
     a <- fresh Nothing
-    v <- name ::: Type (var a) >- infer body
+    v <- name ::: var a >- infer body
     return (var a .->. v)
 
   App f arg -> do
@@ -261,7 +260,7 @@ infer' term = case unfix term of
           return (a, b)
 
         inferDType name ty body = do
-          result <- name ::: Type ty >- infer body
+          result <- name ::: ty >- infer body
           isType result
           return typeT
 
@@ -279,7 +278,7 @@ isType' ty = case unfix ty of
 
   Pi name ty body -> do
     isType ty
-    name ::: Type ty >- isType body
+    name ::: ty >- isType body
 
   Var name -> do
     entry <- findEntry name
@@ -513,7 +512,7 @@ findEntry name = getContext >>= go
           (context :< _)                                -> go context
           _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
 
-find :: Name -> Proof Scheme
+find :: Name -> Proof Type
 find name = getContext >>= help
   where help (_ :< Tm (found ::: decl))
           | name == found = return decl
@@ -530,20 +529,12 @@ findBinding name = do
         help _ = return Nothing
 
 
-specialize :: Scheme -> Proof Type
-specialize (Type t) = return t
-specialize s = do
-  let (d, s') = unpack s
-  b <- fresh d
-  specialize (fmap (fromS b) s')
-  where unpack :: Scheme -> (Maybe Expr, Schm (Index Name))
-        unpack (Context.All s') = (Nothing, s')
-        unpack (LetS t s') = (Just t, s')
-        unpack (Type _) = error "unpack cannot be called with a Type Schm."
-
-        fromS :: Name -> Index Name -> Name
-        fromS b Z = b
-        fromS _ (Context.S a) = a
+specialize :: Type -> Proof Type
+specialize ty = case unfix ty of
+  Pi _ t b -> do
+    _ <- fresh (if t == typeT then Nothing else Just t)
+    specialize b
+  _ -> return ty
 
 onTop :: (Binding -> Proof Extension) -> Proof ()
 onTop f = do
@@ -572,23 +563,17 @@ x ::: s >- ma = do
         extract _ = error "Missing term variable!"
 
 
-bind :: Name -> Scheme -> Schm (Index Name)
-bind a = fmap help
-  where help :: Name -> Index Name
-        help b | a == b = Z
-               | otherwise = Context.S b
+(==>) :: Suffix -> Type -> Proof Type
+[]                      ==> ty = return ty
+((a := Nothing) : rest) ==> ty = makePi a typeT <$> rest ==> ty
+((a := Just v) : rest)  ==> ty = makePi a v <$> rest ==> ty
 
-(==>) :: Suffix -> Type -> Scheme
-[]                        ==> ty = Type ty
-((a := Nothing) : rest)   ==> ty = All (bind a (rest ==> ty))
-((a := Just v) : rest)    ==> ty = LetS v (bind a (rest ==> ty))
-
-generalizeOver :: Proof Type -> Proof Scheme
+generalizeOver :: Proof Type -> Proof Type
 generalizeOver mt = do
   modifyContext (:< Sep)
   t <- mt
   rest <- skimContext []
-  return (rest ==> t)
+  rest ==> t
   where skimContext :: Suffix -> Proof Suffix
         skimContext rest = do
           context :< d <- getContext

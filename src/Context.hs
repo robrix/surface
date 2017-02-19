@@ -14,7 +14,7 @@ data Entry
 
 data Binding = Name := Maybe Expr
   deriving (Eq, Show)
-data TermEntry = Name ::: Scheme
+data TermEntry = Name ::: Expr
   deriving (Eq, Show)
 
 infixl 8 :<
