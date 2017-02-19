@@ -6,8 +6,8 @@ import Expr
 import Text.Pretty
 
 data Constraint
-  = Ty DefinitionConstraint
-  | Tm TypeConstraint
+  = D DefinitionConstraint
+  | T TypeConstraint
   | Sep
   deriving (Eq, Show)
 
@@ -26,12 +26,12 @@ type Suffix = [DefinitionConstraint]
 infixl 8 <><
 (<><) :: Context -> Suffix -> Context
 context <>< [] = context
-context <>< (entry : rest) = context :< Ty entry <>< rest
+context <>< (entry : rest) = context :< D entry <>< rest
 
 applyContext :: Expr -> Context -> Expr
 applyContext expr context = case context of
   Nil -> expr
-  (rest :< Ty (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
+  (rest :< D (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
   (rest :< _) -> applyContext expr rest
 
 
@@ -45,8 +45,8 @@ instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
 
 instance Pretty Constraint where
-  prettyPrec d (Ty ty) = prettyPrec d ty
-  prettyPrec d (Tm term) = prettyPrec d term
+  prettyPrec d (D ty) = prettyPrec d ty
+  prettyPrec d (T term) = prettyPrec d term
   prettyPrec _ Sep = showChar ';'
 
 instance Pretty DefinitionConstraint where

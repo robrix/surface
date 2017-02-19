@@ -34,6 +34,6 @@ instance Binder1 (ExprF Name) where
 
 instance Binder Constraint where
   n <? t = case t of
-    Ty d -> n <? d
-    Tm d -> n <? d
+    D d -> n <? d
+    T d -> n <? d
     Sep -> False

@@ -379,7 +379,7 @@ fresh' d = do
   s <- get
   let m = proofNextName s
   put s { proofNextName = succName m
-        , proofContext = proofContext s :< Ty (m := d) }
+        , proofContext = proofContext s :< D (m := d) }
   return m
 
 restore' :: Proof Extension
@@ -507,14 +507,14 @@ declare binding = modifyContext (<>< [ binding ])
 findEntry :: Name -> Proof (Either DefinitionConstraint TypeConstraint)
 findEntry name = getContext >>= go
   where go context = case context of
-          (_ :< Tm entry@(found ::: _)) | name == found -> return (Right entry)
-          (_ :< Ty entry@(found := _))  | name == found -> return (Left entry)
+          (_ :< T entry@(found ::: _)) | name == found -> return (Right entry)
+          (_ :< D entry@(found := _))  | name == found -> return (Left entry)
           (context :< _)                                -> go context
           _ -> fail ("Missing variable " ++ pretty name ++ " in context.")
 
 find :: Name -> Proof Type
 find name = getContext >>= help
-  where help (_ :< Tm (found ::: decl))
+  where help (_ :< T (found ::: decl))
           | name == found = return decl
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
@@ -523,7 +523,7 @@ findBinding :: Name -> Proof (Maybe Expr)
 findBinding name = do
   context <- getContext
   contextualizeErrors (++ [ pretty context ]) $ help context
-  where help (_ :< Ty (found := decl))
+  where help (_ :< D (found := decl))
           | name == found = return decl
         help (context :< _) = help context
         help _ = return Nothing
@@ -543,7 +543,7 @@ onTop f = do
     context :< vd -> do
       putContext context
       case vd of
-        Ty d -> do
+        D d -> do
           m <- f d
           case m of
             Context.Replace with -> modifyContext (<>< with)
@@ -553,12 +553,12 @@ onTop f = do
 
 (>-) :: TypeConstraint -> Proof a -> Proof a
 x ::: s >- ma = do
-  modifyContext (:< Tm (x ::: s))
+  modifyContext (:< T (x ::: s))
   a <- ma
   modifyContext extract
   return a
-  where extract (context :< Tm (y ::: _)) | x == y = context
-        extract (context :< Ty d) = extract context :< Ty d
+  where extract (context :< T (y ::: _)) | x == y = context
+        extract (context :< D d) = extract context :< D d
         extract (_ :< _) = error "Bad context entry!"
         extract _ = error "Missing term variable!"
 
@@ -580,8 +580,8 @@ generalizeOver mt = do
           putContext context
           case d of
             Sep -> return rest
-            Ty a -> skimContext (a : rest)
-            Tm _ -> error "Unexpected term variable."
+            D a -> skimContext (a : rest)
+            T _ -> error "Unexpected term variable."
 
 contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
 contextualizeErrors addContext = iterFreer alg . fmap pure
