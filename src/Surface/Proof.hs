@@ -511,9 +511,7 @@ findTyping name = getContext >>= help
         help _ = fail ("Missing type constraint for " ++ pretty name ++ " in context.")
 
 findDefinition :: Name -> Proof (Maybe Expr)
-findDefinition name = do
-  context <- getContext
-  contextualizeErrors (++ [ pretty context ]) $ help context
+findDefinition name = getContext >>= help
   where help (_ :< D (found := decl))
           | name == found = return decl
         help (context :< _) = help context
