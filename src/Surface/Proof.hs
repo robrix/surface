@@ -25,9 +25,10 @@ type Proof = Freer ProofF
 data ProofState = ProofState
   { proofNextName :: Name
   , proofContext :: Context
-  , proofEnvironment :: H.HashMap Name Declaration }
+  , proofEnvironment :: Environment }
   deriving (Eq, Show)
 
+type Environment = H.HashMap Name Declaration
 
 -- Judgement constructors
 
