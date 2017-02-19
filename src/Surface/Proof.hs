@@ -25,7 +25,7 @@ type Proof = Freer ProofF
 data ProofState = ProofState
   { proofNextName :: Name
   , proofContext :: Context
-  , proofEnvironment :: H.HashMap String Declaration }
+  , proofEnvironment :: H.HashMap Name Declaration }
   deriving (Eq, Show)
 
 
@@ -163,7 +163,7 @@ checkModule' module' = do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = context [ declarationName decl ] $ case decl of
+checkDeclaration' (Module modName _) decl = context [ pretty (declarationName decl) ] $ case decl of
   Declaration _ ty term -> do
     for_ (freeVariables ty) (\ name -> do
       context <- getContext
@@ -171,7 +171,7 @@ checkDeclaration' (Module modName _) decl = context [ declarationName decl ] $ c
     check term ty
   Data _ ty constructors -> do
     isType ty
-    for_ constructors (\ (Constructor cname sig) -> context [ declarationName decl, cname ] $ do
+    for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $ do
       isType sig
       let (op, _) = applicationChain sig
       check op ty)
@@ -602,7 +602,7 @@ instance Pretty ProofState where
   prettyPrec _ (ProofState n c e)
     = showString "{ " . prettyPrec 0 n
     . showString ", " . prettyPrec 0 c
-    . showString ", " . prettyPrec 0 (N <$> H.keys e) . showString " }"
+    . showString ", " . prettyPrec 0 (H.keys e) . showString " }"
 
 
 instance Eq1 ProofF where

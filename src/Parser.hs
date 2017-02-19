@@ -50,17 +50,17 @@ declaration =  (datatype <?> "datatype")
            <|> (binding  <?> "declaration")
   where binding = runUnlined $ do
           name <- identifier
-          Declaration name <$  colon
-                           <*> type' <* some newline
-                           <*  token (highlight Identifier (string name)) <* op "="
-                           <*> expr
+          Declaration (N name) <$  colon
+                               <*> type' <* some newline
+                               <*  token (highlight Identifier (string name)) <* op "="
+                               <*> expr
         datatype = runUnlined $
           Data <$ preword "data"
-               <*> typeIdentifier
+               <*> (N <$> typeIdentifier)
                <*> (fromMaybe typeT <$> optional signature) <* preword "where" <* newline
                <*> some (whiteSpace *> constructor <* newline)
         constructor =
-          Constructor <$> identifier
+          Constructor <$> name
                       <*> signature
                       <?> "constructor"
         signature = colon *> type'
