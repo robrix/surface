@@ -18,7 +18,7 @@ data ExprF n a where
   Sigma :: n -> a -> a -> ExprF n a
 
   UnitT :: ExprF n a
-  TypeT :: ExprF n a
+  Type :: ExprF n a
 
   Abs :: n -> a -> ExprF n a
   Var :: n -> ExprF n a
@@ -57,7 +57,7 @@ unitT :: Type
 unitT = Fix UnitT
 
 typeT :: Type
-typeT = Fix TypeT
+typeT = Fix Type
 
 
 infixr 0 .->.
@@ -220,7 +220,7 @@ zipExprFWith g f a b = case (a, b) of
 
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (UnitT, UnitT) -> Just UnitT
-  (TypeT, TypeT) -> Just TypeT
+  (Type, Type) -> Just Type
 
   (Abs n1 b1, Abs n2 b2) -> Just (Abs (g n1 n2) (f b1 b2))
   (Var n1, Var n2) -> Just (Var (g n1 n2))
@@ -259,7 +259,7 @@ instance Bifunctor ExprF where
     Sigma n t b -> Sigma (g n) (f t) (f b)
 
     UnitT -> UnitT
-    TypeT -> TypeT
+    Type -> Type
 
     Abs n b -> Abs (g n) (f b)
     Var n -> Var (g n)
@@ -287,7 +287,7 @@ instance Bifoldable ExprF where
     Sigma n t b -> mappend (g n) (mappend (f t) (f b))
 
     UnitT -> mempty
-    TypeT -> mempty
+    Type -> mempty
 
     Abs n b -> mappend (g n) (f b)
     Var n -> g n
@@ -324,7 +324,7 @@ instance Pretty2 ExprF where
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
     UnitT -> showString "Unit"
     Unit -> showString "()"
-    TypeT -> showString "Type"
+    Type -> showString "Type"
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
     where showBrace b s = if b then showString "{ " . s . showString " }" else s
@@ -355,7 +355,7 @@ instance Show n => Show1 (ExprF n) where
     Product a b -> showsBinaryWith sp sp "Product" d a b
     UnitT -> showString "UnitT"
     Unit -> showString "Unit"
-    TypeT -> showString "TypeT"
+    Type -> showString "Type"
     Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
     As term ty -> showsBinaryWith sp sp "As" d term ty
 

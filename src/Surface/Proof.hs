@@ -236,7 +236,7 @@ infer' term = case unfix term of
 
   -- Types
   UnitT -> return typeT
-  TypeT -> return typeT -- Impredicativity.
+  Type -> return typeT -- Impredicativity.
   Product{} -> isType term >> return typeT
   Sum{} -> isType term >> return typeT
 
@@ -268,7 +268,7 @@ infer' term = case unfix term of
 isType' :: Term -> Proof ()
 isType' ty = case unfix ty of
   UnitT -> return ()
-  TypeT -> return ()
+  Type -> return ()
   Sum a b -> do
     isType a
     isType b
@@ -329,7 +329,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
   (UnitT, UnitT) -> return ()
-  (TypeT, TypeT) -> return ()
+  (Type, Type) -> return ()
 
   (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context
   (Var v1, Var v2) -> onTop $ \ (n := d) ->

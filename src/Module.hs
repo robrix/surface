@@ -47,7 +47,7 @@ instance Pretty Declaration where
     . foldr ((.) . prettyConstructor) id constructors
     where prettyDSig :: Expr -> ShowS
           prettyDSig t = case unfix t of
-            TypeT -> id
+            Type -> id
             _ -> showString " : " . prettyPrec 0 t
           prettyConstructor (Constructor cname sig) = showString "  " . prettyPrec 0 cname . showString " : " . prettyCSig sig
           prettyCSig :: Expr -> ShowS
