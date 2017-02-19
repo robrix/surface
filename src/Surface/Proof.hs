@@ -284,7 +284,7 @@ isType' ty = case unfix ty of
     entry <- findDefinition name
     case entry of
       Just ty' -> isType ty'
-      Nothing  -> fail ("Expected a definition for " ++ pretty ty ++ " but found none.")
+      Nothing  -> fail ("Missing definition constraint for " ++ pretty ty ++ " in context.")
 
   App f arg -> unify f (arg .->. typeT)
 
