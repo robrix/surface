@@ -221,7 +221,7 @@ infer' term = case unfix term of
 
   Unit -> return unitT
 
-  Var name -> find name >>= specialize
+  Var name -> findTyping name >>= specialize
 
   Abs name body -> do
     a <- fresh Nothing
@@ -503,8 +503,8 @@ define name ty = declare (name := Just ty)
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
-find :: Name -> Proof Type
-find name = getContext >>= help
+findTyping :: Name -> Proof Type
+findTyping name = getContext >>= help
   where help (_ :< T (found ::: decl))
           | name == found = return decl
         help (context :< _) = help context
