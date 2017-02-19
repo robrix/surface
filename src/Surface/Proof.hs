@@ -379,11 +379,9 @@ fresh' :: Maybe Expr -> Proof Name
 fresh' d = do
   s <- get
   let m = proofNextName s
-  put s { proofNextName = increment m
+  put s { proofNextName = succName m
         , proofContext = proofContext s :< Ty (m := d) }
   return m
-  where increment (I n) = I (succ n)
-        increment (N s) = N (s ++ "'")
 
 restore' :: Proof Extension
 restore' = return Context.Restore
