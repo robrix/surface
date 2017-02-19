@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Judgement where
 
-import Context hiding (S)
+import Context
 import Data.Functor.Classes
 import Expr
 import Module
