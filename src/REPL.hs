@@ -23,6 +23,7 @@ type REPL = Freer REPLF
 data Command
   = Run Expr
   | TypeOf Expr
+  | WHNF Expr
   | Help
   | Quit
 
@@ -49,11 +50,12 @@ handleInput input =
     Result Quit -> pure ()
     Result (Run expr) -> output (run (infer expr >> normalize expr)) >> repl
     Result (TypeOf expr) -> do
-      output (run $ do
+      output (run (do
         ty <- infer expr
         context <- getContext
-        return (expr `as` applyContext ty context))
+        return (expr `as` applyContext ty context)))
       repl
+    Result (WHNF expr) -> output (run (infer expr >> whnf expr)) >> repl
     error -> output error >> repl
 
 
@@ -62,6 +64,7 @@ command = whiteSpace *> (char ':' *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
            <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
+           <|> (WHNF <$> ((long "whnf" <|> short 'w') *> expr) <?> "whnf")
            <?> "command; use :? for help"
 
         eval = Run <$> expr <?> "expression"
@@ -97,5 +100,6 @@ instance Pretty Command where
   prettyPrec d command = case command of
     Run expr -> prettyPrec d expr
     TypeOf expr -> showsUnaryWith prettyPrec ":type" d expr
+    WHNF expr -> showsUnaryWith prettyPrec ":whnf" d expr
     Help -> showString ":help"
     Quit -> showString ":quit"
