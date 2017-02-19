@@ -32,7 +32,7 @@ instance Binder1 (ExprF Name) where
     Var v | v == name -> True
     _ -> any (occurs name) expr
 
-instance Binder Entry where
+instance Binder Constraint where
   n <? t = case t of
     Ty d -> n <? d
     Tm d -> n <? d

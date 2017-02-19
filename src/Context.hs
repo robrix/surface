@@ -5,7 +5,7 @@ import Data.Foldable (toList)
 import Expr
 import Text.Pretty
 
-data Entry
+data Constraint
   = Ty DefinitionConstraint
   | Tm TypeConstraint
   | Sep
@@ -20,7 +20,7 @@ infixl 8 :<
 data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show)
 
-type Context = Backward Entry
+type Context = Backward Constraint
 type Suffix = [DefinitionConstraint]
 
 infixl 8 <><
@@ -44,7 +44,7 @@ data Extension = Restore | Replace Suffix
 instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
 
-instance Pretty Entry where
+instance Pretty Constraint where
   prettyPrec d (Ty ty) = prettyPrec d ty
   prettyPrec d (Tm term) = prettyPrec d term
   prettyPrec _ Sep = showChar ';'
