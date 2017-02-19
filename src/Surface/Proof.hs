@@ -281,11 +281,10 @@ isType' ty = case unfix ty of
     name ::: ty >- isType body
 
   Var name -> do
-    entry <- findConstraint name
+    entry <- findDefinition name
     case entry of
-      Left (_ := Just ty') -> isType ty'
-      Left (_ := Nothing)  -> fail ("Expected a type for variable but got a hole: " ++ pretty ty)
-      Right (_ ::: scheme) -> specialize scheme >>= isType
+      Just ty' -> isType ty'
+      Nothing  -> fail ("Expected a definition for " ++ pretty ty ++ " but found none.")
 
   App f arg -> unify f (arg .->. typeT)
 
