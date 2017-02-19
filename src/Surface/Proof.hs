@@ -501,10 +501,10 @@ modifyContext f = getContext >>= putContext . f
 define :: Name -> Type -> Proof ()
 define name ty = declare (name := Just ty)
 
-declare :: Binding -> Proof ()
+declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
-findEntry :: Name -> Proof (Either Binding TypeConstraint)
+findEntry :: Name -> Proof (Either DefinitionConstraint TypeConstraint)
 findEntry name = getContext >>= go
   where go context = case context of
           (_ :< Tm entry@(found ::: _)) | name == found -> return (Right entry)
@@ -536,7 +536,7 @@ specialize ty = case unfix ty of
     specialize b
   _ -> return ty
 
-onTop :: (Binding -> Proof Extension) -> Proof ()
+onTop :: (DefinitionConstraint -> Proof Extension) -> Proof ()
 onTop f = do
   current <- getContext
   case current of

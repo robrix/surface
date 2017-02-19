@@ -6,12 +6,12 @@ import Expr
 import Text.Pretty
 
 data Entry
-  = Ty Binding
+  = Ty DefinitionConstraint
   | Tm TypeConstraint
   | Sep
   deriving (Eq, Show)
 
-data Binding = Name := Maybe Expr
+data DefinitionConstraint = Name := Maybe Expr
   deriving (Eq, Show)
 data TypeConstraint = Name ::: Expr
   deriving (Eq, Show)
@@ -21,7 +21,7 @@ data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show)
 
 type Context = Backward Entry
-type Suffix = [Binding]
+type Suffix = [DefinitionConstraint]
 
 infixl 8 <><
 (<><) :: Context -> Suffix -> Context
@@ -49,7 +49,7 @@ instance Pretty Entry where
   prettyPrec d (Tm term) = prettyPrec d term
   prettyPrec _ Sep = showChar ';'
 
-instance Pretty Binding where
+instance Pretty DefinitionConstraint where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyPrec 10) declaration
 
 instance Pretty TypeConstraint where

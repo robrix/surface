@@ -17,7 +17,7 @@ instance (Foldable t, Binder a) => Binder (t a) where
 instance Binder Name where
   (<?) = (==)
 
-instance Binder Binding where
+instance Binder DefinitionConstraint where
   name <? (_ := m) = name <? m
 
 instance Binder TypeConstraint where
