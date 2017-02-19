@@ -281,7 +281,7 @@ isType' ty = case unfix ty of
     name ::: ty >- isType body
 
   Var name -> do
-    entry <- findDefinition name
+    entry <- lookupDefinition name
     case entry of
       Just ty' -> isType ty'
       Nothing  -> fail ("Missing definition constraint for " ++ pretty ty ++ " in context.")
@@ -391,7 +391,7 @@ replace' = return . Context.Replace
 normalize' :: Expr -> Proof Expr
 normalize' expr = case unfix expr of
   Var name -> do
-    binding <- findDefinition name
+    binding <- lookupDefinition name
     case binding of
       Just term -> return term
       Nothing -> return (var name)
@@ -451,7 +451,7 @@ normalize' expr = case unfix expr of
 whnf' :: Expr -> Proof Expr
 whnf' expr = case unfix expr of
   Var v -> do
-    binding <- findDefinition v
+    binding <- lookupDefinition v
     case binding of
       Just a -> whnf a
       _ -> return (var v)
@@ -510,8 +510,8 @@ findTyping name = getContext >>= help
         help (context :< _) = help context
         help _ = fail ("Missing type constraint for " ++ pretty name ++ " in context.")
 
-findDefinition :: Name -> Proof (Maybe Expr)
-findDefinition name = getContext >>= help
+lookupDefinition :: Name -> Proof (Maybe Expr)
+lookupDefinition name = getContext >>= help
   where help (_ :< D (found := decl))
           | name == found = return decl
         help (context :< _) = help context
