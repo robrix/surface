@@ -560,7 +560,7 @@ x ::: s >- ma = do
   where extract (context :< T (y ::: _)) | x == y = context
         extract (context :< D d) = extract context :< D d
         extract (_ :< _) = error "Bad context entry!"
-        extract _ = error "Missing term variable!"
+        extract _ = error "Missing type constraint!"
 
 
 (==>) :: Suffix -> Type -> Proof Type
@@ -581,7 +581,7 @@ generalizeOver mt = do
           case d of
             Sep -> return rest
             D a -> skimContext (a : rest)
-            T _ -> error "Unexpected term variable."
+            T _ -> error "Unexpected type constraint."
 
 contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
 contextualizeErrors addContext = iterFreer alg . fmap pure
