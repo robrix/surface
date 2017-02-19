@@ -508,7 +508,9 @@ findTyping name = getContext >>= help
   where help (_ :< T (found ::: decl))
           | name == found = return decl
         help (context :< _) = help context
-        help _ = fail ("Missing type constraint for " ++ pretty name ++ " in context.")
+        help _ = do
+          ty <- gets (fmap declarationType . H.lookup name . proofEnvironment)
+          maybe (fail ("Missing type constraint for " ++ pretty name ++ " in context.")) return ty
 
 lookupDefinition :: Name -> Proof (Maybe Expr)
 lookupDefinition name = getContext >>= help
