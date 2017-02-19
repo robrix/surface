@@ -392,7 +392,7 @@ replace' = return . Context.Replace
 normalize' :: Expr -> Proof Expr
 normalize' expr = case unfix expr of
   Var name -> do
-    binding <- findBinding name
+    binding <- findDefinition name
     case binding of
       Just term -> return term
       Nothing -> return (var name)
@@ -452,7 +452,7 @@ normalize' expr = case unfix expr of
 whnf' :: Expr -> Proof Expr
 whnf' expr = case unfix expr of
   Var v -> do
-    binding <- findBinding v
+    binding <- findDefinition v
     case binding of
       Just a -> whnf a
       _ -> return (var v)
@@ -519,8 +519,8 @@ find name = getContext >>= help
         help (context :< _) = help context
         help _ = fail ("Missing variable " ++ pretty name ++ " in context.")
 
-findBinding :: Name -> Proof (Maybe Expr)
-findBinding name = do
+findDefinition :: Name -> Proof (Maybe Expr)
+findDefinition name = do
   context <- getContext
   contextualizeErrors (++ [ pretty context ]) $ help context
   where help (_ :< D (found := decl))
