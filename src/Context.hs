@@ -7,13 +7,13 @@ import Text.Pretty
 
 data Entry
   = Ty Binding
-  | Tm TermEntry
+  | Tm TypeConstraint
   | Sep
   deriving (Eq, Show)
 
 data Binding = Name := Maybe Expr
   deriving (Eq, Show)
-data TermEntry = Name ::: Expr
+data TypeConstraint = Name ::: Expr
   deriving (Eq, Show)
 
 infixl 8 :<
@@ -52,5 +52,5 @@ instance Pretty Entry where
 instance Pretty Binding where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyPrec 10) declaration
 
-instance Pretty TermEntry where
+instance Pretty TypeConstraint where
   prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyPrec 10 scheme

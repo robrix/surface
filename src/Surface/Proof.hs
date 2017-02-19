@@ -504,7 +504,7 @@ define name ty = declare (name := Just ty)
 declare :: Binding -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
-findEntry :: Name -> Proof (Either Binding TermEntry)
+findEntry :: Name -> Proof (Either Binding TypeConstraint)
 findEntry name = getContext >>= go
   where go context = case context of
           (_ :< Tm entry@(found ::: _)) | name == found -> return (Right entry)
@@ -551,7 +551,7 @@ onTop f = do
         _ -> onTop f >> modifyContext (:< vd)
     Nil -> fail "onTop called with empty context."
 
-(>-) :: TermEntry -> Proof a -> Proof a
+(>-) :: TypeConstraint -> Proof a -> Proof a
 x ::: s >- ma = do
   modifyContext (:< Tm (x ::: s))
   a <- ma
