@@ -1,12 +1,14 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GADTs #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, GADTs #-}
 module Expr where
 
 import Data.Bifoldable
 import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable
+import Data.Hashable (Hashable)
 import Data.List (nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
+import GHC.Generics (Generic)
 import Text.Pretty
 
 data ExprF n a where
@@ -48,7 +50,7 @@ type Term = Fix (TermF Name)
 
 data Name = N String
           | I Integer
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Generic, Hashable, Ord, Show)
 
 
 unitT :: Type
