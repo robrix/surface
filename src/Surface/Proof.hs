@@ -277,10 +277,8 @@ isType' ty = case unfix ty of
     name ::: ty >- isType body
 
   Var name -> do
-    entry <- lookupDefinition name
-    case entry of
-      Just ty' -> isType ty'
-      Nothing  -> fail ("Missing definition constraint for " ++ pretty ty ++ " in context.")
+    ty' <- findTyping name
+    isType ty'
 
   App f arg -> unify f (arg .->. typeT)
 
