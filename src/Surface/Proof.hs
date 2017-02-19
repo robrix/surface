@@ -498,6 +498,19 @@ define name ty = declare (name := Just ty)
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
+
+getEnvironment :: Proof Environment
+getEnvironment = gets proofEnvironment
+
+putEnvironment :: Environment -> Proof ()
+putEnvironment environment = do
+  s <- get
+  put s { proofEnvironment = environment }
+
+modifyEnvironment :: (Environment -> Environment) -> Proof ()
+modifyEnvironment f = getEnvironment >>= putEnvironment . f
+
+
 findTyping :: Name -> Proof Type
 findTyping name = getContext >>= help
   where help (_ :< T (found ::: decl))
