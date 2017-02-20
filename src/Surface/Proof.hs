@@ -335,6 +335,18 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Type, Type) -> return ()
 
   (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context
+
+  (Var name@N{}, _) -> do
+    def <- lookupDefinition name
+    case def of
+      Just d -> unify d t2
+      Nothing -> cannotUnify
+  (_, Var name@N{}) -> do
+    def <- lookupDefinition name
+    case def of
+      Just d -> unify t1 d
+      Nothing -> cannotUnify
+
   (Var v1, Var v2) -> onTop $ \ (n := d) ->
     case (n == v1, n == v2, d) of
       (True, True, _) -> restore
