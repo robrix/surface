@@ -163,6 +163,9 @@ asApplication expr = case unfix expr of
   _ -> Nothing
 
 
+domain :: Type -> [Type]
+domain = maybe [] (\ (_, t, b) -> t : domain b) . asPi
+
 codomain :: Type -> Type
 codomain expr = maybe expr (\ (_, _, b) -> b) (asPi expr)
 
