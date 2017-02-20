@@ -290,7 +290,9 @@ isType' ty = case unfix ty of
     ty' <- findTyping name
     isType ty'
 
-  App f arg -> unify f (arg .->. typeT)
+  App f arg -> do
+    a <- infer arg
+    unify f (a .->. typeT)
 
   _ -> fail ("Expected a Type but got " ++ pretty ty)
 
