@@ -9,7 +9,7 @@ import Data.Foldable (for_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Nil)
 import qualified Data.HashMap.Lazy as H
-import Data.List (intercalate, union)
+import Data.List (intercalate, union, (\\))
 import Data.Result
 import Expr
 import Judgement
@@ -170,14 +170,16 @@ checkModule' module' = do
 checkDeclaration' :: Module -> Declaration -> Proof ()
 checkDeclaration' (Module modName _) decl = do
   isType (declarationType decl)
-  context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (declarationType decl) } of
+  env <- getEnvironment
+  let ty = declarationType decl
+  context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (freeVariables ty \\ H.keys env) ty } of
     Declaration _ ty term -> check term ty
-    Data _ ty constructors ->
-      for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $ do
-        let sig' = generalize sig
-        isType sig
-        let (op, _) = applicationChain sig'
-        check op ty)
+    Data dname ty constructors ->
+      for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $
+        flip (foldr (>-)) (fmap (::: typeT) (freeVariables sig \\ H.keys env)) $ do
+          isType sig
+          variables <- traverse (fresh . Just) (domain ty)
+          unify (foldl (#) (var dname) (fmap var variables)) (codomain sig))
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: Term -> Type -> Proof ()
