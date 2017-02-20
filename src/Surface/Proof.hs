@@ -28,7 +28,11 @@ data ProofState = ProofState
   , proofEnvironment :: Environment }
   deriving (Eq, Show)
 
-type Environment = H.HashMap Name Declaration
+type Environment = H.HashMap Name Binding
+
+data Binding = Binding { bindingType :: Type, bindingValue :: Expr }
+  deriving (Eq, Show)
+
 
 -- Judgement constructors
 
@@ -160,7 +164,7 @@ decompose judgement = case judgement of
 
 checkModule' :: Module -> Proof ()
 checkModule' module' = do
-  modify $ \ s -> s { proofEnvironment = moduleDeclarations module' }
+  for_ (moduleDeclarations module') addBindings
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
@@ -495,6 +499,15 @@ modifyContext f = getContext >>= putContext . f
 declare :: DefinitionConstraint -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
+addBindings :: Declaration -> Proof ()
+addBindings decl = case decl of
+  Declaration name ty value ->
+    modifyEnvironment (H.insert name (Binding ty value))
+  Data name ty constructors -> do
+    modifyEnvironment (H.insert name (Binding ty typeT))
+    for_ constructors (\ (Constructor name ty) ->
+      modifyEnvironment (H.insert name (Binding ty unit)))
+
 
 getEnvironment :: Proof Environment
 getEnvironment = gets proofEnvironment
@@ -514,7 +527,7 @@ findTyping name = getContext >>= help
           | name == found = return decl
         help (context :< _) = help context
         help _ = do
-          ty <- gets (fmap declarationType . H.lookup name . proofEnvironment)
+          ty <- gets (fmap bindingType . H.lookup name . proofEnvironment)
           maybe (fail ("Missing type constraint for " ++ pretty name ++ " in context.")) return ty
 
 lookupDefinition :: Name -> Proof (Maybe Expr)
@@ -522,7 +535,7 @@ lookupDefinition name = getContext >>= help
   where help (_ :< D (found := decl))
           | name == found = return decl
         help (context :< _) = help context
-        help _ = return Nothing
+        help _ = gets (fmap bindingValue . H.lookup name . proofEnvironment)
 
 
 specialize :: Type -> Proof Type
