@@ -187,6 +187,10 @@ check' :: Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
   (Abs n body, Pi n1 t tbody) -> n1 ::: t >- (n ::: t >- check body tbody)
 
+  (Var name@N{}, _) -> do
+    ty' <- findTyping name
+    unify ty' ty
+
   (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
   (InL l, Sum t1 _) -> check l t1
