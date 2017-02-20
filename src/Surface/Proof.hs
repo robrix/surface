@@ -168,14 +168,16 @@ checkModule' module' = do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (declarationType decl) } of
-  Declaration _ ty term -> check term ty
-  Data _ ty constructors -> do
-    isType ty
-    for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $ do
-      isType sig
-      let (op, _) = applicationChain sig
-      check op ty)
+checkDeclaration' (Module modName _) decl = do
+  isType (declarationType decl)
+  context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (declarationType decl) } of
+    Declaration _ ty term -> check term ty
+    Data _ ty constructors ->
+      for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $ do
+        let sig' = generalize sig
+        isType sig
+        let (op, _) = applicationChain sig'
+        check op ty)
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: Term -> Type -> Proof ()
