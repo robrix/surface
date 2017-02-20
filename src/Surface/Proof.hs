@@ -292,7 +292,9 @@ isType' ty = case unfix ty of
 
   App f arg -> do
     a <- infer arg
-    unify f (a .->. typeT)
+    b <- fresh Nothing
+    check f (a .->. var b)
+    isType (var b)
 
   _ -> fail ("Expected a Type but got " ++ pretty ty)
 
