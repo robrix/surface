@@ -357,7 +357,8 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
 
   (Unit, Unit) -> return ()
 
-  _ -> fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
+  _ -> cannotUnify
+  where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
 
 solve' :: Name -> Suffix -> Type -> Proof ()
 solve' name suffix ty = onTop $ \ (n := d) ->
