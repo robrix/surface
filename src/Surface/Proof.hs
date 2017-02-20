@@ -178,8 +178,9 @@ checkDeclaration' (Module modName _) decl = do
       for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $
         flip (foldr (>-)) (fmap (::: typeT) (freeVariables sig \\ H.keys env)) $ do
           isType sig
-          variables <- traverse (fresh . Just) (domain ty)
-          unify (foldl (#) (var dname) (fmap var variables)) (codomain sig))
+          tyVariables <- traverse (fresh . Just) (domain ty)
+          sigVariables <- traverse (fresh . Just) (domain sig)
+          check (codomain sig) (foldl (#) (var dname) (fmap var (tyVariables ++ sigVariables))))
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: Term -> Type -> Proof ()
