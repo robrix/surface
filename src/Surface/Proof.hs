@@ -12,6 +12,7 @@ import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\))
 import Data.Result
 import Expr
+import GHC.Stack
 import Judgement
 import Module
 import Prelude hiding (fail)
@@ -102,8 +103,8 @@ modify f = get >>= put . f
 
 -- Result constructors
 
-fail :: String -> Proof a
-fail = wrap . R . Error . (:[])
+fail :: HasCallStack => String -> Proof a
+fail = wrap . R . Error . (:[ prettyCallStack callStack ])
 
 
 -- Proof evaluation
