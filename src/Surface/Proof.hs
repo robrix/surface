@@ -107,7 +107,9 @@ modify f = get >>= put . f
 -- Result constructors
 
 fail :: HasCallStack => String -> Proof a
-fail = wrap . R . Error . (:[ prettyCallStack callStack ])
+fail message = let ?callStack = modifyCallStack (filter ((/= "J") . fst)) callStack in
+  wrap (R (Error [ message, prettyCallStack callStack ]))
+  where modifyCallStack f = fromCallSiteList . f . getCallStack
 
 
 -- Proof evaluation
