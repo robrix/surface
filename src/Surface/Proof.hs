@@ -169,12 +169,12 @@ decompose judgement = let ?callStack = popCallStack callStack in case judgement 
 -- Judgement interpreters
 
 checkModule' :: HasCallStack => Module -> Proof ()
-checkModule' module' = do
+checkModule' module' = let ?callStack = popCallStack callStack in do
   for_ (moduleDeclarations module') addBindings
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = do
+checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callStack in  do
   isType (declarationType decl)
   env <- getEnvironment
   let ty = declarationType decl
@@ -190,7 +190,7 @@ checkDeclaration' (Module modName _) decl = do
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: HasCallStack => Term -> Type -> Proof ()
-check' term ty = case (unfix term, unfix ty) of
+check' term ty = let ?callStack = popCallStack callStack in case (unfix term, unfix ty) of
   (Abs n body, Pi n1 t tbody) -> n1 ::: t >- (n ::: t >- check body tbody)
 
   (Var name@N{}, _) -> do
@@ -207,7 +207,7 @@ check' term ty = case (unfix term, unfix ty) of
     unify ty ty'
 
 infer' :: HasCallStack => Term -> Proof Type
-infer' term = case unfix term of
+infer' term = let ?callStack = popCallStack callStack in case unfix term of
   Pair x y -> (.*.) <$> infer x <*> infer y
 
   Fst p -> var . fst <$> inferPair p
@@ -282,7 +282,7 @@ infer' term = case unfix term of
 
 
 isType' :: HasCallStack => Term -> Proof ()
-isType' ty = case unfix ty of
+isType' ty = let ?callStack = popCallStack callStack in case unfix ty of
   UnitT -> return ()
   Type -> return ()
   Sum a b -> do
@@ -312,7 +312,7 @@ isType' ty = case unfix ty of
 alphaEquivalent' :: HasCallStack => Expr -> Expr -> Proof Bool
 alphaEquivalent' e1 e2
   | e1 == e2 = return True
-  | otherwise = case (unfix e1, unfix e2) of
+  | otherwise = let ?callStack = popCallStack callStack in case (unfix e1, unfix e2) of
     (Abs n1 b1, Abs n2 b2)
       | n1 == n2 -> alphaEquivalent b1 b2
       | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
@@ -332,7 +332,7 @@ alphaEquivalent' e1 e2
 
 
 equate' :: HasCallStack => Expr -> Expr -> Proof ()
-equate' e1 e2 = do
+equate' e1 e2 = let ?callStack = popCallStack callStack in do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
     nf1 <- whnf e1
@@ -343,7 +343,7 @@ equate' e1 e2 = do
 
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
-unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
+unify' t1 t2 = let ?callStack = popCallStack callStack in unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
   (UnitT, UnitT) -> return ()
@@ -389,7 +389,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
 
 solve' :: HasCallStack => Name -> Suffix -> Type -> Proof ()
-solve' name suffix ty = onTop $ \ (n := d) ->
+solve' name suffix ty = let ?callStack = popCallStack callStack in onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
     (True, False, Nothing) -> replace (suffix ++ [ name := Just ty ])
@@ -406,7 +406,7 @@ solve' name suffix ty = onTop $ \ (n := d) ->
 
 
 fresh' :: HasCallStack => Maybe Expr -> Proof Name
-fresh' d = do
+fresh' d = let ?callStack = popCallStack callStack in do
   s <- get
   let m = proofNextName s
   put s { proofNextName = succName m
@@ -414,14 +414,14 @@ fresh' d = do
   return m
 
 restore' :: HasCallStack => Proof Extension
-restore' = return Context.Restore
+restore' = let ?callStack = popCallStack callStack in return Context.Restore
 
 replace' :: HasCallStack => Suffix -> Proof Extension
-replace' = return . Context.Replace
+replace' = let ?callStack = popCallStack callStack in return . Context.Replace
 
 
 normalize' :: HasCallStack => Expr -> Proof Expr
-normalize' expr = case unfix expr of
+normalize' expr = let ?callStack = popCallStack callStack in case unfix expr of
   Var name -> do
     binding <- lookupDefinition name
     case binding of
@@ -481,7 +481,7 @@ normalize' expr = case unfix expr of
 
 
 whnf' :: HasCallStack => Expr -> Proof Expr
-whnf' expr = case unfix expr of
+whnf' expr = let ?callStack = popCallStack callStack in case unfix expr of
   Var v -> do
     binding <- lookupDefinition v
     case binding of
