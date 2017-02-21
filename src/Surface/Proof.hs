@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, ImplicitParams #-}
 module Surface.Proof where
 
 import Context
@@ -120,13 +120,13 @@ runAll context proof = case runStep context proof of
   Left result -> result
   Right next -> uncurry runAll next
 
-runSteps :: ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
-runSteps context proof = Right (context, proof) : case runStep context proof of
+runSteps :: HasCallStack => ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
+runSteps context proof = let ?callStack = popCallStack callStack in Right (context, proof) : case runStep context proof of
   Left result -> [ Left result ]
   Right next -> uncurry runSteps next
 
-runStep :: ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
-runStep context proof = case proof of
+runStep :: HasCallStack => ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
+runStep context proof = let ?callStack = popCallStack callStack in case proof of
   Return a -> Left $ Result a
   Then proof cont -> case proof of
     J judgement -> Right (context, decompose judgement >>= cont)
@@ -138,8 +138,8 @@ runStep context proof = case proof of
       Result a -> Right (context, cont a)
 
 
-decompose :: Judgement a -> Proof a
-decompose judgement = case judgement of
+decompose :: HasCallStack => Judgement a -> Proof a
+decompose judgement = let ?callStack = popCallStack callStack in case judgement of
   CheckModule module' -> checkModule' module'
   CheckDeclaration m d -> checkDeclaration' m d
 
