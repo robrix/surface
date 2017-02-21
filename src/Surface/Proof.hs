@@ -19,7 +19,10 @@ import Prelude hiding (fail)
 import Surface.Binder
 import Text.Pretty
 
-data ProofF a = J (Judgement a) | S (State ProofState a) | R (Result a)
+data ProofF a where
+  J :: Judgement a -> ProofF a
+  S :: State ProofState a -> ProofF a
+  R :: Result a -> ProofF a
 
 type Proof = Freer ProofF
 
