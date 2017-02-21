@@ -130,6 +130,11 @@ runSteps context proof = let ?callStack = popCallStack callStack in Right (conte
   Left result -> [ Left result ]
   Right next -> uncurry runSteps next
 
+-- | Like runSteps, but filtering out gets and puts.
+runSteps' :: HasCallStack => ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
+runSteps' context = filter (either (const True) isSignificant) . runSteps context
+  where isSignificant = iterFreer (\ p _ -> case p of { S _ -> False ; _ -> True }) . (True <$) . snd
+
 runStep :: HasCallStack => ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
 runStep context proof = let ?callStack = popCallStack callStack in case proof of
   Return a -> Left $ Result a
