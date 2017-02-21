@@ -20,7 +20,7 @@ import Surface.Binder
 import Text.Pretty
 
 data ProofF a where
-  J :: Judgement a -> ProofF a
+  J :: HasCallStack => Judgement a -> ProofF a
   S :: State ProofState a -> ProofF a
   R :: Result a -> ProofF a
 
