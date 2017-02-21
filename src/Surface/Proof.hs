@@ -37,52 +37,52 @@ data Binding = Binding { bindingType :: Type, bindingValue :: Expr }
 
 -- Judgement constructors
 
-checkModule :: Module -> Proof ()
+checkModule :: HasCallStack => Module -> Proof ()
 checkModule module' = J (CheckModule module') `Then` return
 
-checkDeclaration :: Module -> Declaration -> Proof ()
+checkDeclaration :: HasCallStack => Module -> Declaration -> Proof ()
 checkDeclaration module' declaration = J (CheckDeclaration module' declaration) `Then` return
 
 
-check :: Term -> Type -> Proof ()
+check :: HasCallStack => Term -> Type -> Proof ()
 check term ty = J (Check term ty) `Then` return
 
-infer :: Term -> Proof Type
+infer :: HasCallStack => Term -> Proof Type
 infer term = J (Infer term) `Then` return
 
 
-isType :: Term -> Proof ()
+isType :: HasCallStack => Term -> Proof ()
 isType term = J (IsType term) `Then` return
 
 
-alphaEquivalent :: Expr -> Expr -> Proof Bool
+alphaEquivalent :: HasCallStack => Expr -> Expr -> Proof Bool
 alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `Then` return
 
-equate :: Expr -> Expr -> Proof ()
+equate :: HasCallStack => Expr -> Expr -> Proof ()
 equate e1 e2 = J (Equate e1 e2) `Then` return
 
 
-unify :: Type -> Type -> Proof ()
+unify :: HasCallStack => Type -> Type -> Proof ()
 unify t1 t2 = J (Unify t1 t2) `Then` return
 
-solve :: Name -> Suffix -> Type -> Proof ()
+solve :: HasCallStack => Name -> Suffix -> Type -> Proof ()
 solve name suffix ty = J (Solve name suffix ty) `Then` return
 
 
-fresh :: Maybe Expr -> Proof Name
+fresh :: HasCallStack => Maybe Expr -> Proof Name
 fresh declaration = J (Fresh declaration) `Then` return
 
-restore :: Proof Extension
+restore :: HasCallStack => Proof Extension
 restore = J Judgement.Restore `Then` return
 
-replace :: Suffix -> Proof Extension
+replace :: HasCallStack => Suffix -> Proof Extension
 replace suffix = J (Judgement.Replace suffix) `Then` return
 
 
-normalize :: Expr -> Proof Expr
+normalize :: HasCallStack => Expr -> Proof Expr
 normalize expr = J (Normalize expr) `Then` return
 
-whnf :: Expr -> Proof Expr
+whnf :: HasCallStack => Expr -> Proof Expr
 whnf expr = J (WHNF expr) `Then` return
 
 
@@ -112,10 +112,10 @@ fail = wrap . R . Error . (:[ prettyCallStack callStack ])
 initialState :: ProofState
 initialState = ProofState (I 0) Nil H.empty
 
-run :: Proof a -> Result a
+run :: HasCallStack => Proof a -> Result a
 run = runAll initialState
 
-runAll :: ProofState -> Proof a -> Result a
+runAll :: HasCallStack => ProofState -> Proof a -> Result a
 runAll context proof = case runStep context proof of
   Left result -> result
   Right next -> uncurry runAll next
@@ -163,12 +163,12 @@ decompose judgement = let ?callStack = popCallStack callStack in case judgement 
 
 -- Judgement interpreters
 
-checkModule' :: Module -> Proof ()
+checkModule' :: HasCallStack => Module -> Proof ()
 checkModule' module' = do
   for_ (moduleDeclarations module') addBindings
   for_ (moduleDeclarations module') (checkDeclaration module')
 
-checkDeclaration' :: Module -> Declaration -> Proof ()
+checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof ()
 checkDeclaration' (Module modName _) decl = do
   isType (declarationType decl)
   env <- getEnvironment
@@ -184,7 +184,7 @@ checkDeclaration' (Module modName _) decl = do
           check (codomain sig) (foldl (#) (var dname) (fmap var (tyVariables ++ sigVariables))))
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
-check' :: Term -> Type -> Proof ()
+check' :: HasCallStack => Term -> Type -> Proof ()
 check' term ty = case (unfix term, unfix ty) of
   (Abs n body, Pi n1 t tbody) -> n1 ::: t >- (n ::: t >- check body tbody)
 
@@ -201,7 +201,7 @@ check' term ty = case (unfix term, unfix ty) of
     ty' <- infer term
     unify ty ty'
 
-infer' :: Term -> Proof Type
+infer' :: HasCallStack => Term -> Proof Type
 infer' term = case unfix term of
   Pair x y -> (.*.) <$> infer x <*> infer y
 
@@ -276,7 +276,7 @@ infer' term = case unfix term of
           return typeT
 
 
-isType' :: Term -> Proof ()
+isType' :: HasCallStack => Term -> Proof ()
 isType' ty = case unfix ty of
   UnitT -> return ()
   Type -> return ()
@@ -304,7 +304,7 @@ isType' ty = case unfix ty of
   _ -> fail ("Expected a Type but got " ++ pretty ty)
 
 
-alphaEquivalent' :: Expr -> Expr -> Proof Bool
+alphaEquivalent' :: HasCallStack => Expr -> Expr -> Proof Bool
 alphaEquivalent' e1 e2
   | e1 == e2 = return True
   | otherwise = case (unfix e1, unfix e2) of
@@ -326,7 +326,7 @@ alphaEquivalent' e1 e2
       _ -> return False
 
 
-equate' :: Expr -> Expr -> Proof ()
+equate' :: HasCallStack => Expr -> Expr -> Proof ()
 equate' e1 e2 = do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
@@ -337,7 +337,7 @@ equate' e1 e2 = do
       _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
 
 
-unify' :: Type -> Type -> Proof ()
+unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
@@ -383,7 +383,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
 
-solve' :: Name -> Suffix -> Type -> Proof ()
+solve' :: HasCallStack => Name -> Suffix -> Type -> Proof ()
 solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
@@ -400,7 +400,7 @@ solve' name suffix ty = onTop $ \ (n := d) ->
       restore
 
 
-fresh' :: Maybe Expr -> Proof Name
+fresh' :: HasCallStack => Maybe Expr -> Proof Name
 fresh' d = do
   s <- get
   let m = proofNextName s
@@ -408,14 +408,14 @@ fresh' d = do
         , proofContext = proofContext s :< D (m := d) }
   return m
 
-restore' :: Proof Extension
+restore' :: HasCallStack => Proof Extension
 restore' = return Context.Restore
 
-replace' :: Suffix -> Proof Extension
+replace' :: HasCallStack => Suffix -> Proof Extension
 replace' = return . Context.Replace
 
 
-normalize' :: Expr -> Proof Expr
+normalize' :: HasCallStack => Expr -> Proof Expr
 normalize' expr = case unfix expr of
   Var name -> do
     binding <- lookupDefinition name
@@ -475,7 +475,7 @@ normalize' expr = case unfix expr of
   _ -> return expr
 
 
-whnf' :: Expr -> Proof Expr
+whnf' :: HasCallStack => Expr -> Proof Expr
 whnf' expr = case unfix expr of
   Var v -> do
     binding <- lookupDefinition v
@@ -549,7 +549,7 @@ modifyEnvironment :: (Environment -> Environment) -> Proof ()
 modifyEnvironment f = getEnvironment >>= putEnvironment . f
 
 
-findTyping :: Name -> Proof Type
+findTyping :: HasCallStack => Name -> Proof Type
 findTyping name = getContext >>= help
   where help (_ :< T (found ::: decl))
           | name == found = return decl
