@@ -302,8 +302,10 @@ isType' ty = let ?callStack = popCallStack callStack in case unfix ty of
     name ::: ty >- isType body
 
   Var name -> do
-    ty' <- findTyping name
-    isType ty'
+    def <- lookupDefinition name
+    case def of
+      Just ty' -> isType ty'
+      _ -> findTyping name >>= isType
 
   App f arg -> do
     a <- infer arg
