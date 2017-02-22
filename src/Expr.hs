@@ -167,7 +167,7 @@ domain :: Type -> [Type]
 domain = maybe [] (\ (_, t, b) -> t : domain b) . asPi
 
 codomain :: Type -> Type
-codomain expr = maybe expr (\ (_, _, b) -> b) (asPi expr)
+codomain expr = maybe expr (\ (_, _, b) -> codomain b) (asPi expr)
 
 
 applicationChain :: Expr -> (Expr, [Expr])
