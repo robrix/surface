@@ -190,8 +190,7 @@ checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callSta
         flip (foldr (>-)) (fmap (::: typeT) (freeVariables sig \\ H.keys env)) $ do
           isType sig
           tyVariables <- traverse (fresh . Just) (domain ty)
-          sigVariables <- traverse (fresh . Just) (domain sig)
-          check (codomain sig) (foldl (#) (var dname) (fmap var (tyVariables ++ sigVariables))))
+          equate (codomain sig) (foldl (#) (var dname) (fmap var tyVariables)))
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 check' :: HasCallStack => Term -> Type -> Proof ()
