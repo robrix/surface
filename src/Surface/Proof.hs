@@ -392,7 +392,7 @@ unify' t1 t2 = let ?callStack = popCallStack callStack in unless (t1 == t2) $ ca
   (Unit, Unit) -> return ()
 
   _ -> cannotUnify
-  where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
+  where cannotUnify = let ?callStack = popCallStack callStack in fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
 
 solve' :: HasCallStack => Name -> Suffix -> Type -> Proof ()
 solve' name suffix ty = let ?callStack = popCallStack callStack in onTop $ \ (n := d) ->
