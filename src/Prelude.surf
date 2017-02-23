@@ -22,6 +22,9 @@ data Maybe : Type -> Type where
   just : a -> Maybe a
   nothing : Maybe a
 
+data List : Type -> Type where
+  cons : a -> List a -> List a
+  nil : List a
 
 data Pair : Type -> Type -> Type where
   (,) : a -> b -> Pair a b
