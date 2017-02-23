@@ -17,6 +17,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Context
                      , Control.State
+                     , Data.Functor.Classes.Eq.Generic
                      , Data.Result
                      , Expr
                      , Judgement
