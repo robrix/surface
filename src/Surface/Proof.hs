@@ -195,7 +195,7 @@ checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callSta
 
 check' :: HasCallStack => Term -> Type -> Proof ()
 check' term ty = let ?callStack = popCallStack callStack in case (unfix term, unfix ty) of
-  (Abs n body, Pi n1 t tbody) -> T (n1 ::: t) >- (T (n ::: t) >- check body tbody)
+  (Abs n body, Pi n1 t tbody) -> T (n1 ::: t) >- T (n ::: t) >- check body tbody
 
   (Var name@N{}, _) -> do
     ty' <- findTyping name
@@ -599,6 +599,7 @@ onTop f = do
         _ -> onTop f >> modifyContext (:< vd)
     Nil -> fail "onTop called with empty context."
 
+infixr 3 >-
 (>-) :: Constraint -> Proof a -> Proof a
 constraint >- ma = do
   modifyContext (:< constraint)
