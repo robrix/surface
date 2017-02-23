@@ -26,6 +26,11 @@ data Either : Type -> Type -> Type where
   left : l -> Either l r
   right : r -> Either l r
 
+data These : Type -> Type -> Type where
+  this : l -> These l r
+  that : r -> These l r
+  these : l -> r -> These l r
+
 data List : Type -> Type where
   cons : a -> List a -> List a
   nil : List a
