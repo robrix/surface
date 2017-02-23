@@ -187,7 +187,7 @@ checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callSta
     Declaration _ ty term -> check term ty
     Data dname ty constructors ->
       for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $
-        flip (foldr (>-)) (fmap (::: typeT) (freeVariables sig \\ H.keys env)) $ do
+        flip (foldr (>-)) (fmap (T . (::: typeT)) (freeVariables sig \\ H.keys env)) $ do
           isType sig
           tyVariables <- traverse (fresh . Just) (domain ty)
           equate (codomain sig) (foldl (#) (var dname) (fmap var tyVariables)))
@@ -195,7 +195,7 @@ checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callSta
 
 check' :: HasCallStack => Term -> Type -> Proof ()
 check' term ty = let ?callStack = popCallStack callStack in case (unfix term, unfix ty) of
-  (Abs n body, Pi n1 t tbody) -> n1 ::: t >- (n ::: t >- check body tbody)
+  (Abs n body, Pi n1 t tbody) -> T (n1 ::: t) >- (T (n ::: t) >- check body tbody)
 
   (Var name@N{}, _) -> do
     ty' <- findTyping name
@@ -245,7 +245,7 @@ infer' term = let ?callStack = popCallStack callStack in case unfix term of
 
   Abs name body -> do
     a <- fresh Nothing
-    v <- name ::: var a >- infer body
+    v <- T (name ::: var a) >- infer body
     return (var a .->. v)
 
   App f arg -> do
@@ -265,7 +265,7 @@ infer' term = let ?callStack = popCallStack callStack in case unfix term of
 
   Let name value body -> do
     t <- generalizeOver (infer value)
-    name ::: t >- infer body
+    T (name ::: t) >- infer body
 
   As term ty -> do
     a <- fresh (Just ty)
@@ -280,7 +280,7 @@ infer' term = let ?callStack = popCallStack callStack in case unfix term of
           return (a, b)
 
         inferDType name ty body = do
-          result <- name ::: ty >- infer body
+          result <- T (name ::: ty) >- infer body
           isType result
           return typeT
 
@@ -298,7 +298,7 @@ isType' ty = let ?callStack = popCallStack callStack in case unfix ty of
 
   Pi name ty body -> do
     isType ty
-    name ::: ty >- isType body
+    T (name ::: ty) >- isType body
 
   Var name -> do
     def <- lookupDefinition name
@@ -599,16 +599,19 @@ onTop f = do
         _ -> onTop f >> modifyContext (:< vd)
     Nil -> fail "onTop called with empty context."
 
-(>-) :: TypeConstraint -> Proof a -> Proof a
-x ::: s >- ma = do
-  modifyContext (:< T (x ::: s))
+(>-) :: Constraint -> Proof a -> Proof a
+constraint >- ma = do
+  modifyContext (:< constraint)
   a <- ma
   modifyContext extract
   return a
-  where extract (context :< T (y ::: _)) | x == y = context
-        extract (context :< D d) = extract context :< D d
-        extract (_ :< _) = error "Bad context entry!"
-        extract _ = error "Missing type constraint!"
+  where extract context = case (constraint, context) of
+          (T (x ::: _), context :< T (y ::: _)) | x == y -> context
+          (T _, context :< D d) -> extract context :< D d
+          (D (x := _), context :< D (y := _)) | x == y -> context
+          (D _, context :< T t) -> extract context :< T t
+          (_, _ :< _) -> error "Bad context entry!"
+          _ -> error "Missing constraint!"
 
 
 (==>) :: Suffix -> Type -> Proof Type
