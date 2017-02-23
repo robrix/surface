@@ -3,14 +3,13 @@ module Module where
 
 import Data.Foldable (toList)
 import Data.Functor.Foldable (unfix)
-import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
 import Expr
 import Text.Pretty
 
 data Module = Module
   { moduleName :: String
-  , moduleDeclarations :: H.HashMap Name Declaration }
+  , moduleDeclarations :: [Declaration] }
   deriving (Eq, Show)
 
 data Declaration
@@ -29,11 +28,6 @@ data Constructor
     { constructorName :: Name
     , constructorSignature :: Expr }
   deriving (Eq, Show)
-
-
-makeModule :: String -> [Declaration] -> Module
-makeModule name = Module name . foldr insert H.empty
-  where insert decl = H.insert (declarationName decl) decl
 
 
 -- Instances

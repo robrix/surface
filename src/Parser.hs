@@ -36,14 +36,14 @@ toResult r = case r of
 source :: (Monad m, TokenParsing m) => m (NonEmpty Module)
 source = (:|) <$> module'
               <*> many module'
-      <|> runUnlined (pure . makeModule "Main" <$> declaration `sepEndBy` some newline)
+      <|> runUnlined (pure . Module "Main" <$> declaration `sepEndBy` some newline)
 
 module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
-  where mod = makeModule <$  preword "module"
-                         <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
-                         <*> (declaration `sepEndBy` some newline)
-                         <?> "module"
+  where mod = Module <$  preword "module"
+                     <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
+                     <*> (declaration `sepEndBy` some newline)
+                     <?> "module"
 
 declaration :: (Monad m, TokenParsing m) => m Declaration
 declaration =  (datatype <?> "datatype")
