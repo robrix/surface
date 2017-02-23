@@ -13,16 +13,19 @@ data Bool : Type where
   true : Bool
   false : Bool
 
+data Nat : Type where
+  zero : Nat
+  succ : Nat -> Nat
+
+
 data Maybe : Type -> Type where
   just : a -> Maybe a
   nothing : Maybe a
 
+
 data Pair : Type -> Type -> Type where
   (,) : a -> b -> Pair a b
 
+
 data Sigma : (A : Type) -> (B : A -> Type) -> Type where
   Sigma : (A : Type) -> (B : A -> Type) -> (a : A) -> B a -> Sigma A B
-
-data Nat : Type where
-  zero : Nat
-  succ : Nat -> Nat
