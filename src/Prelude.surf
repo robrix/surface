@@ -22,3 +22,7 @@ data Pair : Type -> Type -> Type where
 
 data Sigma : (A : Type) -> (B : A -> Type) -> Type where
   Sigma : (A : Type) -> (B : A -> Type) -> (a : A) -> B a -> Sigma A B
+
+data Nat : Type where
+  zero : Nat
+  succ : Nat -> Nat
