@@ -21,4 +21,4 @@ data Pair : Type -> Type -> Type where
   (,) : a -> b -> Pair a b
 
 data Sigma : (A : Type) -> (B : A -> Type) -> Type where
-  Sigma : (a : A) -> B a -> Sigma A B
+  Sigma : (A : Type) -> (B : A -> Type) -> (a : A) -> B a -> Sigma A B
