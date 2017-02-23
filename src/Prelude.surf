@@ -30,5 +30,10 @@ data Pair : Type -> Type -> Type where
   (,) : a -> b -> Pair a b
 
 
+data Vec : Nat -> Type -> Type where
+  vnil : Vec zero a
+  vcons : a -> Vec n a -> Vec (succ n) a
+
+
 data Sigma : (A : Type) -> (B : A -> Type) -> Type where
   Sigma : (A : Type) -> (B : A -> Type) -> (a : A) -> B a -> Sigma A B
