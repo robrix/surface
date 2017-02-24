@@ -634,14 +634,15 @@ generalizeOver mt = do
   t <- mt
   rest <- skimContext []
   rest ==> t
-  where skimContext :: Suffix -> Proof Suffix
-        skimContext rest = do
-          context :< d <- getContext
-          putContext context
-          case d of
-            Sep -> return rest
-            D a -> skimContext (a : rest)
-            T _ -> error "Unexpected type constraint."
+
+skimContext :: Suffix -> Proof Suffix
+skimContext rest = do
+  context :< d <- getContext
+  putContext context
+  case d of
+    Sep -> return rest
+    D a -> skimContext (a : rest)
+    T _ -> error "Unexpected type constraint."
 
 contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
 contextualizeErrors addContext = iterFreer alg . fmap pure
