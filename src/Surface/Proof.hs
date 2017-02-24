@@ -128,14 +128,15 @@ runAll context proof = case runStep context proof of
   Left result -> result
   Right next -> uncurry runAll next
 
-runSteps :: HasCallStack => ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
-runSteps context proof = let ?callStack = popCallStack callStack in Right (context, proof) : case runStep context proof of
-  Left result -> [ Left result ]
+runSteps :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
+runSteps context proof = let ?callStack = popCallStack callStack in (context, proof) : case runStep context proof of
+  Left (Result result) -> [ (context, return result) ]
+  Left (Error errors) -> [ (context, fail (intercalate "\n" errors)) ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
-runSteps' :: HasCallStack => ProofState -> Proof a -> [Either (Result a) (ProofState, Proof a)]
-runSteps' context = filter (either (const True) isSignificant) . runSteps context
+runSteps' :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
+runSteps' context = filter isSignificant . runSteps context
   where isSignificant = iterFreer (\ p _ -> case p of { S _ -> False ; _ -> True }) . (True <$) . snd
 
 runStep :: HasCallStack => ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
