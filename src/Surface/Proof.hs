@@ -183,18 +183,13 @@ checkModule' module' = let ?callStack = popCallStack callStack in do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl = let ?callStack = popCallStack callStack in do
+checkDeclaration' mod@(Module modName _) decl = let ?callStack = popCallStack callStack in do
   isType (declarationType decl)
   env <- getEnvironment
   let ty = declarationType decl
   context [ pretty (declarationName decl) ] $ case decl { declarationType = generalize (freeVariables ty \\ H.keys env) ty } of
     Declaration _ ty term -> check term ty
-    Data dname ty constructors ->
-      for_ constructors (\ (Constructor cname sig) -> context [ pretty (declarationName decl), pretty cname ] $
-        flip (foldr (>-)) (fmap (T . (::: typeT)) (freeVariables sig \\ H.keys env)) $ do
-          isType sig
-          tyVariables <- traverse (fresh . Just) (domain ty)
-          equate (codomain sig) (foldl (#) (var dname) (fmap var tyVariables)))
+    Data _ _ constructors -> for_ constructors (checkConstructor mod decl)
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
 checkConstructor' :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
