@@ -131,7 +131,7 @@ runAll context proof = case runStep context proof of
 runSteps :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
 runSteps context proof = let ?callStack = popCallStack callStack in (context, proof) : case runStep context proof of
   Left (Result result) -> [ (context, return result) ]
-  Left (Error errors) -> [ (context, fail (intercalate "\n" errors)) ]
+  Left (Error errors) -> [ (context, R (Error errors) `Then` return) ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
