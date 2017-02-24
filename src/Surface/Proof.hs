@@ -46,6 +46,9 @@ checkModule module' = J (CheckModule module') `Then` return
 checkDeclaration :: HasCallStack => Module -> Declaration -> Proof ()
 checkDeclaration module' declaration = J (CheckDeclaration module' declaration) `Then` return
 
+checkConstructor :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
+checkConstructor module' declaration constructor = J (CheckConstructor module' declaration constructor) `Then` return
+
 
 check :: HasCallStack => Term -> Type -> Proof ()
 check term ty = J (Check term ty) `Then` return
@@ -152,6 +155,7 @@ decompose :: HasCallStack => Judgement a -> Proof a
 decompose judgement = let ?callStack = popCallStack callStack in case judgement of
   CheckModule module' -> checkModule' module'
   CheckDeclaration m d -> checkDeclaration' m d
+  CheckConstructor m d c -> checkConstructor' m d c
 
   Check term ty -> check' term ty
   Infer term -> infer' term
@@ -179,7 +183,7 @@ checkModule' module' = let ?callStack = popCallStack callStack in do
   for_ (moduleDeclarations module') (checkDeclaration module')
 
 checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof ()
-checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callStack in  do
+checkDeclaration' (Module modName _) decl = let ?callStack = popCallStack callStack in do
   isType (declarationType decl)
   env <- getEnvironment
   let ty = declarationType decl
@@ -192,6 +196,15 @@ checkDeclaration' (Module modName _) decl =let ?callStack = popCallStack callSta
           tyVariables <- traverse (fresh . Just) (domain ty)
           equate (codomain sig) (foldl (#) (var dname) (fmap var tyVariables)))
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
+
+checkConstructor' :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
+checkConstructor' _ decl (Constructor _ sig) = let ?callStack = popCallStack callStack in do
+  env <- getEnvironment
+  flip (foldr (>-)) (fmap (T . (::: typeT)) (freeVariables sig \\ H.keys env)) $ do
+    isType sig
+    tyVariables <- traverse (fresh . Just) (domain (declarationType decl))
+    equate (codomain sig) (foldl (#) (var (declarationName decl)) (fmap var tyVariables))
+
 
 check' :: HasCallStack => Term -> Type -> Proof ()
 check' term ty = let ?callStack = popCallStack callStack in case (unfix term, unfix ty) of
