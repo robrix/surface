@@ -194,11 +194,14 @@ checkDeclaration' mod@(Module modName _) decl = let ?callStack = popCallStack ca
 
 checkConstructor' :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
 checkConstructor' _ decl (Constructor _ sig) = let ?callStack = popCallStack callStack in do
+  modifyContext (:< Sep)
   env <- getEnvironment
   tyVariables <- traverse (fresh . Just) (domain (declarationType decl))
   flip (foldr (>-)) (fmap (T . (::: typeT)) (freeVariables sig \\ H.keys env)) $ do
     isType sig
     equate (codomain sig) (foldl (#) (var (declarationName decl)) (fmap var tyVariables))
+  _ <- skimContext []
+  return ()
 
 
 check' :: HasCallStack => Term -> Type -> Proof ()
