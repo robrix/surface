@@ -587,6 +587,13 @@ lookupDefinition name = getContext >>= help
         help (context :< _) = help context
         help _ = gets (fmap bindingValue . H.lookup name . proofEnvironment)
 
+lookupTyping :: Name -> Proof (Maybe Expr)
+lookupTyping name = getContext >>= help
+  where help (_ :< T (found ::: ty))
+          | name == found = return (Just ty)
+        help (context :< _) = help context
+        help _ = gets (fmap bindingType . H.lookup name . proofEnvironment)
+
 
 specialize :: Type -> Proof Type
 specialize ty = case unfix ty of
