@@ -31,8 +31,8 @@ data Constructor
   deriving (Eq, Show)
 
 
-datatypeSum :: [Constructor] -> Expr
-datatypeSum = maybe unitT (foldr1 (.+.)) . nonEmpty . fmap constructorProduct
+datatypeSum :: Expr -> [Constructor] -> Expr
+datatypeSum ty = maybe unitT (foldr1 (.+.)) . nonEmpty . fmap constructorProduct
 
 constructorProduct :: Constructor -> Expr
 constructorProduct = maybe unitT (foldr1 (.*.)) . nonEmpty . domain . constructorSignature
