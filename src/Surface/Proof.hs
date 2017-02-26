@@ -315,6 +315,10 @@ isType' ty = let ?callStack = popCallStack callStack in case unfix ty of
     isType ty
     T (name ::: ty) >- isType body
 
+  Mu name ty body -> do
+    isType ty
+    T (name ::: ty) >- isType body
+
   Var name -> do
     def <- lookupDefinition name
     case def of
