@@ -4,6 +4,7 @@ module Module where
 import Data.Foldable (toList)
 import Data.Functor.Foldable (unfix)
 import Data.List (intersperse)
+import Data.List.NonEmpty (nonEmpty)
 import Expr
 import Text.Pretty
 
@@ -28,6 +29,10 @@ data Constructor
     { constructorName :: Name
     , constructorSignature :: Expr }
   deriving (Eq, Show)
+
+
+constructorProduct :: Constructor -> Expr
+constructorProduct = maybe unitT (foldr1 (.*.)) . nonEmpty . domain . constructorSignature
 
 
 -- Instances
