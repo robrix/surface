@@ -4,7 +4,7 @@ module Expr where
 import Data.Bifoldable
 import Data.Bifunctor
 import Data.Functor.Classes
-import Data.Functor.Foldable
+import Data.Functor.Foldable hiding (Mu)
 import Data.Hashable (Hashable)
 import Data.List (nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
@@ -15,6 +15,7 @@ data ExprF n a where
   Product :: a -> a -> ExprF n a
   Sum :: a -> a -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
+  Mu :: n -> a -> a -> ExprF n a
   Sigma :: n -> a -> a -> ExprF n a
 
   UnitT :: ExprF n a
@@ -259,6 +260,7 @@ instance Bifunctor ExprF where
     Product a b -> Product (f a) (f b)
     Sum a b -> Sum (f a) (f b)
     Pi n t b -> Pi (g n) (f t) (f b)
+    Mu n t b -> Mu (g n) (f t) (f b)
     Sigma n t b -> Sigma (g n) (f t) (f b)
 
     UnitT -> UnitT
@@ -287,6 +289,7 @@ instance Bifoldable ExprF where
     Product a b -> mappend (f a) (f b)
     Sum a b -> mappend (f a) (f b)
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
+    Mu n t b -> mappend (g n) (mappend (f t) (f b))
     Sigma n t b -> mappend (g n) (mappend (f t) (f b))
 
     UnitT -> mempty
@@ -322,6 +325,7 @@ instance Pretty2 ExprF where
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
+    Mu n t b -> showParen (d > 0) $ showChar 'µ' . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
     Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
@@ -353,6 +357,7 @@ instance Show n => Show1 (ExprF n) where
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
+    Mu n t b -> showsTernaryWith showsPrec sp sp "Mu" d n t b
     Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
