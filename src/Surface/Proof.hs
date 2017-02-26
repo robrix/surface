@@ -7,7 +7,7 @@ import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
 import Data.Foldable (for_)
 import Data.Functor.Classes
-import Data.Functor.Foldable hiding (Nil)
+import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\))
 import Data.Result
@@ -272,6 +272,10 @@ infer' term = let ?callStack = popCallStack callStack in case unfix term of
   Sum{} -> isType term >> return typeT
 
   Pi name ty body -> inferDType name ty body
+  Mu name ty body -> do
+    isType ty
+    T (name ::: ty) >- check body ty
+    return ty
   Sigma name ty body -> inferDType name ty body
 
   Let name value body -> do
