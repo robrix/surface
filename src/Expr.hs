@@ -144,6 +144,13 @@ makePi :: Name -> Type -> Type -> Type
 makePi name ty body = Fix (Pi name ty body)
 
 
+mu :: Type -> (Type -> Type) -> Type
+mu ty = uncurry (`makeMu` ty) . bindVariable
+
+makeMu :: Name -> Type -> Type -> Type
+makeMu name ty body = Fix (Mu name ty body)
+
+
 sigmaT :: Type -> (Type -> Type) -> Type
 sigmaT ty = uncurry (`makeSigma` ty) . bindVariable
 
