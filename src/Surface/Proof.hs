@@ -554,7 +554,7 @@ addBindings decl = case decl of
   Declaration name ty value ->
     modifyEnvironment (H.insert name (Binding ty value))
   Data name ty constructors -> do
-    modifyEnvironment (H.insert name (Binding ty typeT))
+    modifyEnvironment (H.insert name (Binding ty (datatypeSum constructors)))
     for_ constructors (\ (Constructor name ty) ->
       modifyEnvironment (H.insert name (Binding ty unit)))
 
