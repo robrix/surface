@@ -5,11 +5,12 @@ import Control.Applicative
 import Control.Monad.IO.Class
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
+import Data.Maybe (fromMaybe)
 import Data.Result as Result
 import Expr
 import Module
 import Text.Parser.Token
-import Text.Parser.Token.Highlight
+import Text.Parser.Token.Highlight hiding (Constructor)
 import Text.Trifecta as Trifecta
 
 parseExpr :: String -> Result.Result Expr
@@ -35,23 +36,34 @@ toResult r = case r of
 source :: (Monad m, TokenParsing m) => m (NonEmpty Module)
 source = (:|) <$> module'
               <*> many module'
-      <|> runUnlined (pure . makeModule "Main" <$> declaration `sepEndBy` some newline)
+      <|> runUnlined (pure . Module "Main" <$> declaration `sepEndBy` some newline)
 
 module' :: (Monad m, TokenParsing m) => m Module
 module' = runUnlined mod
-  where mod = makeModule <$  preword "module"
-                         <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
-                         <*> (declaration `sepEndBy` some newline)
-                         <?> "module"
+  where mod = Module <$  preword "module"
+                     <*> (typeIdentifier `chainr1` ((++) <$ op ".")) <* preword "where" <* some newline
+                     <*> (declaration `sepEndBy` some newline)
+                     <?> "module"
 
 declaration :: (Monad m, TokenParsing m) => m Declaration
-declaration = runUnlined $ do
-  name <- identifier
-  Declaration name <$  colon
-                   <*> type' <* some newline
-                   <*  token (highlight Identifier (string name)) <* op "="
-                   <*> expr
-                   <?> "declaration"
+declaration =  (datatype <?> "datatype")
+           <|> (binding  <?> "declaration")
+  where binding = runUnlined $ do
+          name <- identifier
+          Declaration (N name) <$  colon
+                               <*> type' <* some newline
+                               <*  token (highlight Identifier (string name)) <* op "="
+                               <*> expr
+        datatype = runUnlined $
+          Data <$ preword "data"
+               <*> (N <$> typeIdentifier)
+               <*> (fromMaybe typeT <$> optional signature) <* preword "where" <* newline
+               <*> some (whiteSpace *> constructor <* newline)
+        constructor =
+          Constructor <$> name
+                      <*> signature
+                      <?> "constructor"
+        signature = colon *> type'
 
 expr :: (Monad m, TokenParsing m) => m Expr
 expr = type'
@@ -107,7 +119,7 @@ let' = makeLet <$  preword "let"
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
         app <- application
-        ty <- optional (op ":" *> type')
+        ty <- optional (colon *> type')
         return (maybe app (app `as`) ty)
         <?> "type annotation"
 
@@ -129,6 +141,7 @@ atom
   <|> lambda
   <|> Parser.var
   <|> Parser.let'
+  <|> Parser.sigma
 
 unitType :: (Monad m, TokenParsing m) => m Type
 unitType = unitT <$  preword "Unit"
@@ -147,18 +160,26 @@ productType = application `chainl1` ((.*.) <$ op "*")
                       <?> "product type"
 
 piType :: (Monad m, TokenParsing m) => m Type
-piType = ((:[]) <$> argument) `chainr1` ((++) <$ op "->") >>= \ components ->
-  pure $! foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
-  where argument =  try (parens (Named <$> name <* op ":" <*> type'))
-                <|>            Unnamed <$> sumType
-        exponential arg = case arg of
+piType = fmap toPi $ ((:[]) <$> argument) `chainr1` ((++) <$ op "->")
+  where exponential arg = case arg of
           Named name ty -> makePi name ty
           Unnamed ty -> (.->.) ty
         codomain res = case res of
           Named name ty -> Expr.var name `as` ty
           Unnamed ty -> ty
+        toPi components = foldr exponential (codomain (Prelude.last components)) (Prelude.init components)
+
+argument :: (Monad m, TokenParsing m) => m Argument
+argument =  try (parens (Named <$> name <* colon <*> type'))
+        <|>            Unnamed <$> sumType
+        <?> "argument"
 
 data Argument = Named Name Type | Unnamed Type
+
+sigma :: (Monad m, TokenParsing m) => m Type
+sigma = braces $ makeSigma <$> name <* colon
+                           <*> type' <* op "|"
+                           <*> expr
 
 
 name :: (Monad m, TokenParsing m) => m Name
@@ -170,13 +191,14 @@ op :: TokenParsing m => String -> m String
 op = token . highlight Operator . string
 
 identifier :: (Monad m, TokenParsing m) => m String
-identifier = ident (IdentifierStyle "identifier" (lower <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+identifier =  ident (IdentifierStyle "identifier" (letter <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
+          <|> try ((:[]) <$> token (parens (highlight Operator (oneOf ".,"))))
 
 typeIdentifier :: (Monad m, TokenParsing m) => m String
 typeIdentifier = ident (IdentifierStyle "type or module identifier" (upper <|> char '_') (alphaNum <|> char '_') reservedWords Identifier ReservedIdentifier)
 
 reservedWords :: HashSet.HashSet String
-reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in" ]
+reservedWords =  [ "module", "where", "inL", "inR", "fst", "snd", "case", "of", "let", "in", "data" ]
 
 preword :: TokenParsing m => String -> m String
 preword s = token (highlight ReservedIdentifier (string s <* notFollowedBy alphaNum))

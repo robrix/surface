@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 module Judgement where
 
-import Context hiding (S)
+import Context
 import Data.Functor.Classes
 import Expr
 import Module
@@ -11,6 +11,7 @@ import Text.Pretty
 data Judgement a where
   CheckModule :: Module -> Judgement ()
   CheckDeclaration :: Module -> Declaration -> Judgement ()
+  CheckConstructor :: Module -> Declaration -> Constructor -> Judgement ()
 
   Check :: Term -> Type -> Judgement ()
   Infer :: Term -> Judgement Type
@@ -36,6 +37,7 @@ instance Show1 Judgement where
   liftShowsPrec _ _ d judgement = case judgement of
     CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
     CheckDeclaration module' declaration -> showsBinaryWith showsPrec showsPrec "CheckDeclaration" d module' declaration
+    CheckConstructor module' declaration constructor -> showsTernaryWith showsPrec showsPrec showsPrec "CheckConstructor" d module' declaration constructor
 
     Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
     Infer term -> showsUnaryWith showsPrec "Infer" d term
@@ -61,7 +63,8 @@ instance Show a => Show (Judgement a) where
 instance Pretty1 Judgement where
   liftPrettyPrec _ _ d judgement = case judgement of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
-    CheckDeclaration (Module modName _) (Declaration name _ _) -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ name)
+    CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
+    CheckConstructor (Module modName _) decl constructor -> showsUnaryWith (const showString) "checkConstructor" d (modName ++ "." ++ pretty (declarationName decl) ++ "." ++ pretty (constructorName constructor))
 
     Check term ty -> showsBinaryWith prettyPrec prettyPrec "check" d term ty
     Infer term -> showsUnaryWith prettyPrec "infer" d term
@@ -84,6 +87,7 @@ instance Eq1 Judgement where
   liftEq _ a b = case (a, b) of
     (CheckModule m1, CheckModule m2) -> m1 == m2
     (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2
+    (CheckConstructor m1 d1 c1, CheckConstructor m2 d2 c2) -> m1 == m2 && d1 == d2 && c1 == c2
 
     (Check tm1 ty1, Check tm2 ty2) -> tm1 == tm2 && ty1 == ty2
     (Infer tm1, Infer tm2) -> tm1 == tm2

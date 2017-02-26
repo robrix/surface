@@ -2,34 +2,63 @@
 module Module where
 
 import Data.Foldable (toList)
-import qualified Data.HashMap.Lazy as H
+import Data.Functor.Foldable (unfix)
 import Data.List (intersperse)
+import Data.List.NonEmpty (nonEmpty)
 import Expr
 import Text.Pretty
 
 data Module = Module
   { moduleName :: String
-  , moduleDeclarations :: H.HashMap String Declaration }
+  , moduleDeclarations :: [Declaration] }
   deriving (Eq, Show)
 
-data Declaration = Declaration
-  { declarationName :: String
-  , declarationType :: Type
-  , declarationTerm :: Term }
+data Declaration
+  = Declaration
+    { declarationName :: Name
+    , declarationType :: Type
+    , declarationTerm :: Term }
+  | Data
+    { declarationName :: Name
+    , declarationType :: Expr
+    , declarationConstructors :: [Constructor] }
+  deriving (Eq, Show)
+
+data Constructor
+  = Constructor
+    { constructorName :: Name
+    , constructorSignature :: Expr }
   deriving (Eq, Show)
 
 
-makeModule :: String -> [Declaration] -> Module
-makeModule name = Module name . foldr insert H.empty
-  where insert decl = H.insert (declarationName decl) decl
+datatypeSum :: Name -> Expr -> [Constructor] -> Expr
+datatypeSum name ty = makeMu name ty . maybe unitT (foldr1 (.+.)) . nonEmpty . fmap constructorProduct
+
+constructorProduct :: Constructor -> Expr
+constructorProduct = maybe unitT (foldr1 (.*.)) . nonEmpty . domain . constructorSignature
 
 
 -- Instances
 
 instance Pretty Declaration where
-  prettyPrec _ Declaration{..}
-    = showString declarationName . showString " : " . prettyPrec 0 declarationType . showChar '\n'
-    . showString declarationName . showString " = " . prettyPrec 0 declarationTerm . showChar '\n'
+  prettyPrec _ (Declaration name ty term)
+    = prettyPrec 0 name . showString " : " . prettyPrec 0 ty . showChar '\n'
+    . prettyPrec 0 name . showString " = " . prettyPrec 0 term . showChar '\n'
+  prettyPrec _ (Data dname sig constructors)
+    = showString "data " . prettyPrec 0 dname . prettyDSig sig . showString " where" . showChar '\n'
+    . foldr ((.) . prettyConstructor) id constructors
+    where prettyDSig :: Expr -> ShowS
+          prettyDSig t = case unfix t of
+            Type -> id
+            _ -> showString " : " . prettyPrec 0 t
+          prettyConstructor (Constructor cname sig) = showString "  " . prettyPrec 0 cname . showString " : " . prettyCSig sig
+          prettyCSig :: Expr -> ShowS
+          prettyCSig t = case unfix t of
+            Pi n ty body -> case n of
+              (I (-1)) -> prettyPrec 0 ty . showString " -> " . prettyPrec 0 body
+              _ -> showParen True (prettyPrec 0 n . showString " : " . prettyPrec 0 ty) . showString " -> " . prettyPrec 0 body
+            _ -> prettyPrec 0 t
+
 
 instance Pretty Module where
   prettyPrec _ Module{..} = foldr (.) id (intersperse nl (mod : (prettyPrec 0 <$> toList moduleDeclarations)))

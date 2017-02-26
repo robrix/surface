@@ -17,10 +17,10 @@ instance (Foldable t, Binder a) => Binder (t a) where
 instance Binder Name where
   (<?) = (==)
 
-instance Binder Binding where
+instance Binder DefinitionConstraint where
   name <? (_ := m) = name <? m
 
-instance Binder TermEntry where
+instance Binder TypeConstraint where
   name <? (_ ::: s) = name <? s
 
 instance Binder1 f => Binder (Fix f) where
@@ -32,8 +32,8 @@ instance Binder1 (ExprF Name) where
     Var v | v == name -> True
     _ -> any (occurs name) expr
 
-instance Binder Entry where
+instance Binder Constraint where
   n <? t = case t of
-    Ty d -> n <? d
-    Tm d -> n <? d
+    D d -> n <? d
+    T d -> n <? d
     Sep -> False

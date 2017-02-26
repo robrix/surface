@@ -5,3 +5,44 @@ id = \ _ b . b
 
 const : (a : Type) -> (b : Type) -> a -> b -> a
 const = \ _ _ a b . a
+
+and : Type -> Type -> Type
+and = \p q. (c: Type) -> (p -> q -> c) -> c
+
+data Bool : Type where
+  true : Bool
+  false : Bool
+
+data Nat : Type where
+  zero : Nat
+  succ : Nat -> Nat
+
+
+data Maybe : Type -> Type where
+  just : a -> Maybe a
+  nothing : Maybe a
+
+data Either : Type -> Type -> Type where
+  left : l -> Either l r
+  right : r -> Either l r
+
+data These : Type -> Type -> Type where
+  this : l -> These l r
+  that : r -> These l r
+  these : l -> r -> These l r
+
+data List : Type -> Type where
+  cons : a -> List a -> List a
+  nil : List a
+
+data Pair : Type -> Type -> Type where
+  (,) : a -> b -> Pair a b
+
+
+data Vec : Nat -> Type -> Type where
+  vnil : Vec zero a
+  vcons : a -> Vec n a -> Vec (succ n) a
+
+
+data Sigma : (A : Type) -> (B : A -> Type) -> Type where
+  Sigma : (A : Type) -> (B : A -> Type) -> (a : A) -> B a -> Sigma A B

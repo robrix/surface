@@ -24,11 +24,13 @@ library
                      , Parser
                      , REPL
                      , Surface.Binder
+                     , Surface.Command
                      , Surface.Proof
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
                      , freer-cofreer
+                     , hashable
                      , haskeline
                      , parsers
                      , recursion-schemes

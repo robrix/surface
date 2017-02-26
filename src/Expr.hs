@@ -1,20 +1,25 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, GADTs #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, GADTs #-}
 module Expr where
 
 import Data.Bifoldable
 import Data.Bifunctor
 import Data.Functor.Classes
-import Data.Functor.Foldable
+import Data.Functor.Foldable hiding (Mu)
+import Data.Hashable (Hashable)
 import Data.List (nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
+import GHC.Generics (Generic)
 import Text.Pretty
 
 data ExprF n a where
   Product :: a -> a -> ExprF n a
   Sum :: a -> a -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
+  Mu :: n -> a -> a -> ExprF n a
+  Sigma :: n -> a -> a -> ExprF n a
+
   UnitT :: ExprF n a
-  TypeT :: ExprF n a
+  Type :: ExprF n a
 
   Abs :: n -> a -> ExprF n a
   Var :: n -> ExprF n a
@@ -46,14 +51,14 @@ type Term = Fix (TermF Name)
 
 data Name = N String
           | I Integer
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Generic, Hashable, Ord, Show)
 
 
 unitT :: Type
 unitT = Fix UnitT
 
 typeT :: Type
-typeT = Fix TypeT
+typeT = Fix Type
 
 
 infixr 0 .->.
@@ -131,11 +136,51 @@ makeLet name value body = Fix (Let name value body)
 as :: Term -> Type -> Term
 as = (Fix .) . As
 
+
 piT :: Type -> (Type -> Type) -> Type
 piT ty = uncurry (`makePi` ty) . bindVariable
 
 makePi :: Name -> Type -> Type -> Type
 makePi name ty body = Fix (Pi name ty body)
+
+
+mu :: Type -> (Type -> Type) -> Type
+mu ty = uncurry (`makeMu` ty) . bindVariable
+
+makeMu :: Name -> Type -> Type -> Type
+makeMu name ty body = Fix (Mu name ty body)
+
+
+sigmaT :: Type -> (Type -> Type) -> Type
+sigmaT ty = uncurry (`makeSigma` ty) . bindVariable
+
+makeSigma :: Name -> Type -> Type -> Type
+makeSigma name ty body = Fix (Sigma name ty body)
+
+
+-- Type elimination
+
+asPi :: Expr -> Maybe (Name, Expr, Expr)
+asPi expr = case unfix expr of
+  Pi n ty body -> Just (n, ty, body)
+  _ -> Nothing
+
+asApplication :: Expr -> Maybe (Expr, Expr)
+asApplication expr = case unfix expr of
+  App a b -> Just (a, b)
+  _ -> Nothing
+
+
+domain :: Type -> [Type]
+domain = maybe [] (\ (_, t, b) -> t : domain b) . asPi
+
+codomain :: Type -> Type
+codomain expr = maybe expr (\ (_, _, b) -> codomain b) (asPi expr)
+
+
+applicationChain :: Expr -> (Expr, [Expr])
+applicationChain = go . flip (,) []
+  where go (expr, args) = maybe (expr, args) (go . second (: args)) (asApplication expr)
 
 
 -- Substitution
@@ -161,6 +206,9 @@ succName :: Name -> Name
 succName (I i) = I (succ i)
 succName (N n) = N (n ++ "'")
 
+generalize :: [Name] -> Expr -> Expr
+generalize = flip (foldr makeLambda)
+
 -- | Capture-avoiding substitution of an Expr for variables with a given Name in an Expr.
 substitute :: Expr -> Name -> Expr -> Expr
 substitute to from = para $ \ expr -> case expr of
@@ -183,7 +231,7 @@ zipExprFWith g f a b = case (a, b) of
 
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (UnitT, UnitT) -> Just UnitT
-  (TypeT, TypeT) -> Just TypeT
+  (Type, Type) -> Just Type
 
   (Abs n1 b1, Abs n2 b2) -> Just (Abs (g n1 n2) (f b1 b2))
   (Var n1, Var n2) -> Just (Var (g n1 n2))
@@ -219,8 +267,11 @@ instance Bifunctor ExprF where
     Product a b -> Product (f a) (f b)
     Sum a b -> Sum (f a) (f b)
     Pi n t b -> Pi (g n) (f t) (f b)
+    Mu n t b -> Mu (g n) (f t) (f b)
+    Sigma n t b -> Sigma (g n) (f t) (f b)
+
     UnitT -> UnitT
-    TypeT -> TypeT
+    Type -> Type
 
     Abs n b -> Abs (g n) (f b)
     Var n -> Var (g n)
@@ -245,8 +296,11 @@ instance Bifoldable ExprF where
     Product a b -> mappend (f a) (f b)
     Sum a b -> mappend (f a) (f b)
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
+    Mu n t b -> mappend (g n) (mappend (f t) (f b))
+    Sigma n t b -> mappend (g n) (mappend (f t) (f b))
+
     UnitT -> mempty
-    TypeT -> mempty
+    Type -> mempty
 
     Abs n b -> mappend (g n) (f b)
     Var n -> g n
@@ -278,13 +332,16 @@ instance Pretty2 ExprF where
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
+    Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
+    Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
     Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
     Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
     UnitT -> showString "Unit"
     Unit -> showString "()"
-    TypeT -> showString "Type"
+    Type -> showString "Type"
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
+    where showBrace b s = if b then showString "{ " . s . showString " }" else s
 
 instance Pretty Name where
   prettyPrec _ name = case name of
@@ -307,11 +364,13 @@ instance Show n => Show1 (ExprF n) where
     Fst f -> showsUnaryWith sp "Fst" d f
     Snd s -> showsUnaryWith sp "Snd" d s
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
+    Mu n t b -> showsTernaryWith showsPrec sp sp "Mu" d n t b
+    Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
     Sum a b -> showsBinaryWith sp sp "Sum" d a b
     Product a b -> showsBinaryWith sp sp "Product" d a b
     UnitT -> showString "UnitT"
     Unit -> showString "Unit"
-    TypeT -> showString "TypeT"
+    Type -> showString "Type"
     Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
     As term ty -> showsBinaryWith sp sp "As" d term ty
 
