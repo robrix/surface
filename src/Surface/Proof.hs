@@ -572,13 +572,7 @@ modifyEnvironment f = getEnvironment >>= putEnvironment . f
 
 
 findTyping :: HasCallStack => Name -> Proof Type
-findTyping name = getContext >>= help
-  where help (_ :< T (found ::: decl))
-          | name == found = return decl
-        help (context :< _) = help context
-        help _ = do
-          ty <- gets (fmap bindingType . H.lookup name . proofEnvironment)
-          maybe (fail ("Missing type constraint for " ++ pretty name ++ " in context.")) return ty
+findTyping name = lookupTyping name >>= maybe (fail ("Missing type constraint for " ++ pretty name ++ " in context.")) return
 
 lookupDefinition :: Name -> Proof (Maybe Expr)
 lookupDefinition name = getContext >>= help
