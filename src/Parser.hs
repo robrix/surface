@@ -3,7 +3,6 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
-import Data.Char (isSpace)
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
