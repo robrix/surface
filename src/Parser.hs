@@ -29,11 +29,11 @@ parseExpr = Parser.parseString (whole expr)
 parseModule :: String -> Result.Result Module
 parseModule = Parser.parseString (whole module')
 
-parseString :: Parser a -> String -> Result.Result a
-parseString p = toResult . Trifecta.parseString p mempty
+parseString :: SurfaceParser Parser a -> String -> Result.Result a
+parseString (SurfaceParser p) = toResult . Trifecta.parseString p mempty
 
-parseFromFile :: MonadIO m => Parser a -> FilePath -> m (Result.Result a)
-parseFromFile p = fmap toResult . parseFromFileEx p
+parseFromFile :: MonadIO m => SurfaceParser Parser a -> FilePath -> m (Result.Result a)
+parseFromFile (SurfaceParser p) = fmap toResult . parseFromFileEx p
 
 whole :: (Monad m, TokenParsing m) => m a -> m a
 whole p = whiteSpace *> p <* eof
