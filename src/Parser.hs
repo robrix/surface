@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, OverloadedLists #-}
+{-# LANGUAGE GADTs, GeneralizedNewtypeDeriving, OverloadedLists #-}
 module Parser where
 
 import Control.Applicative
@@ -11,7 +11,17 @@ import Expr
 import Module
 import Text.Parser.Token
 import Text.Parser.Token.Highlight hiding (Constructor)
+import Text.Parser.Token.Style
 import Text.Trifecta as Trifecta
+
+newtype SurfaceParser p a = SurfaceParser { runSurfaceParser :: p a }
+  deriving (Alternative, Applicative, CharParsing, Functor, Monad, Parsing)
+
+instance TokenParsing p => TokenParsing (SurfaceParser p) where
+  someSpace = SurfaceParser $ buildSomeSpaceParser someSpace haskellCommentStyle
+  nesting = SurfaceParser . nesting . runSurfaceParser
+  highlight h = SurfaceParser . highlight h . runSurfaceParser
+
 
 parseExpr :: String -> Result.Result Expr
 parseExpr = Parser.parseString (whole expr)
@@ -19,11 +29,11 @@ parseExpr = Parser.parseString (whole expr)
 parseModule :: String -> Result.Result Module
 parseModule = Parser.parseString (whole module')
 
-parseString :: Parser a -> String -> Result.Result a
-parseString p = toResult . Trifecta.parseString p mempty
+parseString :: SurfaceParser Parser a -> String -> Result.Result a
+parseString (SurfaceParser p) = toResult . Trifecta.parseString p mempty
 
-parseFromFile :: MonadIO m => Parser a -> FilePath -> m (Result.Result a)
-parseFromFile p = fmap toResult . parseFromFileEx p
+parseFromFile :: MonadIO m => SurfaceParser Parser a -> FilePath -> m (Result.Result a)
+parseFromFile (SurfaceParser p) = fmap toResult . parseFromFileEx p
 
 whole :: (Monad m, TokenParsing m) => m a -> m a
 whole p = whiteSpace *> p <* eof
@@ -118,10 +128,10 @@ let' = makeLet <$  preword "let"
 
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
-        app <- application
-        ty <- optional (colon *> type')
-        return (maybe app (app `as`) ty)
-        <?> "type annotation"
+  app <- application
+  ty <- optional (colon *> type')
+  return (maybe app (app `as`) ty)
+  <?> "type annotation"
 
 
 type' :: (Monad m, TokenParsing m) => m Type

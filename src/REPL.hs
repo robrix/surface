@@ -59,7 +59,7 @@ handleInput input =
     error -> output error >> repl
 
 
-command :: Parser Command
+command :: (Monad m, TokenParsing m) => m Command
 command = whiteSpace *> (colon *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
