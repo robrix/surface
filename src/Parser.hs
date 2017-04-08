@@ -1,8 +1,9 @@
-{-# LANGUAGE GADTs, OverloadedLists #-}
+{-# LANGUAGE GADTs, GeneralizedNewtypeDeriving, OverloadedLists #-}
 module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
+import Data.Char (isSpace)
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
@@ -11,7 +12,17 @@ import Expr
 import Module
 import Text.Parser.Token
 import Text.Parser.Token.Highlight hiding (Constructor)
+import Text.Parser.Token.Style
 import Text.Trifecta as Trifecta
+
+newtype SurfaceParser p a = SurfaceParser { runSurfaceParser :: p a }
+  deriving (Alternative, Applicative, CharParsing, Functor, Monad, Parsing)
+
+instance TokenParsing p => TokenParsing (SurfaceParser p) where
+  someSpace = SurfaceParser $ buildSomeSpaceParser someSpace haskellCommentStyle
+  nesting = SurfaceParser . nesting . runSurfaceParser
+  highlight h = SurfaceParser . highlight h . runSurfaceParser
+
 
 parseExpr :: String -> Result.Result Expr
 parseExpr = Parser.parseString (whole expr)
