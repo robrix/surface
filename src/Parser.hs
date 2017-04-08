@@ -118,10 +118,10 @@ let' = makeLet <$  preword "let"
 
 annotation :: (Monad m, TokenParsing m) => m Term
 annotation = do
-        app <- application
-        ty <- optional (colon *> type')
-        return (maybe app (app `as`) ty)
-        <?> "type annotation"
+  app <- application
+  ty <- optional (colon *> type')
+  return (maybe app (app `as`) ty)
+  <?> "type annotation"
 
 
 type' :: (Monad m, TokenParsing m) => m Type
