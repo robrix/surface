@@ -2,7 +2,6 @@
 module Surface.Proof where
 
 import Context
-import Control.State
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
 import Data.Foldable (for_)
@@ -20,7 +19,8 @@ import Text.Pretty
 
 data ProofF a where
   J :: HasCallStack => Judgement a -> ProofF a
-  S :: State ProofState a -> ProofF a
+  Get :: ProofF ProofState
+  Put :: ProofState -> ProofF ()
   Error :: [String] -> ProofF a
 
 type Proof = Freer ProofF
@@ -94,13 +94,13 @@ whnf expr = J (WHNF expr) `Then` return
 -- State constructors
 
 get :: Proof ProofState
-get = S Get `Then` return
+get = Get `Then` return
 
 gets :: (ProofState -> result) -> Proof result
 gets f = fmap f get
 
 put :: ProofState -> Proof ()
-put s = S (Put s) `Then` return
+put s = Put s `Then` return
 
 modify :: (ProofState -> ProofState) -> Proof ()
 modify f = get >>= put . f
@@ -137,16 +137,15 @@ runSteps context proof = let ?callStack = popCallStack callStack in (context, pr
 -- | Like runSteps, but filtering out gets and puts.
 runSteps' :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
 runSteps' context = filter isSignificant . runSteps context
-  where isSignificant = iterFreer (\ p _ -> case p of { S _ -> False ; _ -> True }) . (True <$) . snd
+  where isSignificant = iterFreer (\ p _ -> case p of { J _ -> True ; Error _ -> True ; _ -> False }) . (True <$) . snd
 
 runStep :: HasCallStack => ProofState -> Proof a -> Either [String] (ProofState, Proof a)
 runStep context proof = let ?callStack = popCallStack callStack in case proof of
   Return a -> Right (context, return a)
   Then proof cont -> case proof of
     J judgement -> Right (context, decompose judgement >>= cont)
-    S state -> case state of
-      Get -> Right (context, cont context)
-      Put context' -> Right (context', cont ())
+    Get -> Right (context, cont context)
+    Put context' -> Right (context', cont ())
     Error errors -> Left errors
 
 
@@ -668,7 +667,8 @@ contextualizeErrors addContext = iterFreer alg . fmap pure
 instance Show1 ProofF where
   liftShowsPrec sp sl d proof = case proof of
     J judgement -> showsUnaryWith (liftShowsPrec sp sl) "J" d judgement
-    S state -> showsUnaryWith (liftShowsPrec sp sl) "S" d state
+    Get -> showString "Get"
+    Put state -> showsUnaryWith showsPrec "Put" d state
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 instance Show a => Show (ProofF a) where
@@ -678,7 +678,8 @@ instance Show a => Show (ProofF a) where
 instance Pretty1 ProofF where
   liftPrettyPrec pp pl d proof = case proof of
     J judgement -> liftPrettyPrec pp pl d judgement
-    S state -> liftPrettyPrec pp pl d state
+    Get -> showString "Get"
+    Put state -> shows state
     Error errors -> liftPrettyPrec prettyPrec prettyList d errors
 
 instance Pretty ProofState where
@@ -691,6 +692,7 @@ instance Pretty ProofState where
 instance Eq1 ProofF where
   liftEq eq a b = case (a, b) of
     (J a, J b) -> liftEq eq a b
-    (S a, S b) -> liftEq eq a b
+    (Get, Get) -> True
+    (Put s1, Put s2) -> s1 == s2
     (Error es1, Error es2) -> es1 == es2
     _ -> False
