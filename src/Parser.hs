@@ -3,6 +3,7 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
+import Data.Char
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
@@ -94,6 +95,11 @@ snd' :: (Monad m, TokenParsing m) => m Term
 snd' = Expr.snd' <$ preword "snd" <*> expr
                                   <?> "snd"
 
+at :: (Monad m, TokenParsing m) => m Term
+at = flip Expr.at <$ preword "at" <*> (foldl (\ into each -> into * 10 + each) 0 <$> some (digitToInt <$> digit))
+                                  <*> expr
+                                  <?> "at"
+
 lambda :: (Monad m, TokenParsing m) => m Term
 lambda = foldr ((.) . makeLambda) id <$  op "\\"
                                      <*> some name <* dot
@@ -143,6 +149,7 @@ atom
   <|> Parser.tuple
   <|> Parser.fst'
   <|> Parser.snd'
+  <|> Parser.at
   <|> Parser.inL
   <|> Parser.inR
   <|> Parser.case'
