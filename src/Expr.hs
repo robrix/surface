@@ -345,13 +345,17 @@ instance Pretty2 ExprF where
     Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
 
     Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
-    At a i -> showParen (d > 10) $ pp 11 a . showBracket True (shows i)
+    At a i -> showParen (d > 10) $ pp 11 a . showSubscript i
 
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
 
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
-    where showBracket b s = if b then showString "[" . s . showString "]" else s
-          showBrace b s = if b then showString "{ " . s . showString " }" else s
+    where showBrace b s = if b then showString "{ " . s . showString " }" else s
+          showSubscript i
+            | i < 0 = showChar '₋' . showSubscript (abs i)
+            | i < 10 = showChar (subscripts !! i)
+            | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
+          subscripts = "₀₁₂₃₄₅₆₇₈₉"
 
 instance Pretty Name where
   prettyPrec _ name = case name of
