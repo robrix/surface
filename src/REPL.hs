@@ -54,7 +54,7 @@ handleInput input =
         context <- getContext
         return (expr `as` applyContext ty context)))
       repl
-    Right (WHNF expr) -> output (run (infer expr >> whnf expr)) >> repl
+    Right (REPL.WHNF expr) -> output (run (infer expr >> whnf expr)) >> repl
     error -> output error >> repl
 
 
@@ -63,7 +63,7 @@ command = whiteSpace *> (colon *> meta <|> eval) <* eof <?> "command"
   where meta = (Help <$ (long "help" <|> short 'h' <|> short '?') <?> "help")
            <|> (Quit <$ (long "quit" <|> short 'q') <?> "quit")
            <|> (TypeOf <$> ((long "type" <|> short 't') *> expr) <?> "type of")
-           <|> (WHNF <$> ((long "whnf" <|> short 'w') *> expr) <?> "whnf")
+           <|> (REPL.WHNF <$> ((long "whnf" <|> short 'w') *> expr) <?> "whnf")
            <?> "command; use :? for help"
 
         eval = Run <$> expr <?> "expression"
@@ -99,6 +99,6 @@ instance Pretty Command where
   prettyPrec d command = case command of
     Run expr -> prettyPrec d expr
     TypeOf expr -> showsUnaryWith prettyPrec ":type" d expr
-    WHNF expr -> showsUnaryWith prettyPrec ":whnf" d expr
+    REPL.WHNF expr -> showsUnaryWith prettyPrec ":whnf" d expr
     Help -> showString ":help"
     Quit -> showString ":quit"

@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, ImplicitParams, StandaloneDeriving #-}
+{-# LANGUAGE GADTs, ImplicitParams, ScopedTypeVariables, StandaloneDeriving #-}
 module Surface.Proof where
 
 import Context
@@ -11,14 +11,32 @@ import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\))
 import Expr
 import GHC.Stack
-import Judgement
 import Module
 import Prelude hiding (fail)
 import Surface.Binder
 import Text.Pretty
 
 data ProofF a where
-  J :: HasCallStack => Judgement a -> ProofF a
+  CheckModule :: HasCallStack => Module -> ProofF ()
+  CheckDeclaration :: HasCallStack => Module -> Declaration -> ProofF ()
+  CheckConstructor :: HasCallStack => Module -> Declaration -> Constructor -> ProofF ()
+
+  Check :: HasCallStack => Term -> Type -> ProofF ()
+  Infer :: HasCallStack => Term -> ProofF Type
+  IsType :: HasCallStack => Term -> ProofF ()
+
+  AlphaEquivalent :: HasCallStack => Expr -> Expr -> ProofF Bool
+  Equate :: HasCallStack => Expr -> Expr -> ProofF ()
+
+  Unify :: HasCallStack => Type -> Type -> ProofF ()
+  Solve :: HasCallStack => Name -> Suffix -> Type -> ProofF ()
+
+  Fresh :: HasCallStack => Maybe Expr -> ProofF Name
+  Restore :: HasCallStack => ProofF Extension
+  Replace :: HasCallStack => Suffix -> ProofF Extension
+
+  Normalize :: HasCallStack => Expr -> ProofF Expr
+  WHNF :: HasCallStack => Expr -> ProofF Expr
 
   Get :: ProofF ProofState
   Put :: ProofState -> ProofF ()
@@ -45,55 +63,55 @@ data Binding = Binding { bindingType :: Type, bindingValue :: Expr }
 -- Judgement constructors
 
 checkModule :: HasCallStack => Module -> Proof ()
-checkModule module' = J (CheckModule module') `Then` return
+checkModule module' = CheckModule module' `Then` return
 
 checkDeclaration :: HasCallStack => Module -> Declaration -> Proof ()
-checkDeclaration module' declaration = J (CheckDeclaration module' declaration) `Then` return
+checkDeclaration module' declaration = CheckDeclaration module' declaration `Then` return
 
 checkConstructor :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
-checkConstructor module' declaration constructor = J (CheckConstructor module' declaration constructor) `Then` return
+checkConstructor module' declaration constructor = CheckConstructor module' declaration constructor `Then` return
 
 
 check :: HasCallStack => Term -> Type -> Proof ()
-check term ty = J (Check term ty) `Then` return
+check term ty = Check term ty `Then` return
 
 infer :: HasCallStack => Term -> Proof Type
-infer term = J (Infer term) `Then` return
+infer term = Infer term `Then` return
 
 
 isType :: HasCallStack => Term -> Proof ()
-isType term = J (IsType term) `Then` return
+isType term = IsType term `Then` return
 
 
 alphaEquivalent :: HasCallStack => Expr -> Expr -> Proof Bool
-alphaEquivalent e1 e2 = J (AlphaEquivalent e1 e2) `Then` return
+alphaEquivalent e1 e2 = AlphaEquivalent e1 e2 `Then` return
 
 equate :: HasCallStack => Expr -> Expr -> Proof ()
-equate e1 e2 = J (Equate e1 e2) `Then` return
+equate e1 e2 = Equate e1 e2 `Then` return
 
 
 unify :: HasCallStack => Type -> Type -> Proof ()
-unify t1 t2 = J (Unify t1 t2) `Then` return
+unify t1 t2 = Unify t1 t2 `Then` return
 
 solve :: HasCallStack => Name -> Suffix -> Type -> Proof ()
-solve name suffix ty = J (Solve name suffix ty) `Then` return
+solve name suffix ty = Solve name suffix ty `Then` return
 
 
 fresh :: HasCallStack => Maybe Expr -> Proof Name
-fresh declaration = J (Fresh declaration) `Then` return
+fresh declaration = Fresh declaration `Then` return
 
 restore :: HasCallStack => Proof Extension
-restore = J Judgement.Restore `Then` return
+restore = Surface.Proof.Restore `Then` return
 
 replace :: HasCallStack => Suffix -> Proof Extension
-replace suffix = J (Judgement.Replace suffix) `Then` return
+replace suffix = Surface.Proof.Replace suffix `Then` return
 
 
 normalize :: HasCallStack => Expr -> Proof Expr
-normalize expr = J (Normalize expr) `Then` return
+normalize expr = Normalize expr `Then` return
 
 whnf :: HasCallStack => Expr -> Proof Expr
-whnf expr = J (WHNF expr) `Then` return
+whnf expr = WHNF expr `Then` return
 
 
 -- State constructors
@@ -142,40 +160,41 @@ runSteps context proof = let ?callStack = popCallStack callStack in (context, pr
 -- | Like runSteps, but filtering out gets and puts.
 runSteps' :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
 runSteps' context = filter isSignificant . runSteps context
-  where isSignificant = iterFreer (\ p _ -> case p of { J _ -> True ; Error _ -> True ; _ -> False }) . (True <$) . snd
+  where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . snd
 
-runStep :: HasCallStack => ProofState -> Proof a -> Either [String] (ProofState, Proof a)
+runStep :: forall a. HasCallStack => ProofState -> Proof a -> Either [String] (ProofState, Proof a)
 runStep context proof = let ?callStack = popCallStack callStack in case proof of
   Return a -> Right (context, return a)
-  Then proof cont -> case proof of
-    J judgement -> Right (context, decompose judgement >>= cont)
-    Get -> Right (context, cont context)
-    Put context' -> Right (context', cont ())
-    Error errors -> Left errors
+  Then proof yield -> go proof yield
+  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (ProofState, Proof a)
+        go proof yield = case proof of
+          CheckModule module' -> run $ checkModule' module'
+          CheckDeclaration m d -> run $ checkDeclaration' m d
+          CheckConstructor m d c -> run $ checkConstructor' m d c
 
+          Check term ty -> run $ check' term ty
+          Infer term -> run $ infer' term
+          IsType ty -> run $ isType' ty
 
-decompose :: HasCallStack => Judgement a -> Proof a
-decompose judgement = let ?callStack = popCallStack callStack in case judgement of
-  CheckModule module' -> checkModule' module'
-  CheckDeclaration m d -> checkDeclaration' m d
-  CheckConstructor m d c -> checkConstructor' m d c
+          AlphaEquivalent e1 e2 -> run $ alphaEquivalent' e1 e2
+          Equate e1 e2 -> run $ equate' e1 e2
 
-  Check term ty -> check' term ty
-  Infer term -> infer' term
-  IsType ty -> isType' ty
+          Unify t1 t2 -> run $ unify' t1 t2
+          Solve name suffix ty -> run $ solve' name suffix ty
 
-  AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
-  Equate e1 e2 -> equate' e1 e2
+          Fresh declaration -> run $ fresh' declaration
+          Surface.Proof.Restore -> run $ restore'
+          Surface.Proof.Replace suffix -> run $ replace' suffix
 
-  Unify t1 t2 -> unify' t1 t2
-  Solve name suffix ty -> solve' name suffix ty
+          Normalize expr -> run $ normalize' expr
+          WHNF expr -> run $ whnf' expr
 
-  Fresh declaration -> fresh' declaration
-  Judgement.Restore -> restore'
-  Judgement.Replace suffix -> replace' suffix
+          Get -> Right (context, yield context)
+          Put context' -> Right (context', yield ())
 
-  Normalize expr -> normalize' expr
-  WHNF expr -> whnf' expr
+          Error errors -> Left errors
+          where run :: Proof x -> Either [String] (ProofState, Proof a)
+                run = Right . (,) context . (>>= yield)
 
 
 -- Judgement interpreters
@@ -670,18 +689,61 @@ contextualizeErrors addContext = iterFreer alg . fmap pure
 -- Instances
 
 instance Show1 ProofF where
-  liftShowsPrec sp sl d proof = case proof of
-    J judgement -> showsUnaryWith (liftShowsPrec sp sl) "J" d judgement
+  liftShowsPrec _ _ d proof = case proof of
+    CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
+    CheckDeclaration module' declaration -> showsBinaryWith showsPrec showsPrec "CheckDeclaration" d module' declaration
+    CheckConstructor module' declaration constructor -> showsTernaryWith showsPrec showsPrec showsPrec "CheckConstructor" d module' declaration constructor
+
+    Check term ty -> showsBinaryWith showsPrec showsPrec "Check" d term ty
+    Infer term -> showsUnaryWith showsPrec "Infer" d term
+
+    IsType ty -> showsUnaryWith showsPrec "IsType" d ty
+
+    AlphaEquivalent e1 e2 -> showsBinaryWith showsPrec showsPrec "AlphaEquivalent" d e1 e2
+    Equate e1 e2 -> showsBinaryWith showsPrec showsPrec "Equate" d e1 e2
+
+    Unify t1 t2 -> showsBinaryWith showsPrec showsPrec "Unify" d t1 t2
+    Solve name suffix ty -> showsTernaryWith showsPrec showsPrec showsPrec "Solve" d name suffix ty
+
+    Fresh declaration -> showsUnaryWith showsPrec "Fresh" d declaration
+    Surface.Proof.Restore -> showString "Restore"
+    Surface.Proof.Replace suffix -> showsUnaryWith showsPrec "Replace" d suffix
+
+    Normalize expr -> showsUnaryWith showsPrec "Normalize" d expr
+    WHNF expr -> showsUnaryWith showsPrec "WHNF" d expr
+
     Get -> showString "Get"
     Put state -> showsUnaryWith showsPrec "Put" d state
+
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 
 instance Pretty1 ProofF where
-  liftPrettyPrec pp pl d proof = case proof of
-    J judgement -> liftPrettyPrec pp pl d judgement
+  liftPrettyPrec _ _ d proof = case proof of
+    CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
+    CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
+    CheckConstructor (Module modName _) decl constructor -> showsUnaryWith (const showString) "checkConstructor" d (modName ++ "." ++ pretty (declarationName decl) ++ "." ++ pretty (constructorName constructor))
+
+    Check term ty -> showsBinaryWith prettyPrec prettyPrec "check" d term ty
+    Infer term -> showsUnaryWith prettyPrec "infer" d term
+    IsType ty -> showsUnaryWith prettyPrec "isType" d ty
+
+    AlphaEquivalent e1 e2 -> showsBinaryWith prettyPrec prettyPrec "alphaEquivalent" d e1 e2
+    Equate e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equate" d e1 e2
+
+    Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
+    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyPrec "solve" d n s ty
+
+    Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyPrec) "fresh" d declaration
+    Surface.Proof.Restore -> showString "restore"
+    Surface.Proof.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
+
+    Normalize expr -> showsUnaryWith prettyPrec "normalize" d expr
+    WHNF expr -> showsUnaryWith prettyPrec "whnf" d expr
+
     Get -> showString "Get"
     Put state -> shows state
+
     Error errors -> liftPrettyPrec prettyPrec prettyList d errors
 
 instance Pretty ProofState where
@@ -692,8 +754,28 @@ instance Pretty ProofState where
 
 
 instance Eq1 ProofF where
-  liftEq eq a b = case (a, b) of
-    (J a, J b) -> liftEq eq a b
+  liftEq _ a b = case (a, b) of
+    (CheckModule m1, CheckModule m2) -> m1 == m2
+    (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2
+    (CheckConstructor m1 d1 c1, CheckConstructor m2 d2 c2) -> m1 == m2 && d1 == d2 && c1 == c2
+
+    (Check tm1 ty1, Check tm2 ty2) -> tm1 == tm2 && ty1 == ty2
+    (Infer tm1, Infer tm2) -> tm1 == tm2
+    (IsType tm1, IsType tm2) -> tm1 == tm2
+
+    (AlphaEquivalent a1 b1, AlphaEquivalent a2 b2) -> a1 == a2 && b1 == b2
+    (Equate a1 b1, Equate a2 b2) -> a1 == a2 && b1 == b2
+
+    (Unify a1 b1, Unify a2 b2) -> a1 == a2 && b1 == b2
+    (Solve n1 s1 t1, Solve n2 s2 t2) -> n1 == n2 && s1 == s2 && t1 == t2
+
+    (Fresh a1, Fresh a2) -> a1 == a2
+    (Surface.Proof.Restore, Surface.Proof.Restore) -> True
+    (Surface.Proof.Replace s1, Surface.Proof.Replace s2) -> s1 == s2
+
+    (Normalize tm1, Normalize tm2) -> tm1 == tm2
+    (WHNF tm1, WHNF tm2) -> tm1 == tm2
+
     (Get, Get) -> True
     (Put s1, Put s2) -> s1 == s2
     (Error es1, Error es2) -> es1 == es2
