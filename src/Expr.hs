@@ -262,10 +262,11 @@ prettyTerm = flip . para $ \ term d -> case term of
           | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
         subscripts = "₀₁₂₃₄₅₆₇₈₉"
         showName (N s) = showString s
-        showName (I i)
+        showName (I i) = showAlphabet i
+        showAlphabet i
           | i < 0 = showString "_"
           | i < 26 = showChar (alphabet !! i)
-          | otherwise = let (n, d) = i `divMod` 26 in showName (I d) . showSubscript n
+          | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . showAlphabet n
         alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 
