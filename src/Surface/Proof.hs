@@ -355,14 +355,22 @@ alphaEquivalent' e1 e2
       | n1 == n2 -> alphaEquivalent b1 b2
       | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
         alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Pi n1 t1 b1, Pi n2 t2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
-      alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Mu n1 t1 b1, Mu n2 t2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
-      alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Sigma n1 t1 b1, Sigma n2 t2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
-      alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Let n1 v1 b1, Let n2 v2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
-      alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Pi n1 t1 b1, Pi n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Mu n1 t1 b1, Mu n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Sigma n1 t1 b1, Sigma n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Let n1 v1 b1, Let n2 v2 b2)
+      | n1 == n2 -> alphaEquivalent v1 v2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
+        alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
 
     (Var n1, Var n2) -> return (n1 == n2)
 
