@@ -49,14 +49,14 @@ handleInput input =
       , ":type, :t <expr>  - print the type of <expr>"
       ] :: Either [String] ()) >> repl
     Right Quit -> pure ()
-    Right (Run expr) -> output' (flip (prettyExpr 0) "") (run (infer expr >> normalize expr)) >> repl
+    Right (Run expr) -> output' (flip (prettyExpr 0) "") (runProof (infer expr >> normalize expr)) >> repl
     Right (TypeOf expr) -> do
-      output' (flip (prettyExpr 0) "") (run (do
+      output' (flip (prettyExpr 0) "") (runProof (do
         ty <- infer expr
         context <- getContext
         return (expr `as` applyContext ty context)))
       repl
-    Right (REPL.WHNF expr) -> output' (flip (prettyExpr 0) "") (run (infer expr >> whnf expr)) >> repl
+    Right (REPL.WHNF expr) -> output' (flip (prettyExpr 0) "") (runProof (infer expr >> whnf expr)) >> repl
     error -> output error >> repl
 
 

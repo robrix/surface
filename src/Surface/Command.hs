@@ -18,7 +18,7 @@ runCommand command = case command of
       result <- parseFromFile source path
       printResult $ do
         modules <- result
-        for_ modules (run . checkModule)
+        for_ modules (runProof . checkModule)
     Debug path -> do
       result <- parseFromFile source path
       traverse_ (traverse_ prettyPrint) $ do

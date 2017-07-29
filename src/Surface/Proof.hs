@@ -141,8 +141,8 @@ fail message = Error [ message, prettyCallStack callStack ] `Then` return
 initialState :: ProofState
 initialState = ProofState (I 0) Nil H.empty
 
-run :: HasCallStack => Proof a -> Either [String] a
-run = flip runAll initialState
+runProof :: HasCallStack => Proof a -> Either [String] a
+runProof = flip runAll initialState
 
 runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
 runAll context proof = case runStep context proof of
