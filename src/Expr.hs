@@ -65,11 +65,11 @@ infixr 0 .->.
 (.->.) :: Type -> Type -> Type
 (.->.) = makePi (I (negate 1))
 
-infixl 6 .+.
+infixr 6 .+.
 (.+.) :: Type -> Type -> Type
 (.+.) = (Fix .) . Sum
 
-infixl 7 .*.
+infixr 7 .*.
 (.*.) :: Type -> Type -> Type
 (.*.) = (Fix .) . Product
 
