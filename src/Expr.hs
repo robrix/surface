@@ -266,7 +266,7 @@ prettyTerm = flip . para $ \ term d -> case term of
         showAlphabet i
           | i < 0 = showString "_"
           | i < 26 = showChar (alphabet !! i)
-          | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . showAlphabet n
+          | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
         alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 
