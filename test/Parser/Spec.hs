@@ -1,6 +1,5 @@
 module Parser.Spec where
 
-import Data.Result
 import Expr
 import Module
 import Parser

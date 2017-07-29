@@ -1,7 +1,6 @@
 module Surface.Proof.Spec where
 
 import Data.Functor.Listable
-import Data.Result
 import Expr
 import Surface.Proof hiding ((==>))
 import Test.Hspec
@@ -48,9 +47,8 @@ spec = do
       \ a -> run (whnf (lam id # a)) `shouldBe` run (whnf a)
 
 
-eraseErrors :: Result a -> Result a
-eraseErrors = mapErrors (const [])
+eraseErrors :: Either [String] a -> Either [String] a
+eraseErrors = either (Left . const []) Right
 
-isResult :: Result a -> Bool
-isResult r | Result _ <- r = True
-           | otherwise = False
+isResult :: Either [String] a -> Bool
+isResult = either False True
