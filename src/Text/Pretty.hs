@@ -43,6 +43,9 @@ prettys = prettyPrec 0
 
 data PrettyOf a = PrettyOf { prettyPrecOf :: Int -> a -> ShowS, unPrettyOf :: a }
 
+prettyOf :: Pretty a => a -> PrettyOf a
+prettyOf = PrettyOf prettyPrec
+
 prettyLines :: Pretty a => [a] -> PrettyOf [a]
 prettyLines = PrettyOf $ \ _ lines -> case lines of
   [] -> showString "[]"
