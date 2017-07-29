@@ -70,6 +70,9 @@ infixr 6 .+.
 a .+. Fix (Sum b) = Fix (Sum (a : b))
 a .+. b = Fix (Sum [a, b])
 
+sumT :: [Type] -> Type
+sumT = Fix . Sum
+
 infixr 7 .*.
 (.*.) :: Type -> Type -> Type
 a .*. Fix (Product b) = Fix (Product (a : b))
