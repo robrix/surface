@@ -95,7 +95,7 @@ instance Listable2 ExprF where
     \/ liftCons2 nameTiers ts Abs
     \/ liftCons1 nameTiers Var
     \/ liftCons2 ts ts App
-    \/ liftCons2 ts (abs `mapT` tiers) In
+    \/ liftCons2 ts (abs `mapT` tiers) Inj
     \/ liftCons2 ts (liftTiers ts) Case
     \/ liftCons1 (liftTiers ts) Tuple
     \/ liftCons2 ts (abs `mapT` tiers) At

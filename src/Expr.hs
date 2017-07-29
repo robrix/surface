@@ -24,7 +24,7 @@ data ExprF n a where
   Var :: n -> ExprF n a
   App :: a -> a -> ExprF n a
 
-  In :: a -> Int -> ExprF n a
+  Inj :: a -> Int -> ExprF n a
   Case :: a -> [a] -> ExprF n a
 
   Tuple :: [a] -> ExprF n a
@@ -109,7 +109,7 @@ infixl 9 #
 a # b = Fix (App a b)
 
 inj :: Term -> Int -> Term
-inj a i = Fix (In a i)
+inj a i = Fix (Inj a i)
 
 case' :: Term -> [(Term -> Term)] -> Term
 case' t fs = makeCase t (lam <$> fs)
@@ -247,7 +247,7 @@ zipExprFWith g f a b = case (a, b) of
   (Var n1, Var n2) -> Just (Var (g n1 n2))
   (App a1 b1, App a2 b2) -> Just (App (f a1 a2) (f b1 b2))
 
-  (In a1 i1, In a2 i2) | i1 == i2 -> Just (In (f a1 a2) i1)
+  (Inj a1 i1, Inj a2 i2) | i1 == i2 -> Just (Inj (f a1 a2) i1)
   (Case s1 cs1, Case s2 cs2) | length cs1 == length cs2 -> Just (Case (f s1 s2) (zipWith f cs1 cs2))
 
   (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> Just (Tuple (zipWith f vs1 vs2))
@@ -282,7 +282,7 @@ instance Bifunctor ExprF where
     Var n -> Var (g n)
     App a b -> App (f a) (f b)
 
-    In a i -> In (f a) i
+    Inj a i -> Inj (f a) i
     Case s cs -> Case (f s) (map f cs)
 
     Tuple vs -> Tuple (map f vs)
@@ -306,7 +306,7 @@ instance Bifoldable ExprF where
     Var n -> g n
     App a b -> mappend (f a) (f b)
 
-    In a _ -> f a
+    Inj a _ -> f a
     Case s cs -> mappend (f s) (foldMap f cs)
 
     Tuple vs -> foldMap f vs
@@ -332,7 +332,7 @@ instance Pretty2 ExprF where
     Var v -> pn 0 v
     App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
 
-    In l i -> showParen (d > 10) $ showString "in" . showSubscript i . showChar ' ' . pp 11 l
+    Inj l i -> showParen (d > 10) $ showString "in" . showSubscript i . showChar ' ' . pp 11 l
     Case s cs -> showParen (d > 10) $ showString "case " . pp 0 s . showString " of " . foldr (.) id (intersperse (showChar ' ') (map (pp 11) cs))
 
     Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
@@ -371,7 +371,7 @@ instance Show2 ExprF where
     Var v -> showsUnaryWith spn "Var" d v
     App a b -> showsBinaryWith spr spr "App" d a b
 
-    In a i -> showsBinaryWith spr showsPrec "In" d a i
+    Inj a i -> showsBinaryWith spr showsPrec "Inj" d a i
     Case s cs -> showsBinaryWith spr (liftShowsPrec spr slr) "Case" d s cs
 
     Tuple as -> showsUnaryWith (liftShowsPrec spr slr) "Tuple" d as

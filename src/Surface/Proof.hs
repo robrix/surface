@@ -237,7 +237,7 @@ check' term ty = case (unfix term, unfix ty) of
   (_, Product [t]) -> check term t
   (Tuple vs, Product ts) | length vs == length ts -> sequenceA_ (zipWith check vs ts)
 
-  (In a i, Sum ts) | length ts > i -> check a (ts !! i)
+  (Inj a i, Sum ts) | length ts > i -> check a (ts !! i)
 
   _ -> do
     ty' <- infer term
@@ -255,7 +255,7 @@ infer' term = case unfix term of
       unify ty (productT vs)
       return (vs !! i)
 
-  In a i -> do
+  Inj a i -> do
     a' <- infer a
     vinit <- replicateM i (var <$> fresh Nothing)
     vtail <- var <$> fresh Nothing
@@ -413,7 +413,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (_, Var v) -> solve v [] t1
   (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
-  (In a1 i1, In a2 i2) | i1 == i2 -> unify a1 a2
+  (Inj a1 i1, Inj a2 i2) | i1 == i2 -> unify a1 a2
   (Case s1 [], Case s2 []) -> unify s1 s2
   (Case s1 (c1 : cs1), Case s2 (c2 :cs2)) -> unify c1 c2 >> unify (makeCase s1 cs1) (makeCase s2 cs2)
 
@@ -478,13 +478,13 @@ normalize' expr = case unfix expr of
       Var v -> return (var v # a)
       _ -> error ("Application of non-abstraction value: " ++ pretty o)
 
-  In a i
+  Inj a i
     | i < 0 -> error ("Injection at negative index: " ++ show i)
     | otherwise -> flip inj i <$> normalize a
   Case scrutinee cases -> do
     Fix scrutinee' <- normalize scrutinee
     case scrutinee' of
-      In a i
+      Inj a i
         | length cases > i -> do
           f <- normalize (cases !! i)
           normalize (f # a)
@@ -538,7 +538,7 @@ whnf' expr = case unfix expr of
   Case scrutinee cases -> do
     scrutinee' <- whnf scrutinee
     case unfix scrutinee' of
-      In a i | length cases > i -> whnf ((cases !! i) # a)
+      Inj a i | length cases > i -> whnf ((cases !! i) # a)
       _ -> return (makeCase scrutinee cases)
 
   _ -> return expr
