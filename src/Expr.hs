@@ -127,12 +127,6 @@ tuple = Fix . Tuple
 at :: Term -> Int -> Term
 at = (Fix .) . At
 
-fst' :: Term -> Term
-fst' a = Fix (At a 0)
-
-snd' :: Term -> Term
-snd' a = Fix (At a 1)
-
 unit :: Term
 unit = Fix (Tuple [])
 

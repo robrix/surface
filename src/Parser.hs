@@ -87,14 +87,6 @@ tuple :: (Monad m, TokenParsing m) => m Term
 tuple = parens (chainr expr (pair <$ comma) Expr.unit)
                <?> "tuple"
 
-fst' :: (Monad m, TokenParsing m) => m Term
-fst' = Expr.fst' <$ preword "fst" <*> expr
-                                  <?> "fst"
-
-snd' :: (Monad m, TokenParsing m) => m Term
-snd' = Expr.snd' <$ preword "snd" <*> expr
-                                  <?> "snd"
-
 at :: (Monad m, TokenParsing m) => m Term
 at = flip Expr.at <$ preword "at" <*> int
                                   <*> expr
@@ -147,8 +139,6 @@ atom
   <|> unitType
   <|> Parser.var
   <|> Parser.tuple
-  <|> Parser.fst'
-  <|> Parser.snd'
   <|> Parser.at
   <|> Parser.inj
   <|> Parser.case'
