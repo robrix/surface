@@ -232,7 +232,8 @@ check' term ty = case (unfix term, unfix ty) of
     ty' <- findTyping name
     unify ty' ty
 
-  (Pair a b, Product t1 t2) -> check a t1 >> check b t2
+  (_, Product [t]) -> check term t
+  (Pair a b, Product (t : ts)) -> check a t >> check b (Fix (Product ts))
 
   (InL l, Sum (t : _)) -> check l t
   (InR r, Sum (_ : ts)) -> check (Fix (InL r)) (Fix (Sum ts))
@@ -325,9 +326,7 @@ isType' ty = case unfix ty of
   UnitT -> return ()
   Type -> return ()
   Sum ts -> for_ ts isType
-  Product a b -> do
-    isType a
-    isType b
+  Product ts -> for_ ts isType
 
   Pi name ty body -> do
     isType ty
@@ -387,7 +386,8 @@ equate' e1 e2 = do
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
-  (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Product [], Product []) -> return ()
+  (Product (a1 : as1), Product (a2 : as2)) -> unify a1 a2 >> unify (Fix (Product as1)) (Fix (Product as2))
   (Sum [], Sum []) -> return ()
   (Sum (a1 : as1), Sum (a2 : as2)) -> unify a1 a2 >> unify (Fix (Sum as1)) (Fix (Sum as2))
   (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
@@ -516,7 +516,7 @@ normalize' expr = case unfix expr of
       Pair _ b -> return b
       _ -> error ("snd applied to non-product value: " ++ pretty p')
 
-  Product a b -> (.*.) <$> normalize a <*> normalize b
+  Product vs -> Fix . Sum <$> traverse normalize vs
   Sum vs -> Fix . Sum <$> traverse normalize vs
 
   Let name value body -> do

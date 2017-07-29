@@ -86,7 +86,7 @@ instance Listable a => Listable1 ((,) a) where
 
 instance Listable2 ExprF where
   liftTiers2 nameTiers ts
-    =  liftCons2 ts ts Product
+    =  liftCons1 (liftTiers ts) Product
     \/ liftCons1 (liftTiers ts) Sum
     \/ liftCons3 nameTiers ts ts Pi
     \/ liftCons3 nameTiers ts ts Mu

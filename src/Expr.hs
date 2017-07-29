@@ -12,7 +12,7 @@ import GHC.Generics (Generic)
 import Text.Pretty
 
 data ExprF n a where
-  Product :: a -> a -> ExprF n a
+  Product :: [a] -> ExprF n a
   Sum :: [a] -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
   Mu :: n -> a -> a -> ExprF n a
@@ -72,7 +72,8 @@ a .+. b = Fix (Sum [a, b])
 
 infixr 7 .*.
 (.*.) :: Type -> Type -> Type
-(.*.) = (Fix .) . Product
+a .*. Fix (Product b) = Fix (Product (a : b))
+a .*. b = Fix (Product [a, b])
 
 lam :: (Term -> Term) -> Term
 lam = uncurry makeLambda . bindVariable
@@ -227,7 +228,7 @@ substitute to from = para $ \ expr -> case expr of
 
 zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Maybe (ExprF o c)
 zipExprFWith g f a b = case (a, b) of
-  (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
+  (Product vs1, Product vs2) | length vs1 == length vs2 -> Just (Product (zipWith f vs1 vs2))
   (Sum vs1, Sum vs2) | length vs1 == length vs2 -> Just (Sum (zipWith f vs1 vs2))
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (Mu n1 t1 b1, Mu n2 t2 b2) -> Just (Mu (g n1 n2) (f t1 t2) (f b1 b2))
@@ -267,7 +268,7 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
-    Product a b -> Product (f a) (f b)
+    Product vs -> Product (map f vs)
     Sum vs -> Sum (map f vs)
     Pi n t b -> Pi (g n) (f t) (f b)
     Mu n t b -> Mu (g n) (f t) (f b)
@@ -296,7 +297,7 @@ instance Bifunctor ExprF where
 
 instance Bifoldable ExprF where
   bifoldMap g f expr = case expr of
-    Product a b -> mappend (f a) (f b)
+    Product vs -> foldMap f vs
     Sum vs -> foldMap f vs
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
     Mu n t b -> mappend (g n) (mappend (f t) (f b))
@@ -325,7 +326,8 @@ instance Bifoldable ExprF where
 
 instance Pretty2 ExprF where
   liftPrettyPrec2 pn _ pp _ d expr = case expr of
-    Product a b -> showParen (d > 7) $ pp 8 a . showString " * " . pp 7 b
+    Product [] -> showString "()"
+    Product vs -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (pp 8) vs))
     Sum [] -> showString "void"
     Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
@@ -365,7 +367,7 @@ instance Eq n => Eq1 (ExprF n) where
 
 instance Show2 ExprF where
   liftShowsPrec2 spn _ spr slr d t = case t of
-    Product a b -> showsBinaryWith spr spr "Product" d a b
+    Product vs -> showsUnaryWith (liftShowsPrec spr slr) "Product" d vs
     Sum vs -> showsUnaryWith (liftShowsPrec spr slr) "Sum" d vs
     Pi n t b -> showsTernaryWith spn spr spr "Pi" d n t b
     Mu n t b -> showsTernaryWith spn spr spr "Mu" d n t b
