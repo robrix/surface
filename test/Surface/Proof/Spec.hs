@@ -51,4 +51,4 @@ eraseErrors :: Either [String] a -> Either [String] a
 eraseErrors = either (Left . const []) Right
 
 isResult :: Either [String] a -> Bool
-isResult = either False True
+isResult = either (const False) (const True)
