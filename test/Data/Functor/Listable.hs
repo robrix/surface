@@ -102,7 +102,6 @@ instance Listable2 ExprF where
     \/ liftCons2 ts ts Pair
     \/ liftCons1 ts Fst
     \/ liftCons1 ts Snd
-    \/ cons0 Unit
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
 

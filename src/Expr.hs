@@ -33,8 +33,6 @@ data ExprF n a where
   Fst :: a -> ExprF n a
   Snd :: a -> ExprF n a
 
-  Unit :: ExprF n a
-
   Let :: n -> a -> a -> ExprF n a
 
   As :: a -> a -> ExprF n a
@@ -127,7 +125,7 @@ snd' :: Term -> Term
 snd' = Fix . Snd
 
 unit :: Term
-unit = Fix Unit
+unit = Fix (Product [])
 
 let' :: Term -> (Term -> Term) -> Term
 let' value = uncurry (`makeLet` value) . bindVariable
@@ -249,8 +247,6 @@ zipExprFWith g f a b = case (a, b) of
   (Fst a1, Fst a2) -> Just (Fst (f a1 a2))
   (Snd a1, Snd a2) -> Just (Snd (f a1 a2))
 
-  (Unit, Unit) -> Just Unit
-
   (Let n1 v1 b1, Let n2 v2 b2) -> Just (Let (g n1 n2) (f v1 v2) (f b1 b2))
 
   (As a1 b1, As a2 b2) -> Just (As (f a1 a2) (f b1 b2))
@@ -289,8 +285,6 @@ instance Bifunctor ExprF where
     Fst a -> Fst (f a)
     Snd a -> Snd (f a)
 
-    Unit -> Unit
-
     Let n v b -> Let (g n) (f v) (f b)
 
     As a b -> As (f a) (f b)
@@ -317,8 +311,6 @@ instance Bifoldable ExprF where
     Pair a b -> mappend (f a) (f b)
     Fst a -> f a
     Snd a -> f a
-
-    Unit -> mempty
 
     Let n v b -> mappend (g n) (mappend (f v) (f b))
 
@@ -348,8 +340,6 @@ instance Pretty2 ExprF where
     Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
-
-    Unit -> showString "()"
 
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
 
@@ -387,8 +377,6 @@ instance Show2 ExprF where
     Pair a b -> showsBinaryWith spr spr "Pair" d a b
     Fst f -> showsUnaryWith spr "Fst" d f
     Snd s -> showsUnaryWith spr "Snd" d s
-
-    Unit -> showString "Unit"
 
     Let n v b -> showsTernaryWith spn spr spr "Let" d n v b
 

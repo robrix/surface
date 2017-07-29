@@ -271,8 +271,6 @@ infer' term = case unfix term of
     unify tr (var r .->. var b)
     return (var b)
 
-  Unit -> return unitT
-
   Var name -> findTyping name >>= specialize
 
   Abs name body -> do
@@ -429,8 +427,6 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Pair a1 b1, Pair a2 b2) -> unify a1 a2 >> unify b1 b2
   (Fst p1, Fst p2) -> unify p1 p2
   (Snd p1, Snd p2) -> unify p1 p2
-
-  (Unit, Unit) -> return ()
 
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
