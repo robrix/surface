@@ -141,7 +141,7 @@ atom
    =  typeType
   <|> unitType
   <|> Parser.var
-  <|> tuple
+  <|> Parser.tuple
   <|> Parser.fst'
   <|> Parser.snd'
   <|> Parser.inL

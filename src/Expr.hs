@@ -28,7 +28,7 @@ data ExprF n a where
   InR :: a -> ExprF n a
   Case :: a -> a -> a -> ExprF n a
 
-  Pair :: a -> a -> ExprF n a
+  Tuple :: [a] -> ExprF n a
   Fst :: a -> ExprF n a
   Snd :: a -> ExprF n a
 
@@ -124,7 +124,11 @@ makeCase :: Term -> Term -> Term -> Term
 makeCase t l r = Fix (Case t l r)
 
 pair :: Term -> Term -> Term
-pair = (Fix .) . Pair
+a `pair` Fix (Tuple as) = Fix (Tuple (a : as))
+a `pair` b = Fix (Tuple [a, b])
+
+tuple :: [Term] -> Term
+tuple = Fix . Tuple
 
 fst' :: Term -> Term
 fst' = Fix . Fst
@@ -133,7 +137,7 @@ snd' :: Term -> Term
 snd' = Fix . Snd
 
 unit :: Term
-unit = Fix (Product [])
+unit = Fix (Tuple [])
 
 let' :: Term -> (Term -> Term) -> Term
 let' value = uncurry (`makeLet` value) . bindVariable
@@ -250,7 +254,7 @@ zipExprFWith g f a b = case (a, b) of
   (InR a1, InR a2) -> Just (InR (f a1 a2))
   (Case c1 l1 r1, Case c2 l2 r2) -> Just (Case (f c1 c2) (f l1 l2) (f r1 r2))
 
-  (Pair a1 b1, Pair a2 b2) -> Just (Pair (f a1 a2) (f b1 b2))
+  (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> Just (Tuple (zipWith f vs1 vs2))
   (Fst a1, Fst a2) -> Just (Fst (f a1 a2))
   (Snd a1, Snd a2) -> Just (Snd (f a1 a2))
 
@@ -287,7 +291,7 @@ instance Bifunctor ExprF where
     InR a -> InR (f a)
     Case c l r -> Case (f c) (f l) (f r)
 
-    Pair a b -> Pair (f a) (f b)
+    Tuple vs -> Tuple (map f vs)
     Fst a -> Fst (f a)
     Snd a -> Snd (f a)
 
@@ -313,7 +317,7 @@ instance Bifoldable ExprF where
     InR a -> f a
     Case c l r -> mappend (f c) (mappend (f l) (f r))
 
-    Pair a b -> mappend (f a) (f b)
+    Tuple vs -> foldMap f vs
     Fst a -> f a
     Snd a -> f a
 
@@ -341,7 +345,7 @@ instance Pretty2 ExprF where
     InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
     Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
 
-    Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
+    Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
     Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
     Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
 
@@ -377,7 +381,7 @@ instance Show2 ExprF where
     InR r -> showsUnaryWith spr "InR" d r
     Case c l r -> showsTernaryWith spr spr spr "Case" d c l r
 
-    Pair a b -> showsBinaryWith spr spr "Pair" d a b
+    Tuple as -> showsUnaryWith (liftShowsPrec spr slr) "Tuple" d as
     Fst f -> showsUnaryWith spr "Fst" d f
     Snd s -> showsUnaryWith spr "Snd" d s
 

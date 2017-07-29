@@ -4,7 +4,7 @@ module Surface.Proof where
 import Context
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
-import Data.Foldable (for_)
+import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
@@ -232,8 +232,9 @@ check' term ty = case (unfix term, unfix ty) of
     ty' <- findTyping name
     unify ty' ty
 
+  (Tuple [a], _) -> check a ty
   (_, Product [t]) -> check term t
-  (Pair a b, Product (t : ts)) -> check a t >> check b (Fix (Product ts))
+  (Tuple vs, Product ts) | length vs == length ts -> sequenceA_ (zipWith check vs ts)
 
   (InL l, Sum (t : _)) -> check l t
   (InR r, Sum (_ : ts)) -> check (Fix (InL r)) (Fix (Sum ts))
@@ -244,7 +245,7 @@ check' term ty = case (unfix term, unfix ty) of
 
 infer' :: HasCallStack => Term -> Proof Type
 infer' term = case unfix term of
-  Pair x y -> (.*.) <$> infer x <*> infer y
+  Tuple as -> productT <$> traverse infer as
 
   Fst p -> var . fst <$> inferPair p
   Snd p -> var . snd <$> inferPair p
@@ -421,7 +422,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (InR r1, InR r2) -> unify r1 r2
   (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
 
-  (Pair a1 b1, Pair a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> sequenceA_ (zipWith unify vs1 vs2)
   (Fst p1, Fst p2) -> unify p1 p2
   (Snd p1, Snd p2) -> unify p1 p2
 
@@ -495,19 +496,20 @@ normalize' expr = case unfix expr of
         normalize (i # r)
       _ -> error ("Case expression on non-sum value: " ++ pretty s)
 
-  Pair a b -> pair <$> normalize a <*> normalize b
+  Tuple [v] -> normalize v
+  Tuple vs -> tuple <$> traverse normalize vs
 
   Fst p -> do
     Fix p' <- normalize p
     case p' of
-      Pair a _ -> return a
-      _ -> error ("fst applied to non-product value: " ++ pretty p')
+      Tuple (t : _) -> return t
+      _ -> error ("fst applied to non-tuple value: " ++ pretty p')
 
   Snd p -> do
     Fix p' <- normalize p
     case p' of
-      Pair _ b -> return b
-      _ -> error ("snd applied to non-product value: " ++ pretty p')
+      Tuple (_ : b) -> normalize (fst' (tuple b))
+      _ -> error ("snd applied to non-tuple value: " ++ pretty p')
 
   Product ts -> Fix . Product <$> traverse normalize ts
   Sum ts -> Fix . Sum <$> traverse normalize ts
@@ -535,16 +537,16 @@ whnf' expr = case unfix expr of
       _ -> return (op # b)
 
   Fst p -> do
-    pair <- whnf p
-    case unfix pair of
-      Pair a _ -> whnf a
-      _ -> return (fst' pair)
+    tuple <- whnf p
+    case unfix tuple of
+      Tuple (a : _) -> whnf a
+      _ -> return (fst' tuple)
 
   Snd p -> do
-    pair <- whnf p
-    case unfix pair of
-      Pair _ b -> whnf b
-      _ -> return (snd' pair)
+    tuple <- whnf p
+    case unfix tuple of
+      Tuple (_ : vs) -> whnf (fst' (Expr.tuple vs))
+      _ -> return (snd' tuple)
 
   Case subject ifL ifR -> do
     sum <- whnf subject

@@ -98,7 +98,7 @@ instance Listable2 ExprF where
     \/ liftCons1 ts InL
     \/ liftCons1 ts InR
     \/ liftCons3 ts ts ts Case
-    \/ liftCons2 ts ts Pair
+    \/ liftCons1 (liftTiers ts) Tuple
     \/ liftCons1 ts Fst
     \/ liftCons1 ts Snd
     \/ liftCons3 nameTiers ts ts Let
