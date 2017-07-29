@@ -364,7 +364,7 @@ alphaEquivalent' e1 e2
 
     (Var n1, Var n2) -> return (n1 == n2)
 
-    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of
+    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of -- FIXME: this should probably be testing under renaming.
       Just equivalences -> do
         eq <- sequenceA equivalences
         return (and eq)
