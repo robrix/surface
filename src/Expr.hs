@@ -325,25 +325,32 @@ instance Bifoldable ExprF where
 
 instance Pretty2 ExprF where
   liftPrettyPrec2 pn _ pp _ d expr = case expr of
-    App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
-    Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
-    Var v -> pn 0 v
-    InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
-    InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
-    Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
-    Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
-    Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
-    Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
+    Product a b -> showParen (d > 7) $ pp 8 a . showString " * " . pp 7 b
+    Sum [] -> showString "void"
+    Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
     Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
-    Sum [] -> showString "void"
-    Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
-    Product a b -> showParen (d > 7) $ pp 8 a . showString " * " . pp 7 b
+
     UnitT -> showString "Unit"
-    Unit -> showString "()"
     Type -> showString "Type"
+
+    Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
+    Var v -> pn 0 v
+    App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
+
+    InL l -> showParen (d > 10) $ showString "inL " . pp 11 l
+    InR r -> showParen (d > 10) $ showString "inR " . pp 11 r
+    Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
+
+    Pair a b -> showParen (d >= 0) $ pp 0 a . showString ", " . pp (negate 1) b
+    Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
+    Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
+
+    Unit -> showString "()"
+
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
+
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
     where showBrace b s = if b then showString "{ " . s . showString " }" else s
 
