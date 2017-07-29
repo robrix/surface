@@ -234,7 +234,7 @@ check' term ty = case (unfix term, unfix ty) of
 
   (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
-  (InL l, Sum (t1 : _)) -> check l t1
+  (InL l, Sum (t : _)) -> check l t
   (InR r, Sum (_ : ts)) -> check (Fix (InL r)) (Fix (Sum ts))
 
   _ -> do
