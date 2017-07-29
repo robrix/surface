@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, GADTs #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 module Expr where
 
 import Data.Bifoldable
@@ -11,28 +11,28 @@ import Data.Semigroup (Semigroup(..), Max(..), Option(..))
 import GHC.Generics (Generic)
 import Text.Pretty
 
-data ExprF n a where
-  Product :: [a] -> ExprF n a
-  Sum :: [a] -> ExprF n a
-  Pi :: n -> a -> a -> ExprF n a
-  Mu :: n -> a -> a -> ExprF n a
-  Sigma :: n -> a -> a -> ExprF n a
+data ExprF n a
+  = Product [a]
+  | Sum [a]
+  | Pi n a a
+  | Mu n a a
+  | Sigma n a a
 
-  Type :: ExprF n a
+  | Type
 
-  Abs :: n -> a -> ExprF n a
-  Var :: n -> ExprF n a
-  App :: a -> a -> ExprF n a
+  | Abs n a
+  | Var n
+  | App a a
 
-  Inj :: a -> Int -> ExprF n a
-  Case :: a -> [a] -> ExprF n a
+  | Inj a Int
+  | Case a [a]
 
-  Tuple :: [a] -> ExprF n a
-  At :: a -> Int -> ExprF n a
+  | Tuple [a]
+  | At a Int
 
-  Let :: n -> a -> a -> ExprF n a
+  | Let n a a
 
-  As :: a -> a -> ExprF n a
+  | As a a
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Expr = Fix (ExprF Name)
@@ -45,7 +45,7 @@ type Term = Fix (TermF Name)
 
 
 data Name = N String
-          | I Integer
+          | I Int
   deriving (Eq, Generic, Hashable, Ord, Show)
 
 
@@ -100,7 +100,7 @@ var = Fix . Var
 varN :: String -> Expr
 varN = var . N
 
-varI :: Integer -> Expr
+varI :: Int -> Expr
 varI = var . I
 
 
@@ -225,6 +225,51 @@ substitute to from = para $ \ expr -> case expr of
   _ -> Fix (fmap snd expr)
 
 
+-- Pretty-printing
+
+prettyExpr :: Int -> Term -> ShowS
+prettyExpr = flip . para $ \ term d -> case term of
+  Product [] -> showString "Unit"
+  Product ts -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (($ 8) . snd) ts))
+  Sum [] -> showString "Void"
+  Sum ts -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (($ 7) . snd) ts))
+  Pi n (t', t) (b', b)
+    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ showName n . showString " -> " . b 0
+    | elem n (freeVariables b') -> showParen (d > 0) $ showParen True (showName n . showString " : " . t 1) . showString " -> " . b 0
+    | otherwise -> showParen (d > 0) $ t 1 . showString " -> " . b 0
+  Mu n (_, t) (_, b) -> showParen (d > 0) $ showChar 'µ' . showParen True (showName n . showString " : " . t 1) . showString " . " . b 0
+  Sigma n (_, t) (_, b) -> showBrace True $ showName n . showString " : " . t 1 . showString " | " . b 0
+
+  Type -> showString "Type"
+
+  Abs n (_, b) -> showParen (d > 0) $ showChar '\\' . showName n . showString " . " . b 0
+  Var n -> showName n
+  App (_, f) (_, a) -> showParen (d > 10) $ f 10 . showChar ' ' . a 11
+
+  Inj (_, a) i -> showParen (d > 10) $ showString "inj" . showSubscript i . showChar ' ' . a 11
+  Case (_, s) cs -> showParen (d > 10) $ showString "case " . s 0 . showString " of " . showBrace True (foldr (.) id (intersperse (showString "; ") (map (($ 11) . snd) cs)))
+
+  Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (($ 0) . snd) vs))
+  At (_, a) i -> showParen (d > 10) $ a 11 . showSubscript i
+
+  Let n (_, v) (_, b) -> showParen (d > 10) $ showString "let " . showName n . showString " = " . v 0 . showString " in " . b 0
+
+  As (_, a) (_, t) -> showParen (d > 0) $ a 1 . showString " : " . t 0
+  where showBrace b s = if b then showString "{ " . s . showString " }" else s
+        showSubscript i
+          | i < 0 = showChar '₋' . showSubscript (abs i)
+          | i < 10 = showChar (subscripts !! i)
+          | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
+        subscripts = "₀₁₂₃₄₅₆₇₈₉"
+        showName (N s) = showString s
+        showName (I i) = showAlphabet i
+        showAlphabet i
+          | i < 0 = showString "_"
+          | i < 26 = showChar (alphabet !! i)
+          | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
+        alphabet = "abcdefghijklmnopqrstuvwxyz"
+
+
 -- Traversal
 
 zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Maybe (ExprF o c)
@@ -310,37 +355,6 @@ instance Bifoldable ExprF where
 
     As a b -> mappend (f a) (f b)
 
-instance Pretty2 ExprF where
-  liftPrettyPrec2 pn _ pp _ d expr = case expr of
-    Product [] -> showString "Unit"
-    Product vs -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (pp 8) vs))
-    Sum [] -> showString "Void"
-    Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
-    Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
-    Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
-    Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
-
-    Type -> showString "Type"
-
-    Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
-    Var v -> pn 0 v
-    App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
-
-    Inj l i -> showParen (d > 10) $ showString "in" . showSubscript i . showChar ' ' . pp 11 l
-    Case s cs -> showParen (d > 10) $ showString "case " . pp 0 s . showString " of " . foldr (.) id (intersperse (showChar ' ') (map (pp 11) cs))
-
-    Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
-    At a i -> showParen (d > 10) $ pp 11 a . showSubscript i
-
-    Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
-
-    As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
-    where showBrace b s = if b then showString "{ " . s . showString " }" else s
-          showSubscript i
-            | i < 0 = showChar '₋' . showSubscript (abs i)
-            | i < 10 = showChar (subscripts !! i)
-            | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
-          subscripts = "₀₁₂₃₄₅₆₇₈₉"
 
 instance Pretty Name where
   prettyPrec _ name = case name of

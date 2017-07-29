@@ -36,7 +36,10 @@ prettyPrint :: Pretty a => a -> IO ()
 prettyPrint = putStrLn . pretty
 
 pretty :: Pretty a => a -> String
-pretty = ($ "") . prettyPrec 0
+pretty = ($ "") . prettys
+
+prettys :: Pretty a => a -> ShowS
+prettys = prettyPrec 0
 
 newtype PrettyOf = PrettyOf { unPrettyOf :: Int -> ShowS }
 
