@@ -336,8 +336,8 @@ instance Pretty2 ExprF where
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
     Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
-    Sum a b -> showParen (d > 6) $ pp 6 a . showString " + " . pp 7 b
-    Product a b -> showParen (d > 7) $ pp 7 a . showString " * " . pp 8 b
+    Sum a b -> showParen (d > 6) $ pp 7 a . showString " + " . pp 6 b
+    Product a b -> showParen (d > 7) $ pp 8 a . showString " * " . pp 7 b
     UnitT -> showString "Unit"
     Unit -> showString "()"
     Type -> showString "Type"
