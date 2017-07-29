@@ -152,7 +152,7 @@ runAll context proof = case runStep context proof of
 
 runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
 runSteps proof context = (proof, context) : case runStep proof context of
-  Left errors -> [ (Error errors `Then` return, context) ]
+  Left _ -> []
   Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
@@ -328,6 +328,10 @@ isType' ty = case unfix ty of
     isType ty
     D (name := Just ty) >- isType body
 
+  Sigma name ty body -> do
+    isType ty
+    T (name ::: ty) >- isType body
+
   Var name -> do
     def <- lookupDefinition name
     case def of
@@ -351,14 +355,26 @@ alphaEquivalent' e1 e2
       | n1 == n2 -> alphaEquivalent b1 b2
       | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
         alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Pi n1 t1 b1, Pi n2 t2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
-      alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
-    (Let n1 v1 b1, Let n2 v2 b2) -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
-      alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Pi n1 t1 b1, Pi n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Mu n1 t1 b1, Mu n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Sigma n1 t1 b1, Sigma n2 t2 b2)
+      | n1 == n2 -> alphaEquivalent t1 t2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2)) in
+        alphaEquivalent t1 t2 >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
+    (Let n1 v1 b1, Let n2 v2 b2)
+      | n1 == n2 -> alphaEquivalent v1 v2 >> alphaEquivalent b1 b2
+      | otherwise -> let new = var (freshNameIn (n1 : n2 : freeVariables b1 `union` freeVariables b2 `union` freeVariables v1 `union` freeVariables v2)) in
+        alphaEquivalent (substitute new n1 v1) (substitute new n2 v2) >> alphaEquivalent (substitute new n1 b1) (substitute new n2 b2)
 
     (Var n1, Var n2) -> return (n1 == n2)
 
-    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of -- FIXME: this should probably be testing under renaming.
+    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of
       Just equivalences -> do
         eq <- sequenceA equivalences
         return (and eq)
@@ -369,9 +385,9 @@ equate' :: HasCallStack => Expr -> Expr -> Proof ()
 equate' e1 e2 = do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
-    nf1 <- whnf e1
-    nf2 <- whnf e2
-    case zipExprFWith (,) equate (unfix nf1) (unfix nf2) of
+    Fix nf1 <- whnf e1
+    Fix nf2 <- whnf e2
+    case zipExprFWith (,) equate nf1 nf2 of
       Just _ -> return ()
       _ -> fail ("Could not judge equality of " ++ prettyExpr 0 e1 (" to " ++ prettyExpr 0 e2 ""))
 
