@@ -324,8 +324,7 @@ isType' :: HasCallStack => Term -> Proof ()
 isType' ty = case unfix ty of
   UnitT -> return ()
   Type -> return ()
-  Sum ts -> do
-    for_ ts isType
+  Sum ts -> for_ ts isType
   Product a b -> do
     isType a
     isType b
