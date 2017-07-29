@@ -25,7 +25,7 @@ data ExprF n a where
   App :: a -> a -> ExprF n a
 
   In :: a -> Int -> ExprF n a
-  Case :: a -> a -> a -> ExprF n a
+  Case :: a -> [a] -> ExprF n a
 
   Tuple :: [a] -> ExprF n a
   At :: a -> Int -> ExprF n a
@@ -117,11 +117,11 @@ inL v = Fix (In v 0)
 inR :: Term -> Term
 inR v = Fix (In v 1)
 
-case' :: Term -> (Term -> Term) -> (Term -> Term) -> Term
-case' t f g = makeCase t (lam f) (lam g)
+case' :: Term -> [(Term -> Term)] -> Term
+case' t fs = makeCase t (lam <$> fs)
 
-makeCase :: Term -> Term -> Term -> Term
-makeCase t l r = Fix (Case t l r)
+makeCase :: Term -> [Term] -> Term
+makeCase = (Fix .) . Case
 
 pair :: Term -> Term -> Term
 a `pair` Fix (Tuple as) = Fix (Tuple (a : as))
@@ -254,7 +254,7 @@ zipExprFWith g f a b = case (a, b) of
   (App a1 b1, App a2 b2) -> Just (App (f a1 a2) (f b1 b2))
 
   (In a1 i1, In a2 i2) | i1 == i2 -> Just (In (f a1 a2) i1)
-  (Case c1 l1 r1, Case c2 l2 r2) -> Just (Case (f c1 c2) (f l1 l2) (f r1 r2))
+  (Case s1 cs1, Case s2 cs2) | length cs1 == length cs2 -> Just (Case (f s1 s2) (zipWith f cs1 cs2))
 
   (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> Just (Tuple (zipWith f vs1 vs2))
   (At a1 i1, At a2 i2) | i1 == i2 -> Just (At (f a1 a2) i1)
@@ -289,7 +289,7 @@ instance Bifunctor ExprF where
     App a b -> App (f a) (f b)
 
     In a i -> In (f a) i
-    Case c l r -> Case (f c) (f l) (f r)
+    Case s cs -> Case (f s) (map f cs)
 
     Tuple vs -> Tuple (map f vs)
     At a i -> At (f a) i
@@ -313,7 +313,7 @@ instance Bifoldable ExprF where
     App a b -> mappend (f a) (f b)
 
     In a _ -> f a
-    Case c l r -> mappend (f c) (mappend (f l) (f r))
+    Case s cs -> mappend (f s) (foldMap f cs)
 
     Tuple vs -> foldMap f vs
     At a _ -> f a
@@ -339,7 +339,7 @@ instance Pretty2 ExprF where
     App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
 
     In l i -> showParen (d > 10) $ showString "in" . showSubscript i . showChar ' ' . pp 11 l
-    Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
+    Case s cs -> showParen (d > 10) $ showString "case " . pp 0 s . showString " of " . foldr (.) id (intersperse (showChar ' ') (map (pp 11) cs))
 
     Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
     At a i -> showParen (d > 10) $ pp 11 a . showSubscript i
@@ -378,7 +378,7 @@ instance Show2 ExprF where
     App a b -> showsBinaryWith spr spr "App" d a b
 
     In a i -> showsBinaryWith spr showsPrec "In" d a i
-    Case c l r -> showsTernaryWith spr spr spr "Case" d c l r
+    Case s cs -> showsBinaryWith spr (liftShowsPrec spr slr) "Case" d s cs
 
     Tuple as -> showsUnaryWith (liftShowsPrec spr slr) "Tuple" d as
     At a i -> showsBinaryWith spr showsPrec "At" d a i

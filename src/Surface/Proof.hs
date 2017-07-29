@@ -9,6 +9,7 @@ import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\), (!!))
+import Data.Traversable (for)
 import Expr
 import GHC.Stack
 import Module
@@ -260,17 +261,16 @@ infer' term = case unfix term of
     vtail <- var <$> fresh Nothing
     return (sumT (vinit ++ [ a', vtail ]))
 
-  Case subject ifL ifR -> do
-    ty <- infer subject
-    l <- fresh Nothing
-    r <- fresh Nothing
-    unify ty (var l .+. var r)
-    b <- fresh Nothing
-    tl <- infer ifL
-    tr <- infer ifR
-    unify tl (var l .->. var b)
-    unify tr (var r .->. var b)
-    return (var b)
+  Case scrutinee cases -> do
+    scrutinee' <- infer scrutinee
+    result <- fresh Nothing
+    functions <- traverse infer cases
+    args <- for functions $ \ t -> do
+      arg <- fresh Nothing
+      unify t (var arg .->. var result)
+      return (var arg)
+    unify scrutinee' (sumT args)
+    return (var result)
 
   Var name -> findTyping name >>= specialize
 
@@ -414,7 +414,8 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
   (In a1 i1, In a2 i2) | i1 == i2 -> unify a1 a2
-  (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
+  (Case s1 [], Case s2 []) -> unify s1 s2
+  (Case s1 (c1 : cs1), Case s2 (c2 :cs2)) -> unify c1 c2 >> unify (makeCase s1 cs1) (makeCase s2 cs2)
 
   (Tuple [], Tuple []) -> return ()
   (Tuple (v1 : vs1), Tuple (v2 : vs2)) -> unify v1 v2 >> unify (tuple vs1) (tuple vs2)
@@ -477,17 +478,18 @@ normalize' expr = case unfix expr of
       Var v -> return (var v # a)
       _ -> error ("Application of non-abstraction value: " ++ pretty o)
 
-  In a i -> flip inI i <$> normalize a
-  Case subject ifL ifR -> do
-    Fix s <- normalize subject
-    case s of
-      In l 0 -> do
-        f <- normalize ifL
-        normalize (f # l)
-      In r 1 -> do
-        f <- normalize ifR
-        normalize (f # r)
-      _ -> error ("Case expression on non-sum value: " ++ pretty s)
+  In a i
+    | i < 0 -> error ("Injection at negative index: " ++ show i)
+    | otherwise -> flip inI i <$> normalize a
+  Case scrutinee cases -> do
+    Fix scrutinee' <- normalize scrutinee
+    case scrutinee' of
+      In a i
+        | length cases > i -> do
+          f <- normalize (cases !! i)
+          normalize (f # a)
+        | otherwise -> error ("Injection out of bounds: " ++ show i ++ " >= " ++ show (length cases))
+      _ -> error ("Case expression on non-sum value: " ++ pretty scrutinee')
 
   Tuple [v] -> normalize v
   Tuple vs -> tuple <$> traverse normalize vs
@@ -533,12 +535,11 @@ whnf' expr = case unfix expr of
       Tuple vs | length vs > i -> return (vs !! i)
       _ -> return (at tuple i)
 
-  Case subject ifL ifR -> do
-    sum <- whnf subject
-    case unfix sum of
-      In l 0 -> whnf (ifL # l)
-      In r 1 -> whnf (ifR # r)
-      _ -> return (makeCase subject ifL ifR)
+  Case scrutinee cases -> do
+    scrutinee' <- whnf scrutinee
+    case unfix scrutinee' of
+      In a i | length cases > i -> whnf ((cases !! i) # a)
+      _ -> return (makeCase scrutinee cases)
 
   _ -> return expr
 

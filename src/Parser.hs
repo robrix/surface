@@ -114,8 +114,7 @@ inR = Expr.inR <$ preword "inR" <*> expr
 case' :: (Monad m, TokenParsing m) => m Term
 case' = makeCase <$  preword "case"
                  <*> expr <* preword "of"
-                 <*> parens lambda
-                 <*> parens lambda
+                 <*> many (parens lambda)
                  <?> "case analysis"
 
 let' :: (Monad m, TokenParsing m) => m Term
