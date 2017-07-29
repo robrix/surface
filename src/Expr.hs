@@ -317,7 +317,7 @@ instance Bifoldable ExprF where
 
 instance Pretty2 ExprF where
   liftPrettyPrec2 pn _ pp _ d expr = case expr of
-    Product [] -> showString "()"
+    Product [] -> showString "Unit"
     Product vs -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (pp 8) vs))
     Sum [] -> showString "void"
     Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
