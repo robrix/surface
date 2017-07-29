@@ -236,8 +236,7 @@ check' term ty = case (unfix term, unfix ty) of
   (_, Product [t]) -> check term t
   (Tuple vs, Product ts) | length vs == length ts -> sequenceA_ (zipWith check vs ts)
 
-  (InL l, Sum (t : _)) -> check l t
-  (InR r, Sum (_ : ts)) -> check (Fix (InL r)) (Fix (Sum ts))
+  (In a i, Sum ts) | length ts > i -> check a (ts !! i)
 
   _ -> do
     ty' <- infer term
@@ -255,15 +254,11 @@ infer' term = case unfix term of
       unify ty (productT vs)
       return (vs !! i)
 
-  InL l -> do
-    a <- infer l
-    b <- fresh Nothing
-    return (a .+. var b)
-
-  InR r -> do
-    a <- fresh Nothing
-    b <- infer r
-    return (var a .+. b)
+  In a i -> do
+    a' <- infer a
+    vinit <- replicateM i (var <$> fresh Nothing)
+    vtail <- var <$> fresh Nothing
+    return (sumT (vinit ++ [ a', vtail ]))
 
   Case subject ifL ifR -> do
     ty <- infer subject
@@ -418,8 +413,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (_, Var v) -> solve v [] t1
   (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
-  (InL l1, InL l2) -> unify l1 l2
-  (InR r1, InR r2) -> unify r1 r2
+  (In a1 i1, In a2 i2) | i1 == i2 -> unify a1 a2
   (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
 
   (Tuple [], Tuple []) -> return ()
@@ -483,17 +477,16 @@ normalize' expr = case unfix expr of
       Var v -> return (var v # a)
       _ -> error ("Application of non-abstraction value: " ++ pretty o)
 
-  InL l -> inL <$> normalize l
-  InR r -> inR <$> normalize r
+  In a i -> flip inI i <$> normalize a
   Case subject ifL ifR -> do
     Fix s <- normalize subject
     case s of
-      InL l -> do
-        i <- normalize ifL
-        normalize (i # l)
-      InR r -> do
-        i <- normalize ifR
-        normalize (i # r)
+      In l 0 -> do
+        f <- normalize ifL
+        normalize (f # l)
+      In r 1 -> do
+        f <- normalize ifR
+        normalize (f # r)
       _ -> error ("Case expression on non-sum value: " ++ pretty s)
 
   Tuple [v] -> normalize v
@@ -543,8 +536,8 @@ whnf' expr = case unfix expr of
   Case subject ifL ifR -> do
     sum <- whnf subject
     case unfix sum of
-      InL l -> whnf (ifL # l)
-      InR r -> whnf (ifR # r)
+      In l 0 -> whnf (ifL # l)
+      In r 1 -> whnf (ifR # r)
       _ -> return (makeCase subject ifL ifR)
 
   _ -> return expr
