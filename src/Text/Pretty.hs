@@ -100,12 +100,6 @@ instance Pretty2 H.HashMap where
   liftPrettyPrec2 pk _ pv _ _ = showAsListWith (uncurry pair) . H.toList
     where pair k v = pk 0 k . showString " : " . pv 0 v
 
-instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
-  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
-
-instance (Pretty1 f, Pretty a) => Pretty (f a) where
-  prettyPrec = prettyPrec1
-
 instance Pretty (PrettyOf a) where
   prettyPrec d (PrettyOf pp a) = pp d a
 
