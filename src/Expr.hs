@@ -225,6 +225,44 @@ substitute to from = para $ \ expr -> case expr of
   _ -> Fix (fmap snd expr)
 
 
+-- Pretty-printing
+
+prettyTerm :: Int -> Term -> ShowS
+prettyTerm = flip . para $ \ term d -> case term of
+  Product [] -> showString "Unit"
+  Product ts -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (($ 8) . snd) ts))
+  Sum [] -> showString "Void"
+  Sum ts -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (($ 7) . snd) ts))
+  Pi n (t', t) (b', b)
+    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ showChar '∀' . prettys n . showString " . " . b 0
+    | elem n (freeVariables b') -> showParen (d > 0) $ showParen True (prettys n . showString " : " . t 1) . showString " -> " . b 0
+    | otherwise -> showParen (d > 0) $ t 1 . showString " -> " . b 0
+  Mu n (_, t) (_, b) -> showParen (d > 0) $ showChar 'µ' . showParen True (prettys n . showString " : " . t 1) . showString " . " . b 0
+  Sigma n (_, t) (_, b) -> showBrace True $ prettys n . showString " : " . t 1 . showString " | " . b 0
+
+  Type -> showString "Type"
+
+  Abs n (_, b) -> showParen (d > 0) $ showChar '\\' . prettys n . showString " . " . b 0
+  Var n -> prettys n
+  App (_, f) (_, a) -> showParen (d > 10) $ f 10 . showChar ' ' . a 11
+
+  Inj (_, a) i -> showParen (d > 10) $ showString "inj" . showSubscript i . showChar ' ' . a 11
+  Case (_, s) cs -> showParen (d > 10) $ showString "case " . s 0 . showString " of " . showBrace True (foldr (.) id (intersperse (showString "; ") (map (($ 11) . snd) cs)))
+
+  Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (($ 0) . snd) vs))
+  At (_, a) i -> showParen (d > 10) $ a 11 . showString " at " . showSubscript i
+
+  Let n (_, v) (_, b) -> showParen (d > 10) $ showString "let " . prettys n . showString " = " . v 0 . showString " in " . b 0
+
+  As (_, a) (_, t) -> showParen (d > 0) $ a 1 . showString " : " . t 0
+  where showBrace b s = if b then showString "{ " . s . showString " }" else s
+        showSubscript i
+          | i < 0 = showChar '₋' . showSubscript (abs i)
+          | i < 10 = showChar (subscripts !! i)
+          | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
+        subscripts = "₀₁₂₃₄₅₆₇₈₉"
+
+
 -- Traversal
 
 zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Maybe (ExprF o c)
