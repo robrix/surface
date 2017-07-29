@@ -328,6 +328,10 @@ isType' ty = case unfix ty of
     isType ty
     D (name := Just ty) >- isType body
 
+  Sigma name ty body -> do
+    isType ty
+    T (name ::: ty) >- isType body
+
   Var name -> do
     def <- lookupDefinition name
     case def of
