@@ -45,7 +45,7 @@ type Term = Fix (TermF Name)
 
 
 data Name = N String
-          | I Integer
+          | I Int
   deriving (Eq, Generic, Hashable, Ord, Show)
 
 
@@ -100,7 +100,7 @@ var = Fix . Var
 varN :: String -> Expr
 varN = var . N
 
-varI :: Integer -> Expr
+varI :: Int -> Expr
 varI = var . I
 
 
