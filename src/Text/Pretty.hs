@@ -108,3 +108,6 @@ instance (Pretty1 f, Pretty a) => Pretty (f a) where
 
 instance Pretty (PrettyOf a) where
   prettyPrec d (PrettyOf pp a) = pp d a
+
+instance Eq a => Eq (PrettyOf a) where
+  PrettyOf _ a1 == PrettyOf _ a2 = a1 == a2
