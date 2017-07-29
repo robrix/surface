@@ -363,34 +363,37 @@ instance Pretty Name where
 instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
 
-instance Show n => Show1 (ExprF n) where
-  liftShowsPrec sp sl d t = case t of
-    Product a b -> showsBinaryWith sp sp "Product" d a b
-    Sum vs -> showsUnaryWith (liftShowsPrec sp sl) "Sum" d vs
-    Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
-    Mu n t b -> showsTernaryWith showsPrec sp sp "Mu" d n t b
-    Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
+instance Show2 ExprF where
+  liftShowsPrec2 spn _ spr slr d t = case t of
+    Product a b -> showsBinaryWith spr spr "Product" d a b
+    Sum vs -> showsUnaryWith (liftShowsPrec spr slr) "Sum" d vs
+    Pi n t b -> showsTernaryWith spn spr spr "Pi" d n t b
+    Mu n t b -> showsTernaryWith spn spr spr "Mu" d n t b
+    Sigma n t b -> showsTernaryWith spn spr spr "Sigma" d n t b
 
     UnitT -> showString "UnitT"
     Type -> showString "Type"
 
-    Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b
-    Var v -> showsUnaryWith showsPrec "Var" d v
-    App a b -> showsBinaryWith sp sp "App" d a b
+    Abs v b -> showsBinaryWith spn spr "Abs" d v b
+    Var v -> showsUnaryWith spn "Var" d v
+    App a b -> showsBinaryWith spr spr "App" d a b
 
-    InL l -> showsUnaryWith sp "InL" d l
-    InR r -> showsUnaryWith sp "InR" d r
-    Case c l r -> showsTernaryWith sp sp sp "Case" d c l r
+    InL l -> showsUnaryWith spr "InL" d l
+    InR r -> showsUnaryWith spr "InR" d r
+    Case c l r -> showsTernaryWith spr spr spr "Case" d c l r
 
-    Pair a b -> showsBinaryWith sp sp "Pair" d a b
-    Fst f -> showsUnaryWith sp "Fst" d f
-    Snd s -> showsUnaryWith sp "Snd" d s
+    Pair a b -> showsBinaryWith spr spr "Pair" d a b
+    Fst f -> showsUnaryWith spr "Fst" d f
+    Snd s -> showsUnaryWith spr "Snd" d s
 
     Unit -> showString "Unit"
 
-    Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
+    Let n v b -> showsTernaryWith spn spr spr "Let" d n v b
 
-    As term ty -> showsBinaryWith sp sp "As" d term ty
+    As term ty -> showsBinaryWith spr spr "As" d term ty
+
+instance Show n => Show1 (ExprF n) where
+  liftShowsPrec = liftShowsPrec2 showsPrec showList
 
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
 showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
