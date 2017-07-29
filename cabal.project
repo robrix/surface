@@ -1,2 +1,3 @@
 packages: surface.cabal
+optional-packages: vendor/*/*.cabal
 jobs: $ncpus
