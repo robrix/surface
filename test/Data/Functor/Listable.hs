@@ -75,6 +75,9 @@ uncurryr4 f (a, (b, (c, d))) = f a b c d
 instance Listable1 Maybe where
   liftTiers tiers = cons0 Nothing \/ liftCons1 tiers Just
 
+instance Listable1 [] where
+  liftTiers tiers = cons0 [] \/ liftCons2 tiers (liftTiers tiers) (:)
+
 instance Listable2 (,) where
   liftTiers2 = productWith (,)
 
@@ -83,23 +86,19 @@ instance Listable a => Listable1 ((,) a) where
 
 instance Listable2 ExprF where
   liftTiers2 nameTiers ts
-    =  liftCons2 ts ts Product
-    \/ liftCons2 ts ts Sum
+    =  liftCons1 (liftTiers ts) Product
+    \/ liftCons1 (liftTiers ts) Sum
     \/ liftCons3 nameTiers ts ts Pi
     \/ liftCons3 nameTiers ts ts Mu
     \/ liftCons3 nameTiers ts ts Sigma
-    \/ cons0 UnitT
     \/ cons0 Type
     \/ liftCons2 nameTiers ts Abs
     \/ liftCons1 nameTiers Var
     \/ liftCons2 ts ts App
-    \/ liftCons1 ts InL
-    \/ liftCons1 ts InR
-    \/ liftCons3 ts ts ts Case
-    \/ liftCons2 ts ts Pair
-    \/ liftCons1 ts Fst
-    \/ liftCons1 ts Snd
-    \/ cons0 Unit
+    \/ liftCons2 ts (abs `mapT` tiers) Inj
+    \/ liftCons2 ts (liftTiers ts) Case
+    \/ liftCons1 (liftTiers ts) Tuple
+    \/ liftCons2 ts (abs `mapT` tiers) At
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
 

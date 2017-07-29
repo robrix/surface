@@ -4,11 +4,12 @@ module Surface.Proof where
 import Context
 import Control.Monad hiding (fail)
 import Control.Monad.Free.Freer
-import Data.Foldable (for_)
+import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
-import Data.List (intercalate, union, (\\))
+import Data.List (intercalate, union, (\\), (!!))
+import Data.Traversable (for)
 import Expr
 import GHC.Stack
 import Module
@@ -232,10 +233,11 @@ check' term ty = case (unfix term, unfix ty) of
     ty' <- findTyping name
     unify ty' ty
 
-  (Pair a b, Product t1 t2) -> check a t1 >> check b t2
+  (Tuple [a], _) -> check a ty
+  (_, Product [t]) -> check term t
+  (Tuple vs, Product ts) | length vs == length ts -> sequenceA_ (zipWith check vs ts)
 
-  (InL l, Sum t1 _) -> check l t1
-  (InR r, Sum _ t2) -> check r t2
+  (Inj a i, Sum ts) | length ts > i -> check a (ts !! i)
 
   _ -> do
     ty' <- infer term
@@ -243,34 +245,32 @@ check' term ty = case (unfix term, unfix ty) of
 
 infer' :: HasCallStack => Term -> Proof Type
 infer' term = case unfix term of
-  Pair x y -> (.*.) <$> infer x <*> infer y
+  Tuple as -> productT <$> traverse infer as
 
-  Fst p -> var . fst <$> inferPair p
-  Snd p -> var . snd <$> inferPair p
+  At a i
+    | i < 0 -> error ("Subscript at negative index: " ++ show i)
+    | otherwise -> do
+      ty <- infer a
+      vs <- replicateM (succ i) (var <$> fresh Nothing)
+      unify ty (productT vs)
+      return (vs !! i)
 
-  InL l -> do
-    a <- infer l
-    b <- fresh Nothing
-    return (a .+. var b)
+  Inj a i -> do
+    a' <- infer a
+    vinit <- replicateM i (var <$> fresh Nothing)
+    vtail <- var <$> fresh Nothing
+    return (sumT (vinit ++ [ a', vtail ]))
 
-  InR r -> do
-    a <- fresh Nothing
-    b <- infer r
-    return (var a .+. b)
-
-  Case subject ifL ifR -> do
-    ty <- infer subject
-    l <- fresh Nothing
-    r <- fresh Nothing
-    unify ty (var l .+. var r)
-    b <- fresh Nothing
-    tl <- infer ifL
-    tr <- infer ifR
-    unify tl (var l .->. var b)
-    unify tr (var r .->. var b)
-    return (var b)
-
-  Unit -> return unitT
+  Case scrutinee cases -> do
+    scrutinee' <- infer scrutinee
+    result <- fresh Nothing
+    functions <- traverse infer cases
+    args <- for functions $ \ t -> do
+      arg <- fresh Nothing
+      unify t (var arg .->. var result)
+      return (var arg)
+    unify scrutinee' (sumT args)
+    return (var result)
 
   Var name -> findTyping name >>= specialize
 
@@ -286,10 +286,11 @@ infer' term = case unfix term of
     return (var b)
 
   -- Types
-  UnitT -> return typeT
   Type -> return typeT -- Impredicativity.
-  Product{} -> isType term >> return typeT
-  Sum{} -> isType term >> return typeT
+  Product [] -> return unitT
+  Product _ -> isType term >> return typeT
+  Sum [] -> return voidT
+  Sum _ -> isType term >> return typeT
 
   Pi name ty body -> inferDType name ty body
   Mu name ty body -> do
@@ -307,14 +308,7 @@ infer' term = case unfix term of
     inferred <- infer term
     unify inferred (var a)
     return ty
-  where inferPair term = do
-          ty <- infer term
-          a <- fresh Nothing
-          b <- fresh Nothing
-          unify ty (var a .*. var b)
-          return (a, b)
-
-        inferDType name ty body = do
+  where inferDType name ty body = do
           result <- T (name ::: ty) >- infer body
           isType result
           return typeT
@@ -322,14 +316,9 @@ infer' term = case unfix term of
 
 isType' :: HasCallStack => Term -> Proof ()
 isType' ty = case unfix ty of
-  UnitT -> return ()
   Type -> return ()
-  Sum a b -> do
-    isType a
-    isType b
-  Product a b -> do
-    isType a
-    isType b
+  Sum ts -> for_ ts isType
+  Product ts -> for_ ts isType
 
   Pi name ty body -> do
     isType ty
@@ -369,7 +358,7 @@ alphaEquivalent' e1 e2
 
     (Var n1, Var n2) -> return (n1 == n2)
 
-    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of
+    (a1, a2) -> case zipExprFWith (==) alphaEquivalent a1 a2 of -- FIXME: this should probably be testing under renaming.
       Just equivalences -> do
         eq <- sequenceA equivalences
         return (and eq)
@@ -389,13 +378,17 @@ equate' e1 e2 = do
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
-  (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
-  (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
-  (UnitT, UnitT) -> return ()
+  (Product [], Product []) -> return ()
+  (Product (t1 : ts1), Product (t2 : ts2)) -> unify t1 t2 >> unify (productT ts1) (productT ts2)
+  (Sum [], Sum []) -> return ()
+  (Sum (t1 : ts1), Sum (t2 : ts2)) -> unify t1 t2 >> unify (sumT ts1) (sumT ts2)
+  (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
+  (Mu _ t1 b1, Mu _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
+  (Sigma _ t1 b1, Sigma _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
+
   (Type, Type) -> return ()
 
   (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context
-  (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
 
   (Var name@N{}, _) -> do
     def <- lookupDefinition name
@@ -420,15 +413,13 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (_, Var v) -> solve v [] t1
   (App a1 b1, App a2 b2) -> unify a1 a2 >> unify b1 b2
 
-  (InL l1, InL l2) -> unify l1 l2
-  (InR r1, InR r2) -> unify r1 r2
-  (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
+  (Inj a1 i1, Inj a2 i2) | i1 == i2 -> unify a1 a2
+  (Case s1 [], Case s2 []) -> unify s1 s2
+  (Case s1 (c1 : cs1), Case s2 (c2 :cs2)) -> unify c1 c2 >> unify (makeCase s1 cs1) (makeCase s2 cs2)
 
-  (Pair a1 b1, Pair a2 b2) -> unify a1 a2 >> unify b1 b2
-  (Fst p1, Fst p2) -> unify p1 p2
-  (Snd p1, Snd p2) -> unify p1 p2
-
-  (Unit, Unit) -> return ()
+  (Tuple [], Tuple []) -> return ()
+  (Tuple (v1 : vs1), Tuple (v2 : vs2)) -> unify v1 v2 >> unify (tuple vs1) (tuple vs2)
+  (At a1 i1, At a2 i2) | i1 == i2 -> unify a1 a2
 
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
@@ -487,35 +478,34 @@ normalize' expr = case unfix expr of
       Var v -> return (var v # a)
       _ -> error ("Application of non-abstraction value: " ++ pretty o)
 
-  InL l -> inL <$> normalize l
-  InR r -> inR <$> normalize r
-  Case subject ifL ifR -> do
-    Fix s <- normalize subject
-    case s of
-      InL l -> do
-        i <- normalize ifL
-        normalize (i # l)
-      InR r -> do
-        i <- normalize ifR
-        normalize (i # r)
-      _ -> error ("Case expression on non-sum value: " ++ pretty s)
+  Inj a i
+    | i < 0 -> error ("Injection at negative index: " ++ show i)
+    | otherwise -> flip inj i <$> normalize a
+  Case scrutinee cases -> do
+    Fix scrutinee' <- normalize scrutinee
+    case scrutinee' of
+      Inj a i
+        | length cases > i -> do
+          f <- normalize (cases !! i)
+          normalize (f # a)
+        | otherwise -> error ("Injection out of bounds: " ++ show i ++ " >= " ++ show (length cases))
+      _ -> error ("Case expression on non-sum value: " ++ pretty scrutinee')
 
-  Pair a b -> pair <$> normalize a <*> normalize b
+  Tuple [v] -> normalize v
+  Tuple vs -> tuple <$> traverse normalize vs
 
-  Fst p -> do
-    Fix p' <- normalize p
-    case p' of
-      Pair a _ -> return a
-      _ -> error ("fst applied to non-product value: " ++ pretty p')
+  At a i
+    | i < 0 -> error ("Subscript at negative index: " ++ show i)
+    | otherwise -> do
+      Fix a' <- normalize a
+      case a' of
+        Tuple vs
+          | length vs > i -> return (vs !! i)
+          | otherwise -> error ("Subscript out of bounds: " ++ show i ++ " >= " ++ show (length vs))
+        _ -> error ("Subscript of non-tuple value: " ++ pretty a')
 
-  Snd p -> do
-    Fix p' <- normalize p
-    case p' of
-      Pair _ b -> return b
-      _ -> error ("snd applied to non-product value: " ++ pretty p')
-
-  Product a b -> (.*.) <$> normalize a <*> normalize b
-  Sum a b -> (.+.) <$> normalize a <*> normalize b
+  Product ts -> Fix . Product <$> traverse normalize ts
+  Sum ts -> Fix . Sum <$> traverse normalize ts
 
   Let name value body -> do
     v <- normalize value
@@ -539,24 +529,17 @@ whnf' expr = case unfix expr of
       Abs name body -> whnf (substitute b name body)
       _ -> return (op # b)
 
-  Fst p -> do
-    pair <- whnf p
-    case unfix pair of
-      Pair a _ -> whnf a
-      _ -> return (fst' pair)
+  At a i -> do
+    tuple <- whnf a
+    case unfix tuple of
+      Tuple vs | length vs > i -> return (vs !! i)
+      _ -> return (at tuple i)
 
-  Snd p -> do
-    pair <- whnf p
-    case unfix pair of
-      Pair _ b -> whnf b
-      _ -> return (snd' pair)
-
-  Case subject ifL ifR -> do
-    sum <- whnf subject
-    case unfix sum of
-      InL l -> whnf (ifL # l)
-      InR r -> whnf (ifR # r)
-      _ -> return (makeCase subject ifL ifR)
+  Case scrutinee cases -> do
+    scrutinee' <- whnf scrutinee
+    case unfix scrutinee' of
+      Inj a i | length cases > i -> whnf ((cases !! i) # a)
+      _ -> return (makeCase scrutinee cases)
 
   _ -> return expr
 

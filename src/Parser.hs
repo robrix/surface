@@ -3,6 +3,7 @@ module Parser where
 
 import Control.Applicative
 import Control.Monad.IO.Class
+import Data.Char
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
@@ -86,13 +87,13 @@ tuple :: (Monad m, TokenParsing m) => m Term
 tuple = parens (chainr expr (pair <$ comma) Expr.unit)
                <?> "tuple"
 
-fst' :: (Monad m, TokenParsing m) => m Term
-fst' = Expr.fst' <$ preword "fst" <*> expr
-                                  <?> "fst"
+at :: (Monad m, TokenParsing m) => m Term
+at = flip Expr.at <$ preword "at" <*> int
+                                  <*> expr
+                                  <?> "at"
 
-snd' :: (Monad m, TokenParsing m) => m Term
-snd' = Expr.snd' <$ preword "snd" <*> expr
-                                  <?> "snd"
+int :: (Alternative m, TokenParsing m) => m Int
+int = foldl (\ into each -> into * 10 + each) 0 <$> some (digitToInt <$> digit)
 
 lambda :: (Monad m, TokenParsing m) => m Term
 lambda = foldr ((.) . makeLambda) id <$  op "\\"
@@ -103,19 +104,15 @@ lambda = foldr ((.) . makeLambda) id <$  op "\\"
 application :: (Monad m, TokenParsing m) => m Expr
 application = atom `chainl1` pure (#) <?> "function application"
 
-inL :: (Monad m, TokenParsing m) => m Term
-inL = Expr.inL <$ preword "inL" <*> expr
-                                <?> "inL"
-
-inR :: (Monad m, TokenParsing m) => m Term
-inR = Expr.inR <$ preword "inR" <*> expr
-                                <?> "inR"
+inj :: (Monad m, TokenParsing m) => m Term
+inj = flip Expr.inj <$ preword "inj" <*> int
+                                     <*> expr
+                                     <?> "inj"
 
 case' :: (Monad m, TokenParsing m) => m Term
 case' = makeCase <$  preword "case"
                  <*> expr <* preword "of"
-                 <*> parens lambda
-                 <*> parens lambda
+                 <*> many (parens lambda)
                  <?> "case analysis"
 
 let' :: (Monad m, TokenParsing m) => m Term
@@ -141,11 +138,9 @@ atom
    =  typeType
   <|> unitType
   <|> Parser.var
-  <|> tuple
-  <|> Parser.fst'
-  <|> Parser.snd'
-  <|> Parser.inL
-  <|> Parser.inR
+  <|> Parser.tuple
+  <|> Parser.at
+  <|> Parser.inj
   <|> Parser.case'
   <|> lambda
   <|> Parser.var
@@ -161,11 +156,11 @@ typeType = typeT <$  preword "Type"
                  <?> "Type"
 
 sumType :: (Monad m, TokenParsing m) => m Type
-sumType = productType `chainl1` ((.+.) <$ op "+")
+sumType = productType `chainr1` ((.+.) <$ op "+")
                       <?> "sum type"
 
 productType :: (Monad m, TokenParsing m) => m Type
-productType = application `chainl1` ((.*.) <$ op "*")
+productType = application `chainr1` ((.*.) <$ op "*")
                       <?> "product type"
 
 piType :: (Monad m, TokenParsing m) => m Type
