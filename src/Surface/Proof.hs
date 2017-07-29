@@ -8,7 +8,7 @@ import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
-import Data.List (intercalate, union, (\\))
+import Data.List (intercalate, union, (\\), (!!))
 import Expr
 import GHC.Stack
 import Module
@@ -247,8 +247,13 @@ infer' :: HasCallStack => Term -> Proof Type
 infer' term = case unfix term of
   Tuple as -> productT <$> traverse infer as
 
-  Fst p -> var . fst <$> inferPair p
-  Snd p -> var . snd <$> inferPair p
+  At a i
+    | i < 0 -> error ("Subscript at negative index: " ++ show i)
+    | otherwise -> do
+      ty <- infer a
+      vs <- replicateM (succ i) (var <$> fresh Nothing)
+      unify ty (productT vs)
+      return (vs !! i)
 
   InL l -> do
     a <- infer l
@@ -308,14 +313,7 @@ infer' term = case unfix term of
     inferred <- infer term
     unify inferred (var a)
     return ty
-  where inferPair term = do
-          ty <- infer term
-          a <- fresh Nothing
-          b <- fresh Nothing
-          unify ty (var a .*. var b)
-          return (a, b)
-
-        inferDType name ty body = do
+  where inferDType name ty body = do
           result <- T (name ::: ty) >- infer body
           isType result
           return typeT
@@ -423,8 +421,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
 
   (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> sequenceA_ (zipWith unify vs1 vs2)
-  (Fst p1, Fst p2) -> unify p1 p2
-  (Snd p1, Snd p2) -> unify p1 p2
+  (At a1 i1, At a2 i2) | i1 == i2 -> unify a1 a2
 
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
@@ -499,17 +496,15 @@ normalize' expr = case unfix expr of
   Tuple [v] -> normalize v
   Tuple vs -> tuple <$> traverse normalize vs
 
-  Fst p -> do
-    Fix p' <- normalize p
-    case p' of
-      Tuple (t : _) -> return t
-      _ -> error ("fst applied to non-tuple value: " ++ pretty p')
-
-  Snd p -> do
-    Fix p' <- normalize p
-    case p' of
-      Tuple (_ : b) -> normalize (fst' (tuple b))
-      _ -> error ("snd applied to non-tuple value: " ++ pretty p')
+  At a i
+    | i < 0 -> error ("Subscript at negative index: " ++ show i)
+    | otherwise -> do
+      Fix a' <- normalize a
+      case a' of
+        Tuple vs
+          | length vs > i -> return (vs !! i)
+          | otherwise -> error ("Subscript out of bounds: " ++ show i ++ " >= " ++ show (length vs))
+        _ -> error ("Subscript of non-tuple value: " ++ pretty a')
 
   Product ts -> Fix . Product <$> traverse normalize ts
   Sum ts -> Fix . Sum <$> traverse normalize ts
@@ -536,17 +531,11 @@ whnf' expr = case unfix expr of
       Abs name body -> whnf (substitute b name body)
       _ -> return (op # b)
 
-  Fst p -> do
-    tuple <- whnf p
+  At a i -> do
+    tuple <- whnf a
     case unfix tuple of
-      Tuple (a : _) -> whnf a
-      _ -> return (fst' tuple)
-
-  Snd p -> do
-    tuple <- whnf p
-    case unfix tuple of
-      Tuple (_ : vs) -> whnf (fst' (Expr.tuple vs))
-      _ -> return (snd' tuple)
+      Tuple vs | length vs > i -> return (vs !! i)
+      _ -> return (at tuple i)
 
   Case subject ifL ifR -> do
     sum <- whnf subject

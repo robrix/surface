@@ -99,8 +99,7 @@ instance Listable2 ExprF where
     \/ liftCons1 ts InR
     \/ liftCons3 ts ts ts Case
     \/ liftCons1 (liftTiers ts) Tuple
-    \/ liftCons1 ts Fst
-    \/ liftCons1 ts Snd
+    \/ liftCons2 ts (abs `mapT` tiers) At
     \/ liftCons3 nameTiers ts ts Let
     \/ liftCons2 ts ts As
 

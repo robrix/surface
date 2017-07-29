@@ -29,8 +29,7 @@ data ExprF n a where
   Case :: a -> a -> a -> ExprF n a
 
   Tuple :: [a] -> ExprF n a
-  Fst :: a -> ExprF n a
-  Snd :: a -> ExprF n a
+  At :: a -> Int -> ExprF n a
 
   Let :: n -> a -> a -> ExprF n a
 
@@ -130,11 +129,14 @@ a `pair` b = Fix (Tuple [a, b])
 tuple :: [Term] -> Term
 tuple = Fix . Tuple
 
+at :: Term -> Int -> Term
+at = (Fix .) . At
+
 fst' :: Term -> Term
-fst' = Fix . Fst
+fst' a = Fix (At a 0)
 
 snd' :: Term -> Term
-snd' = Fix . Snd
+snd' a = Fix (At a 1)
 
 unit :: Term
 unit = Fix (Tuple [])
@@ -255,8 +257,7 @@ zipExprFWith g f a b = case (a, b) of
   (Case c1 l1 r1, Case c2 l2 r2) -> Just (Case (f c1 c2) (f l1 l2) (f r1 r2))
 
   (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> Just (Tuple (zipWith f vs1 vs2))
-  (Fst a1, Fst a2) -> Just (Fst (f a1 a2))
-  (Snd a1, Snd a2) -> Just (Snd (f a1 a2))
+  (At a1 i1, At a2 i2) | i1 == i2 -> Just (At (f a1 a2) i1)
 
   (Let n1 v1 b1, Let n2 v2 b2) -> Just (Let (g n1 n2) (f v1 v2) (f b1 b2))
 
@@ -292,8 +293,7 @@ instance Bifunctor ExprF where
     Case c l r -> Case (f c) (f l) (f r)
 
     Tuple vs -> Tuple (map f vs)
-    Fst a -> Fst (f a)
-    Snd a -> Snd (f a)
+    At a i -> At (f a) i
 
     Let n v b -> Let (g n) (f v) (f b)
 
@@ -318,8 +318,7 @@ instance Bifoldable ExprF where
     Case c l r -> mappend (f c) (mappend (f l) (f r))
 
     Tuple vs -> foldMap f vs
-    Fst a -> f a
-    Snd a -> f a
+    At a _ -> f a
 
     Let n v b -> mappend (g n) (mappend (f v) (f b))
 
@@ -346,13 +345,13 @@ instance Pretty2 ExprF where
     Case c l r -> showParen (d > 10) $ showString "case " . pp 0 c . showString " of " . pp 11 l . showChar ' ' . pp 11 r
 
     Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
-    Fst f -> showParen (d > 10) $ showString "fst " . pp 11 f
-    Snd s -> showParen (d > 10) $ showString "snd " . pp 11 s
+    At a i -> showParen (d > 10) $ pp 11 a . showBracket True (shows i)
 
     Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
 
     As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
-    where showBrace b s = if b then showString "{ " . s . showString " }" else s
+    where showBracket b s = if b then showString "[" . s . showString "]" else s
+          showBrace b s = if b then showString "{ " . s . showString " }" else s
 
 instance Pretty Name where
   prettyPrec _ name = case name of
@@ -382,8 +381,7 @@ instance Show2 ExprF where
     Case c l r -> showsTernaryWith spr spr spr "Case" d c l r
 
     Tuple as -> showsUnaryWith (liftShowsPrec spr slr) "Tuple" d as
-    Fst f -> showsUnaryWith spr "Fst" d f
-    Snd s -> showsUnaryWith spr "Snd" d s
+    At a i -> showsBinaryWith spr showsPrec "At" d a i
 
     Let n v b -> showsTernaryWith spn spr spr "Let" d n v b
 
