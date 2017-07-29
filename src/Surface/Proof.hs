@@ -234,8 +234,8 @@ check' term ty = case (unfix term, unfix ty) of
 
   (Pair a b, Product t1 t2) -> check a t1 >> check b t2
 
-  (InL l, Sum t1 _) -> check l t1
-  (InR r, Sum _ t2) -> check r t2
+  (InL l, Sum (t1 : _)) -> check l t1
+  (InR r, Sum (_ : ts)) -> check (Fix (InL r)) (Fix (Sum ts))
 
   _ -> do
     ty' <- infer term
@@ -324,9 +324,8 @@ isType' :: HasCallStack => Term -> Proof ()
 isType' ty = case unfix ty of
   UnitT -> return ()
   Type -> return ()
-  Sum a b -> do
-    isType a
-    isType b
+  Sum ts -> do
+    for_ ts isType
   Product a b -> do
     isType a
     isType b
@@ -390,7 +389,7 @@ equate' e1 e2 = do
 unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
-  (Sum a1 b1, Sum a2 b2) -> unify a1 a2 >> unify b1 b2
+  (Sum (a1 : as1), Sum (a2 : as2)) -> unify a1 a2 >> unify (Fix (Sum as1)) (Fix (Sum as2))
   (UnitT, UnitT) -> return ()
   (Type, Type) -> return ()
 
@@ -515,7 +514,7 @@ normalize' expr = case unfix expr of
       _ -> error ("snd applied to non-product value: " ++ pretty p')
 
   Product a b -> (.*.) <$> normalize a <*> normalize b
-  Sum a b -> (.+.) <$> normalize a <*> normalize b
+  Sum vs -> Fix . Sum <$> traverse normalize vs
 
   Let name value body -> do
     v <- normalize value

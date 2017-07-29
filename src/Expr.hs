@@ -6,14 +6,14 @@ import Data.Bifunctor
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu)
 import Data.Hashable (Hashable)
-import Data.List (nub, sort, union)
+import Data.List (intersperse, nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
 import GHC.Generics (Generic)
 import Text.Pretty
 
 data ExprF n a where
   Product :: a -> a -> ExprF n a
-  Sum :: a -> a -> ExprF n a
+  Sum :: [a] -> ExprF n a
   Pi :: n -> a -> a -> ExprF n a
   Mu :: n -> a -> a -> ExprF n a
   Sigma :: n -> a -> a -> ExprF n a
@@ -67,7 +67,8 @@ infixr 0 .->.
 
 infixr 6 .+.
 (.+.) :: Type -> Type -> Type
-(.+.) = (Fix .) . Sum
+a .+. Fix (Sum b) = Fix (Sum (a : b))
+a .+. b = Fix (Sum [a, b])
 
 infixr 7 .*.
 (.*.) :: Type -> Type -> Type
@@ -227,7 +228,7 @@ substitute to from = para $ \ expr -> case expr of
 zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Maybe (ExprF o c)
 zipExprFWith g f a b = case (a, b) of
   (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
-  (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
+  (Sum vs1, Sum vs2) | length vs1 == length vs2 -> Just (Sum (zipWith f vs1 vs2))
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (Mu n1 t1 b1, Mu n2 t2 b2) -> Just (Mu (g n1 n2) (f t1 t2) (f b1 b2))
   (Sigma n1 t1 b1, Sigma n2 t2 b2) -> Just (Sigma (g n1 n2) (f t1 t2) (f b1 b2))
@@ -267,7 +268,7 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product a b -> Product (f a) (f b)
-    Sum a b -> Sum (f a) (f b)
+    Sum vs -> Sum (map f vs)
     Pi n t b -> Pi (g n) (f t) (f b)
     Mu n t b -> Mu (g n) (f t) (f b)
     Sigma n t b -> Sigma (g n) (f t) (f b)
@@ -296,7 +297,7 @@ instance Bifunctor ExprF where
 instance Bifoldable ExprF where
   bifoldMap g f expr = case expr of
     Product a b -> mappend (f a) (f b)
-    Sum a b -> mappend (f a) (f b)
+    Sum vs -> foldMap f vs
     Pi n t b -> mappend (g n) (mappend (f t) (f b))
     Mu n t b -> mappend (g n) (mappend (f t) (f b))
     Sigma n t b -> mappend (g n) (mappend (f t) (f b))
@@ -336,7 +337,8 @@ instance Pretty2 ExprF where
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
     Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
-    Sum a b -> showParen (d > 6) $ pp 7 a . showString " + " . pp 6 b
+    Sum [] -> showString "void"
+    Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
     Product a b -> showParen (d > 7) $ pp 8 a . showString " * " . pp 7 b
     UnitT -> showString "Unit"
     Unit -> showString "()"
@@ -355,7 +357,7 @@ instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
 
 instance Show n => Show1 (ExprF n) where
-  liftShowsPrec sp _ d t = case t of
+  liftShowsPrec sp sl d t = case t of
     App a b -> showsBinaryWith sp sp "App" d a b
     Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b
     Var v -> showsUnaryWith showsPrec "Var" d v
@@ -368,7 +370,7 @@ instance Show n => Show1 (ExprF n) where
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
     Mu n t b -> showsTernaryWith showsPrec sp sp "Mu" d n t b
     Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
-    Sum a b -> showsBinaryWith sp sp "Sum" d a b
+    Sum vs -> showsUnaryWith (liftShowsPrec sp sl) "Sum" d vs
     Product a b -> showsBinaryWith sp sp "Product" d a b
     UnitT -> showString "UnitT"
     Unit -> showString "Unit"
