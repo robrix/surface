@@ -32,6 +32,8 @@ prompt s = Prompt s `Then` return
 output :: Pretty a => Either [String] a -> REPL ()
 output a = Output pretty a `Then` return
 
+output' :: (a -> String) -> Either [String] a -> REPL ()
+output' s a = Output s a `Then` return
 
 repl :: REPL ()
 repl = do
@@ -47,9 +49,9 @@ handleInput input =
       , ":type, :t <expr>  - print the type of <expr>"
       ] :: Either [String] ()) >> repl
     Right Quit -> pure ()
-    Right (Run expr) -> output (run (infer expr >> normalize expr)) >> repl
+    Right (Run expr) -> output' (prettyExpr 0) (run (infer expr >> normalize expr)) >> repl
     Right (TypeOf expr) -> do
-      output (run (do
+      output' (prettyExpr 0) (run (do
         ty <- infer expr
         context <- getContext
         return (expr `as` applyContext ty context)))
