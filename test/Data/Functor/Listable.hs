@@ -75,6 +75,9 @@ uncurryr4 f (a, (b, (c, d))) = f a b c d
 instance Listable1 Maybe where
   liftTiers tiers = cons0 Nothing \/ liftCons1 tiers Just
 
+instance Listable1 [] where
+  liftTiers tiers = cons0 [] \/ liftCons2 tiers (liftTiers tiers) (:)
+
 instance Listable2 (,) where
   liftTiers2 = productWith (,)
 
