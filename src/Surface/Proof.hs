@@ -285,7 +285,6 @@ infer' term = case unfix term of
     return (var b)
 
   -- Types
-  UnitT -> return typeT
   Type -> return typeT -- Impredicativity.
   Product{} -> isType term >> return typeT
   Sum{} -> isType term >> return typeT
@@ -321,7 +320,6 @@ infer' term = case unfix term of
 
 isType' :: HasCallStack => Term -> Proof ()
 isType' ty = case unfix ty of
-  UnitT -> return ()
   Type -> return ()
   Sum ts -> for_ ts isType
   Product ts -> for_ ts isType
@@ -392,7 +390,6 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Mu _ t1 b1, Mu _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
   (Sigma _ t1 b1, Sigma _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
 
-  (UnitT, UnitT) -> return ()
   (Type, Type) -> return ()
 
   (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context

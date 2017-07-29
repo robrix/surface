@@ -18,7 +18,6 @@ data ExprF n a where
   Mu :: n -> a -> a -> ExprF n a
   Sigma :: n -> a -> a -> ExprF n a
 
-  UnitT :: ExprF n a
   Type :: ExprF n a
 
   Abs :: n -> a -> ExprF n a
@@ -53,7 +52,7 @@ data Name = N String
 
 
 unitT :: Type
-unitT = Fix UnitT
+unitT = Fix (Product [])
 
 typeT :: Type
 typeT = Fix Type
@@ -232,7 +231,6 @@ zipExprFWith g f a b = case (a, b) of
   (Mu n1 t1 b1, Mu n2 t2 b2) -> Just (Mu (g n1 n2) (f t1 t2) (f b1 b2))
   (Sigma n1 t1 b1, Sigma n2 t2 b2) -> Just (Sigma (g n1 n2) (f t1 t2) (f b1 b2))
 
-  (UnitT, UnitT) -> Just UnitT
   (Type, Type) -> Just Type
 
   (Abs n1 b1, Abs n2 b2) -> Just (Abs (g n1 n2) (f b1 b2))
@@ -270,7 +268,6 @@ instance Bifunctor ExprF where
     Mu n t b -> Mu (g n) (f t) (f b)
     Sigma n t b -> Sigma (g n) (f t) (f b)
 
-    UnitT -> UnitT
     Type -> Type
 
     Abs n b -> Abs (g n) (f b)
@@ -297,7 +294,6 @@ instance Bifoldable ExprF where
     Mu n t b -> mappend (g n) (mappend (f t) (f b))
     Sigma n t b -> mappend (g n) (mappend (f t) (f b))
 
-    UnitT -> mempty
     Type -> mempty
 
     Abs n b -> mappend (g n) (f b)
@@ -326,7 +322,6 @@ instance Pretty2 ExprF where
     Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
     Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
 
-    UnitT -> showString "Unit"
     Type -> showString "Type"
 
     Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
@@ -363,7 +358,6 @@ instance Show2 ExprF where
     Mu n t b -> showsTernaryWith spn spr spr "Mu" d n t b
     Sigma n t b -> showsTernaryWith spn spr spr "Sigma" d n t b
 
-    UnitT -> showString "UnitT"
     Type -> showString "Type"
 
     Abs v b -> showsBinaryWith spn spr "Abs" d v b
