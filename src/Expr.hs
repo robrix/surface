@@ -54,6 +54,9 @@ data Name = N String
 unitT :: Type
 unitT = Fix (Product [])
 
+voidT :: Type
+voidT = Fix (Sum [])
+
 typeT :: Type
 typeT = Fix Type
 
