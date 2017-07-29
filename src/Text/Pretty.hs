@@ -84,17 +84,38 @@ instance Pretty1 f => Pretty1 (Freer f) where
     where go d (Return a) = pp d a
           go d (Then r t) = liftPrettyPrec (\ i -> go i . t) (liftPrettyList pp pl . fmap t) d r
 
+instance (Pretty1 f, Pretty a) => Pretty (Freer f a) where
+  prettyPrec = prettyPrec1
+
 instance Pretty1 [] where
   liftPrettyPrec _ pl _ = pl
+
+instance Pretty a => Pretty [a] where
+  prettyPrec = prettyPrec1
 
 instance Pretty1 NonEmpty where
   liftPrettyPrec pp _ _ = showAsListWith (pp 0)
 
+instance Pretty a => Pretty (NonEmpty a) where
+  prettyPrec = prettyPrec1
+
 instance Pretty2 Either where
   liftPrettyPrec2 pl _ pr _ d = either (pl d) (pr d)
 
+instance Pretty l => Pretty1 (Either l) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
+
+instance (Pretty l, Pretty r) => Pretty (Either l r) where
+  prettyPrec = prettyPrec1
+
 instance Pretty2 (,) where
   liftPrettyPrec2 pa _ pb _ _ (a, b) = showParen True $ pa 0 a . showString ", " . pb 0 b
+
+instance Pretty l => Pretty1 ((,) l) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
+
+instance (Pretty l, Pretty r) => Pretty (l, r) where
+  prettyPrec = prettyPrec1
 
 instance Pretty2 H.HashMap where
   liftPrettyPrec2 pk _ pv _ _ = showAsListWith (uncurry pair) . H.toList

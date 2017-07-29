@@ -44,6 +44,9 @@ data Extension = Restore | Replace Suffix
 instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
 
+instance Pretty a => Pretty (Backward a) where
+  prettyPrec = prettyPrec1
+
 instance Pretty Constraint where
   prettyPrec d (D ty) = prettyPrec d ty
   prettyPrec d (T term) = prettyPrec d term
