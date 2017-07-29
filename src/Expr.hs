@@ -228,8 +228,8 @@ zipExprFWith :: (m -> n -> o) -> (a -> b -> c) -> ExprF m a -> ExprF n b -> Mayb
 zipExprFWith g f a b = case (a, b) of
   (Product a1 b1, Product a2 b2) -> Just (Product (f a1 a2) (f b1 b2))
   (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
-
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
+
   (UnitT, UnitT) -> Just UnitT
   (Type, Type) -> Just Type
 
