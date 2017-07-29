@@ -55,10 +55,12 @@ spec = do
 
   describe "declaration" $ do
     it "parses a type and value" $
-      whole declaration `parseString` "and : Type -> Type -> Type\nand = \\p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result (Declaration (N "and") (typeT .->. typeT .->. typeT) (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c")))))
+      whole declaration `parseString'` "and : Type -> Type -> Type\nand = \\p q. (c : Type) -> (p -> q -> c) -> c" `shouldBe` result' (Declaration (N "and") (typeT .->. typeT .->. typeT) (makeLambda (N "p") (makeLambda (N "q") (makePi (N "c") typeT ((varN "p" .->. varN "q" .->. varN "c") .->. varN "c")))))
 
-  where result = Parse . Right
-        parseString = (Parse .) . Parser.parseString
+  where result = Parse . Right . PrettyOf prettyExpr
+        result' = Parse . Right
+        parseString = ((Parse . fmap (PrettyOf prettyExpr)) .) . Parser.parseString
+        parseString' = (Parse .) . Parser.parseString
 
 
 newtype Parse a = Parse { unParse :: Either [String] a }
