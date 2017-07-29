@@ -319,7 +319,7 @@ instance Pretty2 ExprF where
   liftPrettyPrec2 pn _ pp _ d expr = case expr of
     Product [] -> showString "Unit"
     Product vs -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (pp 8) vs))
-    Sum [] -> showString "void"
+    Sum [] -> showString "Void"
     Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
     Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
     Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
