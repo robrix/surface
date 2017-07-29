@@ -6,7 +6,7 @@ import Data.Foldable (toList)
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
-import Data.List.NonEmpty hiding (intersperse, toList)
+import Data.List.NonEmpty hiding (intersperse, map, toList)
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
@@ -41,12 +41,12 @@ pretty = ($ "") . prettys
 prettys :: Pretty a => a -> ShowS
 prettys = prettyPrec 0
 
-newtype PrettyOf = PrettyOf { unPrettyOf :: Int -> ShowS }
+data PrettyOf a = PrettyOf { prettyPrecOf :: Int -> a -> ShowS, unPrettyOf :: a }
 
-prettyLines :: Pretty a => [a] -> PrettyOf
-prettyLines [] = PrettyOf (\ _ -> showString "[]")
-prettyLines [ x ] = PrettyOf (\ _ -> showString "[ " . prettyPrec 0 x . showString " ]")
-prettyLines (x:xs) = PrettyOf (\ _ ->  showString "[ " . prettyPrec 0 x . foldr (\ each into -> showString "\n, " . prettyPrec 0 each . into) id xs  . showString " ]")
+prettyLines :: Pretty a => [a] -> PrettyOf [a]
+prettyLines = PrettyOf $ \ _ lines -> case lines of
+  [] -> showString "[]"
+  xs -> showString "[ " . foldr (.) id (intersperse (showString "\n, ") (map (prettyPrec 0) xs)) . showString " ]"
 
 
 showBracket :: Bool -> ShowS -> ShowS
@@ -103,5 +103,5 @@ instance (Pretty2 p, Pretty a) => Pretty1 (p a) where
 instance (Pretty1 f, Pretty a) => Pretty (f a) where
   prettyPrec = prettyPrec1
 
-instance Pretty PrettyOf where
-  prettyPrec d (PrettyOf pp) = pp d
+instance Pretty (PrettyOf a) where
+  prettyPrec d (PrettyOf pp a) = pp d a
