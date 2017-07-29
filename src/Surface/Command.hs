@@ -1,7 +1,6 @@
 module Surface.Command where
 
 import Data.Foldable (for_, toList, traverse_)
-import Data.Result
 import Parser
 import qualified REPL
 import Surface.Proof
@@ -28,7 +27,7 @@ runCommand command = case command of
           m <- toList modules
           runSteps' initialState (checkModule m)
 
-printResult :: Pretty a => Result a -> IO ()
+printResult :: Pretty a => Either [String] a -> IO ()
 printResult result = case result of
-  Result a -> prettyPrint a
-  Error es -> for_ es putStrLn
+  Right a -> prettyPrint a
+  Left es -> for_ es putStrLn

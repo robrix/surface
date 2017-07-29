@@ -6,7 +6,6 @@ import Control.Monad.IO.Class
 import qualified Data.HashSet as HashSet
 import Data.List.NonEmpty as NonEmpty
 import Data.Maybe (fromMaybe)
-import Data.Result as Result
 import Expr
 import Module
 import Text.Parser.Token
@@ -23,25 +22,25 @@ instance TokenParsing p => TokenParsing (SurfaceParser p) where
   highlight h = SurfaceParser . highlight h . runSurfaceParser
 
 
-parseExpr :: String -> Result.Result Expr
+parseExpr :: String -> Either [String] Expr
 parseExpr = Parser.parseString (whole expr)
 
-parseModule :: String -> Result.Result Module
+parseModule :: String -> Either [String] Module
 parseModule = Parser.parseString (whole module')
 
-parseString :: SurfaceParser Parser a -> String -> Result.Result a
+parseString :: SurfaceParser Parser a -> String -> Either [String] a
 parseString (SurfaceParser p) = toResult . Trifecta.parseString p mempty
 
-parseFromFile :: MonadIO m => SurfaceParser Parser a -> FilePath -> m (Result.Result a)
+parseFromFile :: MonadIO m => SurfaceParser Parser a -> FilePath -> m (Either [String] a)
 parseFromFile (SurfaceParser p) = fmap toResult . parseFromFileEx p
 
 whole :: (Monad m, TokenParsing m) => m a -> m a
 whole p = whiteSpace *> p <* eof
 
-toResult :: Trifecta.Result a -> Result.Result a
+toResult :: Trifecta.Result a -> Either [String] a
 toResult r = case r of
-  Success a -> Result a
-  Failure info -> Error [show (_errDoc info)]
+  Success a -> Right a
+  Failure info -> Left [show (_errDoc info)]
 
 source :: (Monad m, TokenParsing m) => m (NonEmpty Module)
 source = (:|) <$> module'

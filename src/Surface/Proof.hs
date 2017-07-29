@@ -10,7 +10,6 @@ import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\))
-import Data.Result
 import Expr
 import GHC.Stack
 import Judgement
@@ -22,7 +21,7 @@ import Text.Pretty
 data ProofF a where
   J :: HasCallStack => Judgement a -> ProofF a
   S :: State ProofState a -> ProofF a
-  R :: Result a -> ProofF a
+  Error :: [String] -> ProofF a
 
 type Proof = Freer ProofF
 
@@ -107,11 +106,11 @@ modify :: (ProofState -> ProofState) -> Proof ()
 modify f = get >>= put . f
 
 
--- Result constructors
+-- Errors
 
 fail :: HasCallStack => String -> Proof a
 fail message = let ?callStack = modifyCallStack (filter ((/= "J") . fst)) callStack in
-  wrap (R (Error [ message, prettyCallStack callStack ]))
+  wrap (Error [ message, prettyCallStack callStack ])
   where modifyCallStack f = fromCallSiteList . f . getCallStack
 
 
@@ -120,17 +119,19 @@ fail message = let ?callStack = modifyCallStack (filter ((/= "J") . fst)) callSt
 initialState :: ProofState
 initialState = ProofState (I 0) Nil H.empty
 
-run :: HasCallStack => Proof a -> Result a
+run :: HasCallStack => Proof a -> Either [String] a
 run = runAll initialState
 
-runAll :: HasCallStack => ProofState -> Proof a -> Result a
+runAll :: HasCallStack => ProofState -> Proof a -> Either [String] a
 runAll context proof = case runStep context proof of
-  Left result -> result
+  Left errors -> Left errors
+  Right (_, Return a) -> Right a
   Right next -> uncurry runAll next
 
 runSteps :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
 runSteps context proof = let ?callStack = popCallStack callStack in (context, proof) : case runStep context proof of
-  Left result -> [ (context, R result `Then` return) ]
+  Left errors -> [ (context, Error errors `Then` return) ]
+  Right (state, Return a) -> [ (state, Return a) ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
@@ -138,17 +139,15 @@ runSteps' :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
 runSteps' context = filter isSignificant . runSteps context
   where isSignificant = iterFreer (\ p _ -> case p of { S _ -> False ; _ -> True }) . (True <$) . snd
 
-runStep :: HasCallStack => ProofState -> Proof a -> Either (Result a) (ProofState, Proof a)
+runStep :: HasCallStack => ProofState -> Proof a -> Either [String] (ProofState, Proof a)
 runStep context proof = let ?callStack = popCallStack callStack in case proof of
-  Return a -> Left $ Result a
+  Return a -> Right (context, return a)
   Then proof cont -> case proof of
     J judgement -> Right (context, decompose judgement >>= cont)
     S state -> case state of
       Get -> Right (context, cont context)
       Put context' -> Right (context', cont ())
-    R result -> case result of
-      Error e -> Left (Error e)
-      Result a -> Right (context, cont a)
+    Error errors -> Left errors
 
 
 decompose :: HasCallStack => Judgement a -> Proof a
@@ -660,7 +659,7 @@ contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
 contextualizeErrors addContext = iterFreer alg . fmap pure
   where alg :: ProofF x -> (x -> Proof a) -> Proof a
         alg proof = Then $ case proof of
-          R (Error es) -> R (Error (addContext es))
+          Error es -> Error (addContext es)
           other -> other
 
 
@@ -670,7 +669,7 @@ instance Show1 ProofF where
   liftShowsPrec sp sl d proof = case proof of
     J judgement -> showsUnaryWith (liftShowsPrec sp sl) "J" d judgement
     S state -> showsUnaryWith (liftShowsPrec sp sl) "S" d state
-    R result -> showsUnaryWith (liftShowsPrec sp sl) "R" d result
+    Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 instance Show a => Show (ProofF a) where
   showsPrec = showsPrec1
@@ -680,7 +679,7 @@ instance Pretty1 ProofF where
   liftPrettyPrec pp pl d proof = case proof of
     J judgement -> liftPrettyPrec pp pl d judgement
     S state -> liftPrettyPrec pp pl d state
-    R result -> liftPrettyPrec pp pl d result
+    Error errors -> liftPrettyPrec prettyPrec prettyList d errors
 
 instance Pretty ProofState where
   prettyPrec _ (ProofState n c _)
@@ -693,5 +692,5 @@ instance Eq1 ProofF where
   liftEq eq a b = case (a, b) of
     (J a, J b) -> liftEq eq a b
     (S a, S b) -> liftEq eq a b
-    (R a, R b) -> liftEq eq a b
+    (Error es1, Error es2) -> es1 == es2
     _ -> False
