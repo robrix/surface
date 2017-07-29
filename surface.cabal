@@ -23,6 +23,7 @@ library
                      , Surface.Binder
                      , Surface.Command
                      , Surface.Proof
+                     , Surface.Usage
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
