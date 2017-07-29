@@ -383,8 +383,10 @@ equate' e1 e2 = do
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
-  (Product ts1, Product ts2) | length ts1 == length ts2 -> sequenceA_ (zipWith unify ts1 ts2)
-  (Sum ts1, Sum ts2) | length ts1 == length ts2 -> sequenceA_ (zipWith unify ts1 ts2)
+  (Product [], Product []) -> return ()
+  (Product (t1 : ts1), Product (t2 : ts2)) -> unify t1 t2 >> unify (productT ts1) (productT ts2)
+  (Sum [], Sum []) -> return ()
+  (Sum (t1 : ts1), Sum (t2 : ts2)) -> unify t1 t2 >> unify (sumT ts1) (sumT ts2)
   (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
   (Mu _ t1 b1, Mu _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
   (Sigma _ t1 b1, Sigma _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
@@ -420,7 +422,8 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (InR r1, InR r2) -> unify r1 r2
   (Case c1 l1 r1, Case c2 l2 r2) -> unify c1 c2 >> unify l1 l2 >> unify r1 r2
 
-  (Tuple vs1, Tuple vs2) | length vs1 == length vs2 -> sequenceA_ (zipWith unify vs1 vs2)
+  (Tuple [], Tuple []) -> return ()
+  (Tuple (v1 : vs1), Tuple (v2 : vs2)) -> unify v1 v2 >> unify (tuple vs1) (tuple vs2)
   (At a1 i1, At a2 i2) | i1 == i2 -> unify a1 a2
 
   _ -> cannotUnify
