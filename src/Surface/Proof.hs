@@ -390,11 +390,12 @@ unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product a1 b1, Product a2 b2) -> unify a1 a2 >> unify b1 b2
   (Sum (a1 : as1), Sum (a2 : as2)) -> unify a1 a2 >> unify (Fix (Sum as1)) (Fix (Sum as2))
+  (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
+
   (UnitT, UnitT) -> return ()
   (Type, Type) -> return ()
 
   (Abs _ b1, Abs _ b2) -> unify b1 b2 -- this should probably be pushing unknown declarations onto the context
-  (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
 
   (Var name@N{}, _) -> do
     def <- lookupDefinition name
