@@ -112,14 +112,6 @@ lambda = foldr ((.) . makeLambda) id <$  op "\\"
 application :: (Monad m, TokenParsing m) => m Expr
 application = atom `chainl1` pure (#) <?> "function application"
 
-inL :: (Monad m, TokenParsing m) => m Term
-inL = Expr.inL <$ preword "inL" <*> expr
-                                <?> "inL"
-
-inR :: (Monad m, TokenParsing m) => m Term
-inR = Expr.inR <$ preword "inR" <*> expr
-                                <?> "inR"
-
 inj :: (Monad m, TokenParsing m) => m Term
 inj = flip Expr.inj <$ preword "inj" <*> int
                                      <*> expr
@@ -158,8 +150,6 @@ atom
   <|> Parser.fst'
   <|> Parser.snd'
   <|> Parser.at
-  <|> Parser.inL
-  <|> Parser.inR
   <|> Parser.inj
   <|> Parser.case'
   <|> lambda

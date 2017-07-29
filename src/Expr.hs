@@ -111,12 +111,6 @@ a # b = Fix (App a b)
 inj :: Term -> Int -> Term
 inj a i = Fix (In a i)
 
-inL :: Term -> Term
-inL v = Fix (In v 0)
-
-inR :: Term -> Term
-inR v = Fix (In v 1)
-
 case' :: Term -> [(Term -> Term)] -> Term
 case' t fs = makeCase t (lam <$> fs)
 
