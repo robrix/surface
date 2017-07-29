@@ -78,6 +78,9 @@ infixr 7 .*.
 a .*. Fix (Product b) = Fix (Product (a : b))
 a .*. b = Fix (Product [a, b])
 
+productT :: [Type] -> Type
+productT = Fix . Product
+
 lam :: (Term -> Term) -> Term
 lam = uncurry makeLambda . bindVariable
 
