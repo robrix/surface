@@ -385,9 +385,9 @@ equate' :: HasCallStack => Expr -> Expr -> Proof ()
 equate' e1 e2 = do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
-    nf1 <- whnf e1
-    nf2 <- whnf e2
-    case zipExprFWith (,) equate (unfix nf1) (unfix nf2) of
+    Fix nf1 <- whnf e1
+    Fix nf2 <- whnf e2
+    case zipExprFWith (,) equate nf1 nf2 of
       Just _ -> return ()
       _ -> fail ("Could not judge equality of " ++ prettyExpr 0 e1 (" to " ++ prettyExpr 0 e2 ""))
 
