@@ -141,30 +141,30 @@ initialState :: ProofState
 initialState = ProofState (I 0) Nil H.empty
 
 run :: HasCallStack => Proof a -> Either [String] a
-run = runAll initialState
+run = flip runAll initialState
 
-runAll :: HasCallStack => ProofState -> Proof a -> Either [String] a
+runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
 runAll context proof = case runStep context proof of
   Left errors -> Left errors
-  Right (_, Return a) -> Right a
+  Right (Return a, _) -> Right a
   Right next -> uncurry runAll next
 
-runSteps :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
-runSteps context proof = (context, proof) : case runStep context proof of
-  Left errors -> [ (context, Error errors `Then` return) ]
-  Right (state, Return a) -> [ (state, Return a) ]
+runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps proof context = (proof, context) : case runStep proof context of
+  Left errors -> [ (Error errors `Then` return, context) ]
+  Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
-runSteps' :: HasCallStack => ProofState -> Proof a -> [(ProofState, Proof a)]
-runSteps' context = filter isSignificant . runSteps context
-  where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . snd
+runSteps' :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps' = (filter isSignificant .) . runSteps
+  where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . fst
 
-runStep :: forall a. HasCallStack => ProofState -> Proof a -> Either [String] (ProofState, Proof a)
-runStep context proof = case proof of
-  Return a -> Right (context, return a)
+runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
+runStep proof context = case proof of
+  Return a -> Right (return a, context)
   Then proof yield -> go proof yield
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (ProofState, Proof a)
+  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
         go proof yield = case proof of
           CheckModule module' -> run $ checkModule' module'
           CheckDeclaration m d -> run $ checkDeclaration' m d
@@ -187,12 +187,12 @@ runStep context proof = case proof of
           Normalize expr -> run $ normalize' expr
           WHNF expr -> run $ whnf' expr
 
-          Get -> Right (context, yield context)
-          Put context' -> Right (context', yield ())
+          Get -> Right (yield context, context)
+          Put context' -> Right (yield (), context')
 
           Error errors -> Left errors
-          where run :: Proof x -> Either [String] (ProofState, Proof a)
-                run = Right . (,) context . (>>= yield)
+          where run :: Proof x -> Either [String] (Proof a, ProofState)
+                run = Right . flip (,) context . (>>= yield)
 
 
 -- Judgement interpreters
