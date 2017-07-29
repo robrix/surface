@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, ImplicitParams #-}
+{-# LANGUAGE GADTs, ImplicitParams, StandaloneDeriving #-}
 module Surface.Proof where
 
 import Context
@@ -22,6 +22,9 @@ data ProofF a where
   Get :: ProofF ProofState
   Put :: ProofState -> ProofF ()
   Error :: [String] -> ProofF a
+
+deriving instance Show a => Show (ProofF a)
+deriving instance Eq a => Eq (ProofF a)
 
 type Proof = Freer ProofF
 
@@ -670,9 +673,6 @@ instance Show1 ProofF where
     Get -> showString "Get"
     Put state -> showsUnaryWith showsPrec "Put" d state
     Error errors -> showsUnaryWith showsPrec "Error" d errors
-
-instance Show a => Show (ProofF a) where
-  showsPrec = showsPrec1
 
 
 instance Pretty1 ProofF where
