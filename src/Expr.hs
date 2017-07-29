@@ -227,8 +227,8 @@ substitute to from = para $ \ expr -> case expr of
 
 -- Pretty-printing
 
-prettyTerm :: Int -> Term -> ShowS
-prettyTerm = flip . para $ \ term d -> case term of
+prettyExpr :: Int -> Term -> ShowS
+prettyExpr = flip . para $ \ term d -> case term of
   Product [] -> showString "Unit"
   Product ts -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (($ 8) . snd) ts))
   Sum [] -> showString "Void"
