@@ -234,16 +234,16 @@ prettyExpr = flip . para $ \ term d -> case term of
   Sum [] -> showString "Void"
   Sum ts -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (($ 7) . snd) ts))
   Pi n (t', t) (b', b)
-    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ showName n . showString " -> " . b 0
-    | elem n (freeVariables b') -> showParen (d > 0) $ showParen True (showName n . showString " : " . t 1) . showString " -> " . b 0
+    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ prettyPrec 0 n . showString " -> " . b 0
+    | elem n (freeVariables b') -> showParen (d > 0) $ showParen True (prettyPrec 0 n . showString " : " . t 1) . showString " -> " . b 0
     | otherwise -> showParen (d > 0) $ t 1 . showString " -> " . b 0
-  Mu n (_, t) (_, b) -> showParen (d > 0) $ showChar 'µ' . showParen True (showName n . showString " : " . t 1) . showString " . " . b 0
-  Sigma n (_, t) (_, b) -> showBrace True $ showName n . showString " : " . t 1 . showString " | " . b 0
+  Mu n (_, t) (_, b) -> showParen (d > 0) $ showChar 'µ' . showParen True (prettyPrec 0 n . showString " : " . t 1) . showString " . " . b 0
+  Sigma n (_, t) (_, b) -> showBrace True $ prettyPrec 0 n . showString " : " . t 1 . showString " | " . b 0
 
   Type -> showString "Type"
 
-  Abs n (_, b) -> showParen (d > 0) $ showChar '\\' . showName n . showString " . " . b 0
-  Var n -> showName n
+  Abs n (_, b) -> showParen (d > 0) $ showChar '\\' . prettyPrec 0 n . showString " . " . b 0
+  Var n -> prettyPrec 0 n
   App (_, f) (_, a) -> showParen (d > 10) $ f 10 . showChar ' ' . a 11
 
   Inj (_, a) i -> showParen (d > 10) $ showString "inj" . showSubscript i . showChar ' ' . a 11
@@ -252,7 +252,7 @@ prettyExpr = flip . para $ \ term d -> case term of
   Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (($ 0) . snd) vs))
   At (_, a) i -> showParen (d > 10) $ a 11 . showSubscript i
 
-  Let n (_, v) (_, b) -> showParen (d > 10) $ showString "let " . showName n . showString " = " . v 0 . showString " in " . b 0
+  Let n (_, v) (_, b) -> showParen (d > 10) $ showString "let " . prettyPrec 0 n . showString " = " . v 0 . showString " in " . b 0
 
   As (_, a) (_, t) -> showParen (d > 0) $ a 1 . showString " : " . t 0
   where showBrace b s = if b then showString "{ " . s . showString " }" else s
@@ -261,13 +261,6 @@ prettyExpr = flip . para $ \ term d -> case term of
           | i < 10 = showChar (subscripts !! i)
           | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
         subscripts = "₀₁₂₃₄₅₆₇₈₉"
-        showName (N s) = showString s
-        showName (I i) = showAlphabet i
-        showAlphabet i
-          | i < 0 = showString "_"
-          | i < 26 = showChar (alphabet !! i)
-          | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
-        alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 
 -- Traversal
@@ -359,8 +352,12 @@ instance Bifoldable ExprF where
 instance Pretty Name where
   prettyPrec _ name = case name of
     N s -> showString s
-    I i | i >= 0 -> showChar '_' . shows i
-        | otherwise -> showChar '_'
+    I i -> showAlphabet i
+    where showAlphabet i
+            | i < 0 = showString "_"
+            | i < 26 = showChar (alphabet !! i)
+            | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
+          alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
