@@ -509,7 +509,7 @@ normalize' expr = case unfix expr of
       Pair _ b -> return b
       _ -> error ("snd applied to non-product value: " ++ pretty p')
 
-  Product vs -> Fix . Sum <$> traverse normalize vs
+  Product vs -> Fix . Product <$> traverse normalize vs
   Sum vs -> Fix . Sum <$> traverse normalize vs
 
   Let name value body -> do
