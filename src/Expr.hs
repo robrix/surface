@@ -250,7 +250,7 @@ prettyTerm = flip . para $ \ term d -> case term of
   Case (_, s) cs -> showParen (d > 10) $ showString "case " . s 0 . showString " of " . showBrace True (foldr (.) id (intersperse (showString "; ") (map (($ 11) . snd) cs)))
 
   Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (($ 0) . snd) vs))
-  At (_, a) i -> showParen (d > 10) $ a 11 . showString " at " . showSubscript i
+  At (_, a) i -> showParen (d > 10) $ a 11 . showSubscript i
 
   Let n (_, v) (_, b) -> showParen (d > 10) $ showString "let " . showName n . showString " = " . v 0 . showString " in " . b 0
 
