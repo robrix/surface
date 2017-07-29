@@ -24,7 +24,7 @@ spec = do
       \ a b -> eraseErrors (runProof (a `equate` b)) `shouldBe` eraseErrors (runProof (b `equate` a))
 
     prop "transitivity" . forAll (embedTiers >< embedTiers >< embedTiers) . uncurryr3 $
-      \ a b c -> (isResult (runProof (a `equate` b)) && isResult (runProof (b `equate` c)) ==> isResult (runProof (a `equate` c))) `shouldBe` True
+      \ a b c -> (succeeded (runProof (a `equate` b)) && succeeded (runProof (b `equate` c)) ==> succeeded (runProof (a `equate` c))) `shouldBe` True
 
     prop "congruence" . forAll (embedTiers >< embedTiers) . uncurry $
       \ a b -> runProof ((a .->. b) `equate` (a .->. b)) `shouldBe` return ()
@@ -50,5 +50,5 @@ spec = do
 eraseErrors :: Either [String] a -> Either [String] a
 eraseErrors = either (Left . const []) Right
 
-isResult :: Either [String] a -> Bool
-isResult = either (const False) (const True)
+succeeded :: Either [String] a -> Bool
+succeeded = either (const False) (const True)
