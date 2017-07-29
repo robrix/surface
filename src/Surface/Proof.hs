@@ -384,10 +384,8 @@ equate' e1 e2 = do
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
-  (Product [], Product []) -> return ()
-  (Product (a1 : as1), Product (a2 : as2)) -> unify a1 a2 >> unify (Fix (Product as1)) (Fix (Product as2))
-  (Sum [], Sum []) -> return ()
-  (Sum (a1 : as1), Sum (a2 : as2)) -> unify a1 a2 >> unify (Fix (Sum as1)) (Fix (Sum as2))
+  (Product ts1, Product ts2) | length ts1 == length ts2 -> sequenceA_ (zipWith unify ts1 ts2)
+  (Sum ts1, Sum ts2) | length ts1 == length ts2 -> sequenceA_ (zipWith unify ts1 ts2)
   (Pi _ t1 b1, Pi _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
   (Mu _ t1 b1, Mu _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
   (Sigma _ t1 b1, Sigma _ t2 b2) -> unify t1 t2 >> unify b1 b2 -- this should probably be pushing typing constraints onto the context
