@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, GADTs #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
 module Expr where
 
 import Data.Bifoldable
@@ -11,28 +11,28 @@ import Data.Semigroup (Semigroup(..), Max(..), Option(..))
 import GHC.Generics (Generic)
 import Text.Pretty
 
-data ExprF n a where
-  Product :: [a] -> ExprF n a
-  Sum :: [a] -> ExprF n a
-  Pi :: n -> a -> a -> ExprF n a
-  Mu :: n -> a -> a -> ExprF n a
-  Sigma :: n -> a -> a -> ExprF n a
+data ExprF n a
+  = Product [a]
+  | Sum [a]
+  | Pi n a a
+  | Mu n a a
+  | Sigma n a a
 
-  Type :: ExprF n a
+  | Type
 
-  Abs :: n -> a -> ExprF n a
-  Var :: n -> ExprF n a
-  App :: a -> a -> ExprF n a
+  | Abs n a
+  | Var n
+  | App a a
 
-  Inj :: a -> Int -> ExprF n a
-  Case :: a -> [a] -> ExprF n a
+  | Inj a Int
+  | Case a [a]
 
-  Tuple :: [a] -> ExprF n a
-  At :: a -> Int -> ExprF n a
+  | Tuple [a]
+  | At a Int
 
-  Let :: n -> a -> a -> ExprF n a
+  | Let n a a
 
-  As :: a -> a -> ExprF n a
+  | As a a
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Expr = Fix (ExprF Name)
