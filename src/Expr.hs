@@ -230,6 +230,7 @@ zipExprFWith g f a b = case (a, b) of
   (Sum a1 b1, Sum a2 b2) -> Just (Sum (f a1 a2) (f b1 b2))
   (Pi n1 t1 b1, Pi n2 t2 b2) -> Just (Pi (g n1 n2) (f t1 t2) (f b1 b2))
   (Mu n1 t1 b1, Mu n2 t2 b2) -> Just (Mu (g n1 n2) (f t1 t2) (f b1 b2))
+  (Sigma n1 t1 b1, Sigma n2 t2 b2) -> Just (Sigma (g n1 n2) (f t1 t2) (f b1 b2))
 
   (UnitT, UnitT) -> Just UnitT
   (Type, Type) -> Just Type
