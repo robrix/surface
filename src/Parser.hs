@@ -96,9 +96,12 @@ snd' = Expr.snd' <$ preword "snd" <*> expr
                                   <?> "snd"
 
 at :: (Monad m, TokenParsing m) => m Term
-at = flip Expr.at <$ preword "at" <*> (foldl (\ into each -> into * 10 + each) 0 <$> some (digitToInt <$> digit))
+at = flip Expr.at <$ preword "at" <*> int
                                   <*> expr
                                   <?> "at"
+
+int :: (Alternative m, TokenParsing m) => m Int
+int = foldl (\ into each -> into * 10 + each) 0 <$> some (digitToInt <$> digit)
 
 lambda :: (Monad m, TokenParsing m) => m Term
 lambda = foldr ((.) . makeLambda) id <$  op "\\"
@@ -116,6 +119,11 @@ inL = Expr.inL <$ preword "inL" <*> expr
 inR :: (Monad m, TokenParsing m) => m Term
 inR = Expr.inR <$ preword "inR" <*> expr
                                 <?> "inR"
+
+inj :: (Monad m, TokenParsing m) => m Term
+inj = flip Expr.inj <$ preword "inj" <*> int
+                                     <*> expr
+                                     <?> "inj"
 
 case' :: (Monad m, TokenParsing m) => m Term
 case' = makeCase <$  preword "case"
@@ -152,6 +160,7 @@ atom
   <|> Parser.at
   <|> Parser.inL
   <|> Parser.inR
+  <|> Parser.inj
   <|> Parser.case'
   <|> lambda
   <|> Parser.var

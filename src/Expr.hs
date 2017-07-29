@@ -108,8 +108,8 @@ infixl 9 #
 (#) :: Term -> Term -> Term
 a # b = Fix (App a b)
 
-inI :: Term -> Int -> Term
-inI a i = Fix (In a i)
+inj :: Term -> Int -> Term
+inj a i = Fix (In a i)
 
 inL :: Term -> Term
 inL v = Fix (In v 0)

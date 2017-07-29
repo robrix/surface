@@ -480,7 +480,7 @@ normalize' expr = case unfix expr of
 
   In a i
     | i < 0 -> error ("Injection at negative index: " ++ show i)
-    | otherwise -> flip inI i <$> normalize a
+    | otherwise -> flip inj i <$> normalize a
   Case scrutinee cases -> do
     Fix scrutinee' <- normalize scrutinee
     case scrutinee' of
