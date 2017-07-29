@@ -15,7 +15,7 @@ import Text.Trifecta
 
 data REPLF a where
   Prompt :: String -> REPLF (Maybe String)
-  Output :: Pretty a => Either [String] a -> REPLF ()
+  Output :: (a -> String) -> Either [String] a -> REPLF ()
 
 type REPL = Freer REPLF
 
@@ -30,7 +30,7 @@ prompt :: String -> REPL (Maybe String)
 prompt s = Prompt s `Then` return
 
 output :: Pretty a => Either [String] a -> REPL ()
-output a = Output a `Then` return
+output a = Output pretty a `Then` return
 
 
 repl :: REPL ()
@@ -84,7 +84,7 @@ runREPL repl = do
   where alg :: REPLF x -> (x -> InputT IO a) -> InputT IO a
         alg repl cont = case repl of
           Prompt s -> getInputLine (green ++ s ++ plain) >>= cont
-          Output r -> case r of
+          Output pretty r -> case r of
             Right a -> outputStrLn (pretty a) >>= cont
             Left es -> for_ es outputStrLn >>= cont
         settings = Settings
