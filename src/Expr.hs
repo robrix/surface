@@ -365,24 +365,31 @@ instance Eq n => Eq1 (ExprF n) where
 
 instance Show n => Show1 (ExprF n) where
   liftShowsPrec sp sl d t = case t of
-    App a b -> showsBinaryWith sp sp "App" d a b
-    Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b
-    Var v -> showsUnaryWith showsPrec "Var" d v
-    InL l -> showsUnaryWith sp "InL" d l
-    InR r -> showsUnaryWith sp "InR" d r
-    Case c l r -> showsTernaryWith sp sp sp "Case" d c l r
-    Pair a b -> showsBinaryWith sp sp "Pair" d a b
-    Fst f -> showsUnaryWith sp "Fst" d f
-    Snd s -> showsUnaryWith sp "Snd" d s
+    Product a b -> showsBinaryWith sp sp "Product" d a b
+    Sum vs -> showsUnaryWith (liftShowsPrec sp sl) "Sum" d vs
     Pi n t b -> showsTernaryWith showsPrec sp sp "Pi" d n t b
     Mu n t b -> showsTernaryWith showsPrec sp sp "Mu" d n t b
     Sigma n t b -> showsTernaryWith showsPrec sp sp "Sigma" d n t b
-    Sum vs -> showsUnaryWith (liftShowsPrec sp sl) "Sum" d vs
-    Product a b -> showsBinaryWith sp sp "Product" d a b
+
     UnitT -> showString "UnitT"
-    Unit -> showString "Unit"
     Type -> showString "Type"
+
+    Abs v b -> showsBinaryWith showsPrec sp "Abs" d v b
+    Var v -> showsUnaryWith showsPrec "Var" d v
+    App a b -> showsBinaryWith sp sp "App" d a b
+
+    InL l -> showsUnaryWith sp "InL" d l
+    InR r -> showsUnaryWith sp "InR" d r
+    Case c l r -> showsTernaryWith sp sp sp "Case" d c l r
+
+    Pair a b -> showsBinaryWith sp sp "Pair" d a b
+    Fst f -> showsUnaryWith sp "Fst" d f
+    Snd s -> showsUnaryWith sp "Snd" d s
+
+    Unit -> showString "Unit"
+
     Let n v b -> showsTernaryWith showsPrec sp sp "Let" d n v b
+
     As term ty -> showsBinaryWith sp sp "As" d term ty
 
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
