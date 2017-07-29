@@ -234,7 +234,7 @@ prettyTerm = flip . para $ \ term d -> case term of
   Sum [] -> showString "Void"
   Sum ts -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (($ 7) . snd) ts))
   Pi n (t', t) (b', b)
-    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ showChar '∀' . showName n . showString " . " . b 0
+    | elem n (freeVariables b'), t' == typeT -> showParen (d > 0) $ showName n . showString " -> " . b 0
     | elem n (freeVariables b') -> showParen (d > 0) $ showParen True (showName n . showString " : " . t 1) . showString " -> " . b 0
     | otherwise -> showParen (d > 0) $ t 1 . showString " -> " . b 0
   Mu n (_, t) (_, b) -> showParen (d > 0) $ showChar 'µ' . showParen True (showName n . showString " : " . t 1) . showString " . " . b 0
