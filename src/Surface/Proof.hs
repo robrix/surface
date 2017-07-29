@@ -152,7 +152,7 @@ runAll context proof = case runStep context proof of
 
 runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
 runSteps proof context = (proof, context) : case runStep proof context of
-  Left errors -> [ (Error errors `Then` return, context) ]
+  Left _ -> []
   Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
