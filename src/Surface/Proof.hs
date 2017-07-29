@@ -286,8 +286,10 @@ infer' term = case unfix term of
 
   -- Types
   Type -> return typeT -- Impredicativity.
-  Product{} -> isType term >> return typeT
-  Sum{} -> isType term >> return typeT
+  Product [] -> return unitT
+  Product _ -> isType term >> return typeT
+  Sum [] -> return voidT
+  Sum _ -> isType term >> return typeT
 
   Pi name ty body -> inferDType name ty body
   Mu name ty body -> do
