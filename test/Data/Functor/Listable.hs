@@ -88,7 +88,7 @@ instance Listable2 ExprF where
     \/ liftCons3 nameTiers ts ts Pi
     \/ liftCons3 nameTiers ts ts Sigma
     \/ cons0 UnitT
-    \/ cons0 TypeT
+    \/ cons0 Type
     \/ liftCons2 nameTiers ts Abs
     \/ liftCons1 nameTiers Var
     \/ liftCons2 ts ts App
