@@ -19,8 +19,10 @@ import Text.Pretty
 
 data ProofF a where
   J :: HasCallStack => Judgement a -> ProofF a
+
   Get :: ProofF ProofState
   Put :: ProofState -> ProofF ()
+
   Error :: [String] -> ProofF a
 
 deriving instance Show a => Show (ProofF a)
