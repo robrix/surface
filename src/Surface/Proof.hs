@@ -340,7 +340,7 @@ isType' ty = case unfix ty of
     check f (a .->. var b)
     isType (var b)
 
-  _ -> fail ("Expected a Type but got " ++ pretty ty)
+  _ -> fail ("Expected a Type but got " ++ prettyExpr 0 ty "")
 
 
 alphaEquivalent' :: HasCallStack => Expr -> Expr -> Proof Bool
@@ -373,7 +373,7 @@ equate' e1 e2 = do
     nf2 <- whnf e2
     case zipExprFWith (,) equate (unfix nf1) (unfix nf2) of
       Just _ -> return ()
-      _ -> fail ("Could not judge equality of " ++ pretty e1 ++ " to " ++ pretty e2)
+      _ -> fail ("Could not judge equality of " ++ prettyExpr 0 e1 (" to " ++ prettyExpr 0 e2 ""))
 
 
 unify' :: HasCallStack => Type -> Type -> Proof ()
@@ -422,7 +422,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (At a1 i1, At a2 i2) | i1 == i2 -> unify a1 a2
 
   _ -> cannotUnify
-  where cannotUnify = fail ("Cannot unify " ++ pretty t1 ++ " with " ++ pretty t2)
+  where cannotUnify = fail ("Cannot unify " ++ prettyExpr 0 t1 (" with " ++ prettyExpr 0 t2 ""))
 
 solve' :: HasCallStack => Name -> Suffix -> Type -> Proof ()
 solve' name suffix ty = onTop $ \ (n := d) ->
@@ -469,27 +469,27 @@ normalize' expr = case unfix expr of
     makeLambda name <$> normalize body
 
   App op arg -> do
-    Fix o <- normalize op
+    o <- normalize op
     a <- normalize arg
-    case o of
+    case unfix o of
       Abs name body -> do
         declare (name := Just a)
         normalize body
       Var v -> return (var v # a)
-      _ -> error ("Application of non-abstraction value: " ++ pretty o)
+      _ -> error ("Application of non-abstraction value: " ++ prettyExpr 0 o "")
 
   Inj a i
     | i < 0 -> error ("Injection at negative index: " ++ show i)
     | otherwise -> flip inj i <$> normalize a
   Case scrutinee cases -> do
-    Fix scrutinee' <- normalize scrutinee
-    case scrutinee' of
+    scrutinee' <- normalize scrutinee
+    case unfix scrutinee' of
       Inj a i
         | length cases > i -> do
           f <- normalize (cases !! i)
           normalize (f # a)
         | otherwise -> error ("Injection out of bounds: " ++ show i ++ " >= " ++ show (length cases))
-      _ -> error ("Case expression on non-sum value: " ++ pretty scrutinee')
+      _ -> error ("Case expression on non-sum value: " ++ prettyExpr 0 scrutinee' "")
 
   Tuple [v] -> normalize v
   Tuple vs -> tuple <$> traverse normalize vs
@@ -497,12 +497,12 @@ normalize' expr = case unfix expr of
   At a i
     | i < 0 -> error ("Subscript at negative index: " ++ show i)
     | otherwise -> do
-      Fix a' <- normalize a
-      case a' of
+      a' <- normalize a
+      case unfix a' of
         Tuple vs
           | length vs > i -> return (vs !! i)
           | otherwise -> error ("Subscript out of bounds: " ++ show i ++ " >= " ++ show (length vs))
-        _ -> error ("Subscript of non-tuple value: " ++ pretty a')
+        _ -> error ("Subscript of non-tuple value: " ++ prettyExpr 0 a' "")
 
   Product ts -> Fix . Product <$> traverse normalize ts
   Sum ts -> Fix . Sum <$> traverse normalize ts
@@ -705,22 +705,22 @@ instance Pretty1 ProofF where
     CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
     CheckConstructor (Module modName _) decl constructor -> showsUnaryWith (const showString) "checkConstructor" d (modName ++ "." ++ pretty (declarationName decl) ++ "." ++ pretty (constructorName constructor))
 
-    Check term ty -> showsBinaryWith prettyPrec prettyPrec "check" d term ty
-    Infer term -> showsUnaryWith prettyPrec "infer" d term
-    IsType ty -> showsUnaryWith prettyPrec "isType" d ty
+    Check term ty -> showsBinaryWith prettyExpr prettyExpr "check" d term ty
+    Infer term -> showsUnaryWith prettyExpr "infer" d term
+    IsType ty -> showsUnaryWith prettyExpr "isType" d ty
 
-    AlphaEquivalent e1 e2 -> showsBinaryWith prettyPrec prettyPrec "alphaEquivalent" d e1 e2
-    Equate e1 e2 -> showsBinaryWith prettyPrec prettyPrec "equate" d e1 e2
+    AlphaEquivalent e1 e2 -> showsBinaryWith prettyExpr prettyExpr "alphaEquivalent" d e1 e2
+    Equate e1 e2 -> showsBinaryWith prettyExpr prettyExpr "equate" d e1 e2
 
-    Unify t1 t2 -> showsBinaryWith prettyPrec prettyPrec "unify" d t1 t2
-    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyPrec "solve" d n s ty
+    Unify t1 t2 -> showsBinaryWith prettyExpr prettyExpr "unify" d t1 t2
+    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyExpr "solve" d n s ty
 
-    Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyPrec) "fresh" d declaration
+    Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyExpr) "fresh" d declaration
     Surface.Proof.Restore -> showString "restore"
     Surface.Proof.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
 
-    Normalize expr -> showsUnaryWith prettyPrec "normalize" d expr
-    WHNF expr -> showsUnaryWith prettyPrec "whnf" d expr
+    Normalize expr -> showsUnaryWith prettyExpr "normalize" d expr
+    WHNF expr -> showsUnaryWith prettyExpr "whnf" d expr
 
     Get -> showString "Get"
     Put state -> shows state

@@ -49,14 +49,14 @@ handleInput input =
       , ":type, :t <expr>  - print the type of <expr>"
       ] :: Either [String] ()) >> repl
     Right Quit -> pure ()
-    Right (Run expr) -> output' (prettyExpr 0) (run (infer expr >> normalize expr)) >> repl
+    Right (Run expr) -> output' (flip (prettyExpr 0) "") (run (infer expr >> normalize expr)) >> repl
     Right (TypeOf expr) -> do
-      output' (prettyExpr 0) (run (do
+      output' (flip (prettyExpr 0) "") (run (do
         ty <- infer expr
         context <- getContext
         return (expr `as` applyContext ty context)))
       repl
-    Right (REPL.WHNF expr) -> output (run (infer expr >> whnf expr)) >> repl
+    Right (REPL.WHNF expr) -> output' (flip (prettyExpr 0) "") (run (infer expr >> whnf expr)) >> repl
     error -> output error >> repl
 
 
@@ -99,8 +99,8 @@ runREPL repl = do
 
 instance Pretty Command where
   prettyPrec d command = case command of
-    Run expr -> prettyPrec d expr
-    TypeOf expr -> showsUnaryWith prettyPrec ":type" d expr
-    REPL.WHNF expr -> showsUnaryWith prettyPrec ":whnf" d expr
+    Run expr -> prettyExpr d expr
+    TypeOf expr -> showsUnaryWith prettyExpr ":type" d expr
+    REPL.WHNF expr -> showsUnaryWith prettyExpr ":whnf" d expr
     Help -> showString ":help"
     Quit -> showString ":quit"

@@ -227,8 +227,8 @@ substitute to from = para $ \ expr -> case expr of
 
 -- Pretty-printing
 
-prettyExpr :: Int -> Term -> String
-prettyExpr = ((($ "") .) .) . flip . para $ \ term d -> case term of
+prettyExpr :: Int -> Term -> ShowS
+prettyExpr = flip . para $ \ term d -> case term of
   Product [] -> showString "Unit"
   Product ts -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (($ 8) . snd) ts))
   Sum [] -> showString "Void"
@@ -355,37 +355,6 @@ instance Bifoldable ExprF where
 
     As a b -> mappend (f a) (f b)
 
-instance Pretty2 ExprF where
-  liftPrettyPrec2 pn _ pp _ d expr = case expr of
-    Product [] -> showString "Unit"
-    Product vs -> showParen (d > 7) $ foldr (.) id (intersperse (showString " * ") (map (pp 8) vs))
-    Sum [] -> showString "Void"
-    Sum vs -> showParen (d > 6) $ foldr (.) id (intersperse (showString " + ") (map (pp 7) vs))
-    Pi n t b -> showParen (d > 0) $ showParen True (pn 0 n . showString " : " . pp 1 t) . showString " -> " . pp 0 b
-    Mu n t b -> showParen (d > 0) $ showString "µ " . pn 0 n . showString " : " . pp 1 t . showString " . " . pp 0 b
-    Sigma n t b -> showBrace True $ pn 0 n . showString " : " . pp 1 t . showString " | " . pp 0 b
-
-    Type -> showString "Type"
-
-    Abs v b -> showParen (d > 0) $ showChar '\\' . pn 0 v . showString " . " . pp 0 b
-    Var v -> pn 0 v
-    App a b -> showParen (d > 10) $ pp 10 a . showChar ' ' . pp 11 b
-
-    Inj l i -> showParen (d > 10) $ showString "in" . showSubscript i . showChar ' ' . pp 11 l
-    Case s cs -> showParen (d > 10) $ showString "case " . pp 0 s . showString " of " . foldr (.) id (intersperse (showChar ' ') (map (pp 11) cs))
-
-    Tuple vs -> showParen True $ foldr (.) id (intersperse (showString ", ") (map (pp 0) vs))
-    At a i -> showParen (d > 10) $ pp 11 a . showSubscript i
-
-    Let n v b -> showParen (d > 10) $ showString "let " . pn 0 n . showString " = " . pp 0 v . showString " in " . pp 0 b
-
-    As term ty -> showParen (d > 0) $ pp 1 term . showString " : " . pp 0 ty
-    where showBrace b s = if b then showString "{ " . s . showString " }" else s
-          showSubscript i
-            | i < 0 = showChar '₋' . showSubscript (abs i)
-            | i < 10 = showChar (subscripts !! i)
-            | otherwise = let (n, d) = i `divMod` 10 in showSubscript n . showSubscript d
-          subscripts = "₀₁₂₃₄₅₆₇₈₉"
 
 instance Pretty Name where
   prettyPrec _ name = case name of

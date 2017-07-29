@@ -42,22 +42,22 @@ constructorProduct = maybe unitT (foldr1 (.*.)) . nonEmpty . domain . constructo
 
 instance Pretty Declaration where
   prettyPrec _ (Declaration name ty term)
-    = prettyPrec 0 name . showString " : " . prettyPrec 0 ty . showChar '\n'
-    . prettyPrec 0 name . showString " = " . prettyPrec 0 term . showChar '\n'
+    = prettyPrec 0 name . showString " : " . prettyExpr 0 ty . showChar '\n'
+    . prettyPrec 0 name . showString " = " . prettyExpr 0 term . showChar '\n'
   prettyPrec _ (Data dname sig constructors)
     = showString "data " . prettyPrec 0 dname . prettyDSig sig . showString " where" . showChar '\n'
     . foldr ((.) . prettyConstructor) id constructors
     where prettyDSig :: Expr -> ShowS
           prettyDSig t = case unfix t of
             Type -> id
-            _ -> showString " : " . prettyPrec 0 t
+            _ -> showString " : " . prettyExpr 0 t
           prettyConstructor (Constructor cname sig) = showString "  " . prettyPrec 0 cname . showString " : " . prettyCSig sig
           prettyCSig :: Expr -> ShowS
           prettyCSig t = case unfix t of
             Pi n ty body -> case n of
-              (I (-1)) -> prettyPrec 0 ty . showString " -> " . prettyPrec 0 body
-              _ -> showParen True (prettyPrec 0 n . showString " : " . prettyPrec 0 ty) . showString " -> " . prettyPrec 0 body
-            _ -> prettyPrec 0 t
+              (I (-1)) -> prettyExpr 0 ty . showString " -> " . prettyExpr 0 body
+              _ -> showParen True (prettyPrec 0 n . showString " : " . prettyExpr 0 ty) . showString " -> " . prettyExpr 0 body
+            _ -> prettyExpr 0 t
 
 
 instance Pretty Module where
