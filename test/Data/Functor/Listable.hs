@@ -24,7 +24,7 @@ module Data.Functor.Listable
 , uncurryr4
 ) where
 
-import Data.Functor.Foldable
+import Data.Functor.Foldable hiding (Mu)
 import Expr
 import Test.LeanCheck
 
@@ -86,6 +86,7 @@ instance Listable2 ExprF where
     =  liftCons2 ts ts Product
     \/ liftCons2 ts ts Sum
     \/ liftCons3 nameTiers ts ts Pi
+    \/ liftCons3 nameTiers ts ts Mu
     \/ liftCons3 nameTiers ts ts Sigma
     \/ cons0 UnitT
     \/ cons0 Type
