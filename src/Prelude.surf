@@ -40,8 +40,8 @@ data Pair : Type -> Type -> Type where
 
 
 data Vec : Nat -> Type -> Type where
-  vnil : Vec zero a
-  vcons : a -> Vec n a -> Vec (succ n) a
+  vnil : (a : Type) -> Vec zero a
+  vcons : (n : Nat) -> (a : Type) -> a -> Vec n a -> Vec (succ n) a
 
 
 data Sigma : (A : Type) -> (B : A -> Type) -> Type where
