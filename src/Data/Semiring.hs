@@ -12,6 +12,7 @@ class (Semigroup m, Monoid m) => Semiring m where
 
 
 newtype NumRing n = NumRing { unNumRing :: n }
+  deriving (Eq, Ord, Show)
 
 instance Num n => Semigroup (NumRing n) where
   (<>) = (NumRing .) . ((+) `on` unNumRing)
