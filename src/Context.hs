@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances #-}
 module Context where
 
+import Data.Bifunctor
 import Data.Foldable (toList)
 import Expr
 import Text.Pretty
@@ -40,6 +41,10 @@ data Extension s a = Restore | Replace (Suffix s a)
 
 
 -- Instances
+
+instance Bifunctor DefinitionConstraint where
+  bimap _ g (name := a) = name := fmap g a
+
 
 instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
