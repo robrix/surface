@@ -24,7 +24,7 @@ type Context a = Backward (Constraint a)
 type Suffix a = [DefinitionConstraint a]
 
 infixl 8 <><
-(<><) :: Context Expr -> Suffix Expr -> Context Expr
+(<><) :: Context a -> Suffix a -> Context a
 context <>< [] = context
 context <>< (entry : rest) = context :< D entry <>< rest
 
