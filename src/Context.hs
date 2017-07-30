@@ -45,6 +45,9 @@ data Extension s a = Restore | Replace (Suffix s a)
 instance Bifunctor DefinitionConstraint where
   bimap _ g (name := a) = name := fmap g a
 
+instance Bifunctor TypeConstraint where
+  bimap _ g (name ::: ty) = name ::: g ty
+
 
 instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
