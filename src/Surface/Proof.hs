@@ -705,7 +705,7 @@ instance Show1 (ProofF s) where
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 
-instance Pretty1 (ProofF ()) where
+instance Pretty1 (ProofF s) where
   liftPrettyPrec _ _ d proof = case proof of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
@@ -740,7 +740,7 @@ instance Pretty s => Pretty (ProofState s) where
     {-}. showString ", " . prettyPrec 0 (H.keys e)-} . showString " }"
 
 
-instance Eq1 (ProofF ()) where
+instance Eq1 (ProofF s) where
   liftEq _ a b = case (a, b) of
     (CheckModule m1, CheckModule m2) -> m1 == m2
     (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2
