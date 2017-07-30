@@ -641,9 +641,9 @@ constraint >- ma = do
 
 
 (==>) :: Suffix Expr -> Type -> Proof Type
-[]                      ==> ty = return ty
+[]                      ==> ty =                      return ty
 ((a := Nothing) : rest) ==> ty = makePi a typeT <$> rest ==> ty
-((a := Just v) : rest)  ==> ty = makePi a v <$> rest ==> ty
+((a := Just v)  : rest) ==> ty = makePi a v     <$> rest ==> ty
 
 generalizeOver :: Proof Type -> Proof Type
 generalizeOver mt = do
