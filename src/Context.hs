@@ -3,6 +3,7 @@ module Context where
 
 import Data.Bifunctor
 import Data.Foldable (toList)
+import Data.Semiring
 import Expr
 import Text.Pretty
 
@@ -34,6 +35,9 @@ applyContext expr context = case context of
   Nil -> expr
   (rest :< D (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
   (rest :< _) -> applyContext expr rest
+
+scaleContext :: Semiring s => s -> Context s a -> Context s a
+scaleContext s = fmap (first (s ><))
 
 
 data Extension s a = Restore | Replace (Suffix s a)
