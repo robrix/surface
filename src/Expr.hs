@@ -404,5 +404,8 @@ showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
   showString name . showChar ' ' . sp1 11 x . showChar ' ' . sp2 11 y . showChar ' ' . sp3 11 z
 
 
+instance Eq2 ExprF where
+  liftEq2 eqN eqA = (maybe False biand .) . zipExprFWith eqN eqA
+
 instance Eq n => Eq1 (ExprF n) where
   liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
