@@ -372,9 +372,6 @@ instance Pretty Name where
             | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
           alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-instance Eq n => Eq1 (ExprF n) where
-  liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
-
 instance Show2 ExprF where
   liftShowsPrec2 spn _ spr slr d t = case t of
     Product vs -> showsUnaryWith (liftShowsPrec spr slr) "Product" d vs
@@ -405,3 +402,7 @@ instance Show n => Show1 (ExprF n) where
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
 showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
   showString name . showChar ' ' . sp1 11 x . showChar ' ' . sp2 11 y . showChar ' ' . sp3 11 z
+
+
+instance Eq n => Eq1 (ExprF n) where
+  liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
