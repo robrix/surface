@@ -554,7 +554,7 @@ putContext context = do
 modifyContext :: (Context () Expr -> Context () Expr) -> Proof ()
 modifyContext f = getContext >>= putContext . f
 
-declare :: DefinitionConstraint Expr -> Proof ()
+declare :: DefinitionConstraint () Expr -> Proof ()
 declare binding = modifyContext (<>< [ binding ])
 
 addBindings :: Declaration -> Proof ()
@@ -604,7 +604,7 @@ specialize ty = case unfix ty of
     specialize b
   _ -> return ty
 
-onTop :: (DefinitionConstraint Expr -> Proof (Extension Expr)) -> Proof ()
+onTop :: (DefinitionConstraint () Expr -> Proof (Extension Expr)) -> Proof ()
 onTop f = do
   current <- getContext
   case current of

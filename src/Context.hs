@@ -6,12 +6,12 @@ import Expr
 import Text.Pretty
 
 data Constraint s a
-  = D (DefinitionConstraint a)
+  = D (DefinitionConstraint s a)
   | T (TypeConstraint s a)
   | Sep
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
-data DefinitionConstraint a = Name := Maybe a
+data DefinitionConstraint s a = Name := Maybe a
   deriving (Eq, Foldable, Functor, Show, Traversable)
 data TypeConstraint s a = Name ::: a
   deriving (Eq, Foldable, Functor, Show, Traversable)
@@ -21,10 +21,10 @@ data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Context s a = Backward (Constraint s a)
-type Suffix a = [DefinitionConstraint a]
+type Suffix a = [DefinitionConstraint () a]
 
 infixl 8 <><
-(<><) :: Context s a -> Suffix a -> Context s a
+(<><) :: Context () a -> Suffix a -> Context () a
 context <>< [] = context
 context <>< (entry : rest) = context :< D entry <>< rest
 
@@ -52,7 +52,7 @@ instance Pretty s => Pretty (Constraint s Expr) where
   prettyPrec d (T term) = prettyPrec d term
   prettyPrec _ Sep = showChar ';'
 
-instance Pretty (DefinitionConstraint Expr) where
+instance Pretty s => Pretty (DefinitionConstraint s Expr) where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyExpr 10) declaration
 
 instance Pretty s => Pretty (TypeConstraint s Type) where
