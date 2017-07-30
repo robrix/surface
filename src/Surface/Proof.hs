@@ -53,7 +53,7 @@ type Proof = Freer ProofF
 
 data ProofState = ProofState
   { proofNextName :: Name
-  , proofContext :: Context Expr
+  , proofContext :: Context () Expr
   , proofEnvironment :: Environment }
   deriving (Eq, Show)
 
@@ -543,15 +543,15 @@ whnf' expr = case unfix expr of
 
 -- Conveniences
 
-getContext :: Proof (Context Expr)
+getContext :: Proof (Context () Expr)
 getContext = gets proofContext
 
-putContext :: Context Expr -> Proof ()
+putContext :: Context () Expr -> Proof ()
 putContext context = do
   s <- get
   put s { proofContext = context }
 
-modifyContext :: (Context Expr -> Context Expr) -> Proof ()
+modifyContext :: (Context () Expr -> Context () Expr) -> Proof ()
 modifyContext f = getContext >>= putContext . f
 
 declare :: DefinitionConstraint Expr -> Proof ()

@@ -20,15 +20,15 @@ infixl 8 :<
 data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
-type Context a = Backward (Constraint () a)
+type Context s a = Backward (Constraint s a)
 type Suffix a = [DefinitionConstraint a]
 
 infixl 8 <><
-(<><) :: Context a -> Suffix a -> Context a
+(<><) :: Context s a -> Suffix a -> Context s a
 context <>< [] = context
 context <>< (entry : rest) = context :< D entry <>< rest
 
-applyContext :: Expr -> Context Expr -> Expr
+applyContext :: Expr -> Context s Expr -> Expr
 applyContext expr context = case context of
   Nil -> expr
   (rest :< D (name := d)) | Just t <- d -> applyContext (substitute t name expr) rest
