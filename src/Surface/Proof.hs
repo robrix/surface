@@ -1,9 +1,11 @@
-{-# LANGUAGE GADTs, ScopedTypeVariables, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances, GADTs, InstanceSigs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving #-}
 module Surface.Proof where
 
 import Context
 import Control.Monad hiding (fail)
+import Control.Monad.Fail
 import Control.Monad.Free.Freer
+import Control.Monad.State.Class
 import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
@@ -17,41 +19,41 @@ import Prelude hiding (fail)
 import Surface.Binder
 import Text.Pretty
 
-data ProofF a where
-  CheckModule :: HasCallStack => Module -> ProofF ()
-  CheckDeclaration :: HasCallStack => Module -> Declaration -> ProofF ()
-  CheckConstructor :: HasCallStack => Module -> Declaration -> Constructor -> ProofF ()
+data ProofF a r where
+  CheckModule :: HasCallStack => Module -> ProofF a ()
+  CheckDeclaration :: HasCallStack => Module -> Declaration -> ProofF a ()
+  CheckConstructor :: HasCallStack => Module -> Declaration -> Constructor -> ProofF a ()
 
-  Check :: HasCallStack => Term -> Type -> ProofF ()
-  Infer :: HasCallStack => Term -> ProofF Type
-  IsType :: HasCallStack => Term -> ProofF ()
+  Check :: HasCallStack => Term -> Type -> ProofF a ()
+  Infer :: HasCallStack => Term -> ProofF a Type
+  IsType :: HasCallStack => Term -> ProofF a ()
 
-  AlphaEquivalent :: HasCallStack => Expr -> Expr -> ProofF Bool
-  Equate :: HasCallStack => Expr -> Expr -> ProofF ()
+  AlphaEquivalent :: HasCallStack => Expr -> Expr -> ProofF a Bool
+  Equate :: HasCallStack => Expr -> Expr -> ProofF a ()
 
-  Unify :: HasCallStack => Type -> Type -> ProofF ()
-  Solve :: HasCallStack => Name -> Suffix -> Type -> ProofF ()
+  Unify :: HasCallStack => Type -> Type -> ProofF a ()
+  Solve :: HasCallStack => Name -> Suffix a Expr -> Type -> ProofF a ()
 
-  Fresh :: HasCallStack => Maybe Expr -> ProofF Name
-  Restore :: HasCallStack => ProofF Extension
-  Replace :: HasCallStack => Suffix -> ProofF Extension
+  Fresh :: HasCallStack => Maybe Expr -> ProofF a Name
+  Restore :: HasCallStack => ProofF a (Extension a Expr)
+  Replace :: HasCallStack => Suffix a Expr -> ProofF a (Extension a Expr)
 
-  Normalize :: HasCallStack => Expr -> ProofF Expr
-  WHNF :: HasCallStack => Expr -> ProofF Expr
+  Normalize :: HasCallStack => Expr -> ProofF a Expr
+  WHNF :: HasCallStack => Expr -> ProofF a Expr
 
-  Get :: ProofF ProofState
-  Put :: ProofState -> ProofF ()
+  Get :: ProofF a (ProofState a)
+  Put :: ProofState a -> ProofF a ()
 
-  Error :: [String] -> ProofF a
+  Error :: [String] -> ProofF a r
 
-deriving instance Show a => Show (ProofF a)
-deriving instance Eq a => Eq (ProofF a)
+deriving instance (Show a, Show r) => Show (ProofF a r)
+deriving instance (Eq a, Eq r) => Eq (ProofF a r)
 
-type Proof = Freer ProofF
+type Proof s = Freer (ProofF s)
 
-data ProofState = ProofState
+data ProofState s = ProofState
   { proofNextName :: Name
-  , proofContext :: Context
+  , proofContext :: Context s Expr
   , proofEnvironment :: Environment }
   deriving (Eq, Show)
 
@@ -63,109 +65,88 @@ data Binding = Binding { bindingType :: Type, bindingValue :: Expr }
 
 -- Judgement constructors
 
-checkModule :: HasCallStack => Module -> Proof ()
+checkModule :: HasCallStack => Module -> Proof s ()
 checkModule module' = withFrozenCallStack $ CheckModule module' `Then` return
 
-checkDeclaration :: HasCallStack => Module -> Declaration -> Proof ()
+checkDeclaration :: HasCallStack => Module -> Declaration -> Proof s ()
 checkDeclaration module' declaration = withFrozenCallStack $ CheckDeclaration module' declaration `Then` return
 
-checkConstructor :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
+checkConstructor :: HasCallStack => Module -> Declaration -> Constructor -> Proof s ()
 checkConstructor module' declaration constructor = withFrozenCallStack $ CheckConstructor module' declaration constructor `Then` return
 
 
-check :: HasCallStack => Term -> Type -> Proof ()
+check :: HasCallStack => Term -> Type -> Proof s ()
 check term ty = withFrozenCallStack $ Check term ty `Then` return
 
-infer :: HasCallStack => Term -> Proof Type
+infer :: HasCallStack => Term -> Proof s Type
 infer term = withFrozenCallStack $ Infer term `Then` return
 
 
-isType :: HasCallStack => Term -> Proof ()
+isType :: HasCallStack => Term -> Proof s ()
 isType term = withFrozenCallStack $ IsType term `Then` return
 
 
-alphaEquivalent :: HasCallStack => Expr -> Expr -> Proof Bool
+alphaEquivalent :: HasCallStack => Expr -> Expr -> Proof s Bool
 alphaEquivalent e1 e2 = withFrozenCallStack $ AlphaEquivalent e1 e2 `Then` return
 
-equate :: HasCallStack => Expr -> Expr -> Proof ()
+equate :: HasCallStack => Expr -> Expr -> Proof s ()
 equate e1 e2 = withFrozenCallStack $ Equate e1 e2 `Then` return
 
 
-unify :: HasCallStack => Type -> Type -> Proof ()
+unify :: HasCallStack => Type -> Type -> Proof s ()
 unify t1 t2 = withFrozenCallStack $ Unify t1 t2 `Then` return
 
-solve :: HasCallStack => Name -> Suffix -> Type -> Proof ()
+solve :: HasCallStack => Name -> Suffix s Expr -> Type -> Proof s ()
 solve name suffix ty = withFrozenCallStack $ Solve name suffix ty `Then` return
 
 
-fresh :: HasCallStack => Maybe Expr -> Proof Name
+fresh :: HasCallStack => Maybe Expr -> Proof s Name
 fresh declaration = withFrozenCallStack $ Fresh declaration `Then` return
 
-restore :: HasCallStack => Proof Extension
+restore :: HasCallStack => Proof s (Extension s Expr)
 restore = withFrozenCallStack $ Surface.Proof.Restore `Then` return
 
-replace :: HasCallStack => Suffix -> Proof Extension
+replace :: HasCallStack => Suffix s Expr -> Proof s (Extension s Expr)
 replace suffix = withFrozenCallStack $ Surface.Proof.Replace suffix `Then` return
 
 
-normalize :: HasCallStack => Expr -> Proof Expr
+normalize :: HasCallStack => Expr -> Proof s Expr
 normalize expr = withFrozenCallStack $ Normalize expr `Then` return
 
-whnf :: HasCallStack => Expr -> Proof Expr
+whnf :: HasCallStack => Expr -> Proof s Expr
 whnf expr = withFrozenCallStack $ WHNF expr `Then` return
-
-
--- State constructors
-
-get :: Proof ProofState
-get = Get `Then` return
-
-gets :: (ProofState -> result) -> Proof result
-gets f = fmap f get
-
-put :: ProofState -> Proof ()
-put s = Put s `Then` return
-
-modify :: (ProofState -> ProofState) -> Proof ()
-modify f = get >>= put . f
-
-
--- Errors
-
-fail :: HasCallStack => String -> Proof a
-fail message = Error [ message, prettyCallStack callStack ] `Then` return
 
 
 -- Proof evaluation
 
-initialState :: ProofState
+initialState :: ProofState s
 initialState = ProofState (I 0) Nil H.empty
 
-runProof :: HasCallStack => Proof a -> Either [String] a
+runProof :: HasCallStack => Proof s a -> Either [String] a
 runProof = flip runAll initialState
 
-runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
+runAll :: HasCallStack => Proof s a -> ProofState s -> Either [String] a
 runAll context proof = case runStep context proof of
   Left errors -> Left errors
   Right (Return a, _) -> Right a
   Right next -> uncurry runAll next
 
-runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps :: HasCallStack => Proof s a -> ProofState s -> [(Proof s a, ProofState s)]
 runSteps proof context = (proof, context) : case runStep proof context of
   Left _ -> []
   Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
-runSteps' :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps' :: HasCallStack => Proof s a -> ProofState s -> [(Proof s a, ProofState s)]
 runSteps' = (filter isSignificant .) . runSteps
   where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . fst
 
-runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
+runStep :: forall s a. HasCallStack => Proof s a -> ProofState s -> Either [String] (Proof s a, ProofState s)
 runStep proof context = case proof of
   Return a -> Right (return a, context)
   Then proof yield -> go proof yield
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
+  where go :: forall x . ProofF s x -> (x -> Proof s a) -> Either [String] (Proof s a, ProofState s)
         go proof yield = case proof of
           CheckModule module' -> run $ checkModule' module'
           CheckDeclaration m d -> run $ checkDeclaration' m d
@@ -192,18 +173,18 @@ runStep proof context = case proof of
           Put context' -> Right (yield (), context')
 
           Error errors -> Left errors
-          where run :: Proof x -> Either [String] (Proof a, ProofState)
+          where run :: Proof s x -> Either [String] (Proof s a, ProofState s)
                 run = Right . flip (,) context . (>>= yield)
 
 
 -- Judgement interpreters
 
-checkModule' :: HasCallStack => Module -> Proof ()
+checkModule' :: HasCallStack => Module -> Proof s ()
 checkModule' module' = do
   for_ (moduleDeclarations module') addBindings
   for_ (moduleDeclarations module') (checkDeclaration module')
 
-checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof ()
+checkDeclaration' :: HasCallStack => Module -> Declaration -> Proof s ()
 checkDeclaration' mod@(Module modName _) decl = do
   isType (declarationType decl)
   env <- getEnvironment
@@ -213,7 +194,7 @@ checkDeclaration' mod@(Module modName _) decl = do
     Data _ _ constructors -> for_ constructors (checkConstructor mod decl)
   where context cs = contextualizeErrors (fmap ((intercalate "." (modName : cs) ++ ": ") ++))
 
-checkConstructor' :: HasCallStack => Module -> Declaration -> Constructor -> Proof ()
+checkConstructor' :: HasCallStack => Module -> Declaration -> Constructor -> Proof s ()
 checkConstructor' _ decl (Constructor _ sig) = do
   modifyContext (:< Sep)
   env <- getEnvironment
@@ -225,7 +206,7 @@ checkConstructor' _ decl (Constructor _ sig) = do
   return ()
 
 
-check' :: HasCallStack => Term -> Type -> Proof ()
+check' :: HasCallStack => Term -> Type -> Proof s ()
 check' term ty = case (unfix term, unfix ty) of
   (Abs n body, Pi n1 t tbody) -> T (n1 ::: t) >- T (n ::: t) >- check body tbody
 
@@ -243,7 +224,7 @@ check' term ty = case (unfix term, unfix ty) of
     ty' <- infer term
     unify ty ty'
 
-infer' :: HasCallStack => Term -> Proof Type
+infer' :: HasCallStack => Term -> Proof s Type
 infer' term = case unfix term of
   Tuple as -> productT <$> traverse infer as
 
@@ -314,7 +295,7 @@ infer' term = case unfix term of
           return typeT
 
 
-isType' :: HasCallStack => Term -> Proof ()
+isType' :: HasCallStack => Term -> Proof s ()
 isType' ty = case unfix ty of
   Type -> return ()
   Sum ts -> for_ ts isType
@@ -347,7 +328,7 @@ isType' ty = case unfix ty of
   _ -> fail ("Expected a Type but got " ++ prettyExpr 0 ty "")
 
 
-alphaEquivalent' :: HasCallStack => Expr -> Expr -> Proof Bool
+alphaEquivalent' :: HasCallStack => Expr -> Expr -> Proof s Bool
 alphaEquivalent' e1 e2
   | e1 == e2 = return True
   | otherwise = case (unfix e1, unfix e2) of
@@ -381,7 +362,7 @@ alphaEquivalent' e1 e2
       _ -> return False
 
 
-equate' :: HasCallStack => Expr -> Expr -> Proof ()
+equate' :: HasCallStack => Expr -> Expr -> Proof s ()
 equate' e1 e2 = do
   equivalent <- alphaEquivalent e1 e2
   unless equivalent $ do
@@ -392,7 +373,7 @@ equate' e1 e2 = do
       _ -> fail ("Could not judge equality of " ++ prettyExpr 0 e1 (" to " ++ prettyExpr 0 e2 ""))
 
 
-unify' :: HasCallStack => Type -> Type -> Proof ()
+unify' :: HasCallStack => Type -> Type -> Proof s ()
 unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   (Product [], Product []) -> return ()
   (Product (t1 : ts1), Product (t2 : ts2)) -> unify t1 t2 >> unify (productT ts1) (productT ts2)
@@ -440,7 +421,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ prettyExpr 0 t1 (" with " ++ prettyExpr 0 t2 ""))
 
-solve' :: HasCallStack => Name -> Suffix -> Type -> Proof ()
+solve' :: HasCallStack => Name -> Suffix s Expr -> Type -> Proof s ()
 solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
@@ -457,7 +438,7 @@ solve' name suffix ty = onTop $ \ (n := d) ->
       restore
 
 
-fresh' :: HasCallStack => Maybe Expr -> Proof Name
+fresh' :: HasCallStack => Maybe Expr -> Proof s Name
 fresh' d = do
   s <- get
   let m = proofNextName s
@@ -465,14 +446,14 @@ fresh' d = do
         , proofContext = proofContext s :< D (m := d) }
   return m
 
-restore' :: HasCallStack => Proof Extension
+restore' :: HasCallStack => Proof s (Extension s Expr)
 restore' = return Context.Restore
 
-replace' :: HasCallStack => Suffix -> Proof Extension
+replace' :: HasCallStack => Suffix s Expr -> Proof s (Extension s Expr)
 replace' = return . Context.Replace
 
 
-normalize' :: HasCallStack => Expr -> Proof Expr
+normalize' :: HasCallStack => Expr -> Proof s Expr
 normalize' expr = case unfix expr of
   Var name -> do
     binding <- lookupDefinition name
@@ -531,7 +512,7 @@ normalize' expr = case unfix expr of
   _ -> return expr
 
 
-whnf' :: HasCallStack => Expr -> Proof Expr
+whnf' :: HasCallStack => Expr -> Proof s Expr
 whnf' expr = case unfix expr of
   Var v -> do
     binding <- lookupDefinition v
@@ -562,21 +543,21 @@ whnf' expr = case unfix expr of
 
 -- Conveniences
 
-getContext :: Proof Context
+getContext :: Proof s (Context s Expr)
 getContext = gets proofContext
 
-putContext :: Context -> Proof ()
+putContext :: Context s Expr -> Proof s ()
 putContext context = do
   s <- get
   put s { proofContext = context }
 
-modifyContext :: (Context -> Context) -> Proof ()
+modifyContext :: (Context s Expr -> Context s Expr) -> Proof s ()
 modifyContext f = getContext >>= putContext . f
 
-declare :: DefinitionConstraint -> Proof ()
+declare :: DefinitionConstraint s Expr -> Proof s ()
 declare binding = modifyContext (<>< [ binding ])
 
-addBindings :: Declaration -> Proof ()
+addBindings :: Declaration -> Proof s ()
 addBindings decl = case decl of
   Declaration name ty value ->
     modifyEnvironment (H.insert name (Binding ty value))
@@ -586,29 +567,29 @@ addBindings decl = case decl of
       modifyEnvironment (H.insert name (Binding ty unit)))
 
 
-getEnvironment :: Proof Environment
+getEnvironment :: Proof s Environment
 getEnvironment = gets proofEnvironment
 
-putEnvironment :: Environment -> Proof ()
+putEnvironment :: Environment -> Proof s ()
 putEnvironment environment = do
   s <- get
   put s { proofEnvironment = environment }
 
-modifyEnvironment :: (Environment -> Environment) -> Proof ()
+modifyEnvironment :: (Environment -> Environment) -> Proof s ()
 modifyEnvironment f = getEnvironment >>= putEnvironment . f
 
 
-findTyping :: HasCallStack => Name -> Proof Type
+findTyping :: HasCallStack => Name -> Proof s Type
 findTyping name = lookupTyping name >>= maybe (fail ("Missing type constraint for " ++ pretty name ++ " in context.")) return
 
-lookupDefinition :: Name -> Proof (Maybe Expr)
+lookupDefinition :: Name -> Proof s (Maybe Expr)
 lookupDefinition name = getContext >>= help
   where help (_ :< D (found := decl))
           | name == found = return decl
         help (context :< _) = help context
         help _ = gets (fmap bindingValue . H.lookup name . proofEnvironment)
 
-lookupTyping :: Name -> Proof (Maybe Expr)
+lookupTyping :: Name -> Proof s (Maybe Expr)
 lookupTyping name = getContext >>= help
   where help (_ :< T (found ::: ty))
           | name == found = return (Just ty)
@@ -616,14 +597,14 @@ lookupTyping name = getContext >>= help
         help _ = gets (fmap bindingType . H.lookup name . proofEnvironment)
 
 
-specialize :: Type -> Proof Type
+specialize :: Type -> Proof s Type
 specialize ty = case unfix ty of
   Pi _ t b -> do
     _ <- fresh (if t == typeT then Nothing else Just t)
     specialize b
   _ -> return ty
 
-onTop :: (DefinitionConstraint -> Proof Extension) -> Proof ()
+onTop :: (DefinitionConstraint s Expr -> Proof s (Extension s Expr)) -> Proof s ()
 onTop f = do
   current <- getContext
   case current of
@@ -639,7 +620,7 @@ onTop f = do
     Nil -> fail "onTop called with empty context."
 
 infixr 3 >-
-(>-) :: Constraint -> Proof a -> Proof a
+(>-) :: Constraint s Expr -> Proof s a -> Proof s a
 constraint >- ma = do
   modifyContext (:< constraint)
   a <- ma
@@ -654,19 +635,19 @@ constraint >- ma = do
           _ -> error "Missing constraint!"
 
 
-(==>) :: Suffix -> Type -> Proof Type
-[]                      ==> ty = return ty
+(==>) :: Suffix s Expr -> Type -> Proof s Type
+[]                      ==> ty =                      return ty
 ((a := Nothing) : rest) ==> ty = makePi a typeT <$> rest ==> ty
-((a := Just v) : rest)  ==> ty = makePi a v <$> rest ==> ty
+((a := Just v)  : rest) ==> ty = makePi a v     <$> rest ==> ty
 
-generalizeOver :: Proof Type -> Proof Type
+generalizeOver :: Proof s Type -> Proof s Type
 generalizeOver mt = do
   modifyContext (:< Sep)
   t <- mt
   rest <- skimContext []
   rest ==> t
 
-skimContext :: Suffix -> Proof Suffix
+skimContext :: Suffix s Expr -> Proof s (Suffix s Expr)
 skimContext rest = do
   context :< d <- getContext
   putContext context
@@ -675,9 +656,9 @@ skimContext rest = do
     D a -> skimContext (a : rest)
     T _ -> error "Unexpected type constraint."
 
-contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
+contextualizeErrors :: ([String] -> [String]) -> Proof s a -> Proof s a
 contextualizeErrors addContext = iterFreer alg . fmap pure
-  where alg :: ProofF x -> (x -> Proof a) -> Proof a
+  where alg :: ProofF s x -> (x -> Proof s a) -> Proof s a
         alg proof = Then $ case proof of
           Error es -> Error (addContext es)
           other -> other
@@ -685,7 +666,16 @@ contextualizeErrors addContext = iterFreer alg . fmap pure
 
 -- Instances
 
-instance Show1 ProofF where
+instance MonadFail (Proof s) where
+  fail :: HasCallStack => String -> Proof s a
+  fail message = Error [ message, prettyCallStack callStack ] `Then` return
+
+instance MonadState (ProofState s) (Proof s) where
+  get = Get `Then` return
+  put s = Put s `Then` return
+
+
+instance Show1 (ProofF s) where
   liftShowsPrec _ _ d proof = case proof of
     CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
     CheckDeclaration module' declaration -> showsBinaryWith showsPrec showsPrec "CheckDeclaration" d module' declaration
@@ -715,8 +705,9 @@ instance Show1 ProofF where
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 
-instance Pretty1 ProofF where
-  liftPrettyPrec _ _ d proof = case proof of
+instance Pretty2 ProofF where
+  liftPrettyPrec2 :: forall a r. (Int -> a -> ShowS) -> ([a] -> ShowS) -> (Int -> r -> ShowS) -> ([r] -> ShowS) -> Int -> ProofF a r -> ShowS
+  liftPrettyPrec2 ppa pla _ _ d proof = case proof of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
     CheckConstructor (Module modName _) decl constructor -> showsUnaryWith (const showString) "checkConstructor" d (modName ++ "." ++ pretty (declarationName decl) ++ "." ++ pretty (constructorName constructor))
@@ -729,11 +720,11 @@ instance Pretty1 ProofF where
     Equate e1 e2 -> showsBinaryWith prettyExpr prettyExpr "equate" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith prettyExpr prettyExpr "unify" d t1 t2
-    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyExpr "solve" d n s ty
+    Solve n s ty -> showsTernaryWith prettyPrec prettySuffix prettyExpr "solve" d n s ty
 
     Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyExpr) "fresh" d declaration
     Surface.Proof.Restore -> showString "restore"
-    Surface.Proof.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
+    Surface.Proof.Replace suffix -> showsUnaryWith prettySuffix "replace" d suffix
 
     Normalize expr -> showsUnaryWith prettyExpr "normalize" d expr
     WHNF expr -> showsUnaryWith prettyExpr "whnf" d expr
@@ -742,15 +733,23 @@ instance Pretty1 ProofF where
     Put state -> shows state
 
     Error errors -> liftPrettyPrec prettyPrec prettyList d errors
+    where prettySuffix :: Int -> Suffix a Expr -> ShowS
+          prettySuffix = liftPrettyPrec (liftPrettyPrec2 ppa pla prettyExpr (showListWith (prettyExpr 0))) (liftPrettyList2 ppa pla prettyExpr (showListWith (prettyExpr 0)))
 
-instance Pretty ProofState where
-  prettyPrec _ (ProofState n c _)
+instance Pretty a => Pretty1 (ProofF a) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
+
+instance Pretty1 ProofState where
+  liftPrettyPrec ppa pla _ (ProofState n c _)
     = showString "{ " . prettyPrec 0 n
-    . showString ", " . prettyPrec 0 c
+    . showString ", " . liftPrettyPrec (liftPrettyPrec2 ppa pla prettyExpr (showListWith (prettyExpr 0))) (liftPrettyList2 ppa pla prettyExpr (showListWith (prettyExpr 0))) 0 c
     {-}. showString ", " . prettyPrec 0 (H.keys e)-} . showString " }"
 
+instance Pretty s => Pretty (ProofState s) where
+  prettyPrec = prettyPrec1
 
-instance Eq1 ProofF where
+
+instance Eq1 (ProofF s) where
   liftEq _ a b = case (a, b) of
     (CheckModule m1, CheckModule m2) -> m1 == m2
     (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2

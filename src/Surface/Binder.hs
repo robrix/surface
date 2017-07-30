@@ -11,16 +11,19 @@ class Binder a where
 class Binder1 f where
   liftIn :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
-instance (Foldable t, Binder a) => Binder (t a) where
+instance Binder a => Binder (Maybe a) where
+  (<?) name = any (name <?)
+
+instance Binder a => Binder [a] where
   (<?) name = any (name <?)
 
 instance Binder Name where
   (<?) = (==)
 
-instance Binder DefinitionConstraint where
+instance Binder a => Binder (DefinitionConstraint s a) where
   name <? (_ := m) = name <? m
 
-instance Binder TypeConstraint where
+instance Binder a => Binder (TypeConstraint s a) where
   name <? (_ ::: s) = name <? s
 
 instance Binder1 f => Binder (Fix f) where
@@ -32,7 +35,7 @@ instance Binder1 (ExprF Name) where
     Var v | v == name -> True
     _ -> any (occurs name) expr
 
-instance Binder Constraint where
+instance Binder a => Binder (Constraint s a) where
   n <? t = case t of
     D d -> n <? d
     T d -> n <? d

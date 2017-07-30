@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances #-}
 module Expr where
 
 import Data.Bifoldable
@@ -8,6 +8,7 @@ import Data.Functor.Foldable hiding (Mu)
 import Data.Hashable (Hashable)
 import Data.List (intersperse, nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
+import Data.Semiring (Semiring(..))
 import GHC.Generics (Generic)
 import Text.Pretty
 
@@ -300,6 +301,18 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 -- Instances
 
+instance Semigroup Type where
+  (<>) = (.+.)
+
+instance Monoid Type where
+  mempty = voidT
+  mappend = (<>)
+
+instance Semiring Type where
+  one = unitT
+  (><) = (.*.)
+
+
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product vs -> Product (map f vs)
@@ -359,9 +372,6 @@ instance Pretty Name where
             | otherwise = let (n, d) = i `divMod` 26 in showAlphabet d . shows n
           alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-instance Eq n => Eq1 (ExprF n) where
-  liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
-
 instance Show2 ExprF where
   liftShowsPrec2 spn _ spr slr d t = case t of
     Product vs -> showsUnaryWith (liftShowsPrec spr slr) "Product" d vs
@@ -392,3 +402,10 @@ instance Show n => Show1 (ExprF n) where
 showsTernaryWith :: (Int -> a -> ShowS) -> (Int -> b -> ShowS) -> (Int -> c -> ShowS) -> String -> Int -> a -> b -> c -> ShowS
 showsTernaryWith sp1 sp2 sp3 name d x y z = showParen (d > 10) $
   showString name . showChar ' ' . sp1 11 x . showChar ' ' . sp2 11 y . showChar ' ' . sp3 11 z
+
+
+instance Eq2 ExprF where
+  liftEq2 eqN eqA = (maybe False biand .) . zipExprFWith eqN eqA
+
+instance Eq n => Eq1 (ExprF n) where
+  liftEq = liftEq2 (==)

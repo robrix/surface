@@ -16,19 +16,23 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Context
+                     , Data.Semiring
                      , Expr
                      , Module
                      , Parser
                      , REPL
                      , Surface.Binder
                      , Surface.Command
+                     , Surface.Erasure
                      , Surface.Proof
+                     , Surface.Usage
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
                      , freer-cofreer
                      , hashable
                      , haskeline
+                     , mtl
                      , parsers
                      , recursion-schemes
                      , trifecta
