@@ -312,6 +312,7 @@ instance Semiring Type where
   one = unitT
   (><) = (.*.)
 
+
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product vs -> Product (map f vs)
