@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances, GADTs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances, GADTs, InstanceSigs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving #-}
 module Surface.Proof where
 
 import Context
 import Control.Monad hiding (fail)
+import Control.Monad.Fail
 import Control.Monad.Free.Freer
 import Control.Monad.State.Class
 import Data.Foldable (for_, sequenceA_)
@@ -114,12 +115,6 @@ normalize expr = withFrozenCallStack $ Normalize expr `Then` return
 
 whnf :: HasCallStack => Expr -> Proof Expr
 whnf expr = withFrozenCallStack $ WHNF expr `Then` return
-
-
--- Errors
-
-fail :: HasCallStack => String -> Proof a
-fail message = Error [ message, prettyCallStack callStack ] `Then` return
 
 
 -- Proof evaluation
@@ -670,6 +665,10 @@ contextualizeErrors addContext = iterFreer alg . fmap pure
 
 
 -- Instances
+
+instance MonadFail Proof where
+  fail :: HasCallStack => String -> Proof a
+  fail message = Error [ message, prettyCallStack callStack ] `Then` return
 
 instance MonadState ProofState Proof where
   get = Get `Then` return
