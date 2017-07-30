@@ -14,3 +14,7 @@ class (Semigroup m, Monoid m) => Semiring m where
 
   infixr 7 ><
   (><) :: m -> m -> m
+
+instance Semiring () where
+  one = ()
+  (><) = (<>)
