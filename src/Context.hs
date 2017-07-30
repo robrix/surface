@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor, FlexibleInstances #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveTraversable, FlexibleInstances #-}
 module Context where
 
 import Data.Foldable (toList)
@@ -9,16 +9,16 @@ data Constraint a
   = D (DefinitionConstraint a)
   | T (TypeConstraint a)
   | Sep
-  deriving (Eq, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 data DefinitionConstraint a = Name := Maybe a
-  deriving (Eq, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 data TypeConstraint a = Name ::: a
-  deriving (Eq, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 infixl 8 :<
 data Backward a = Backward a :< a | Nil
-  deriving (Eq, Foldable, Functor, Show)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Context = Backward (Constraint Expr)
 type Suffix = [DefinitionConstraint Expr]
