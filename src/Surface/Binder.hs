@@ -23,7 +23,7 @@ instance Binder Name where
 instance Binder DefinitionConstraint where
   name <? (_ := m) = name <? m
 
-instance Binder TypeConstraint where
+instance Binder a => Binder (TypeConstraint a) where
   name <? (_ ::: s) = name <? s
 
 instance Binder1 f => Binder (Fix f) where

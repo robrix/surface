@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable, DeriveFunctor, FlexibleInstances #-}
 module Context where
 
 import Data.Foldable (toList)
@@ -7,13 +7,13 @@ import Text.Pretty
 
 data Constraint
   = D DefinitionConstraint
-  | T TypeConstraint
+  | T (TypeConstraint Type)
   | Sep
   deriving (Eq, Show)
 
 data DefinitionConstraint = Name := Maybe Expr
   deriving (Eq, Show)
-data TypeConstraint = Name ::: Expr
+data TypeConstraint a = Name ::: a
   deriving (Eq, Show)
 
 infixl 8 :<
@@ -55,5 +55,5 @@ instance Pretty Constraint where
 instance Pretty DefinitionConstraint where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyExpr 10) declaration
 
-instance Pretty TypeConstraint where
+instance Pretty (TypeConstraint Type) where
   prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyExpr 10 scheme
