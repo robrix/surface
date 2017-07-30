@@ -11,7 +11,10 @@ class Binder a where
 class Binder1 f where
   liftIn :: (Name -> a -> Bool) -> Name -> f a -> Bool
 
-instance (Foldable t, Binder a) => Binder (t a) where
+instance Binder a => Binder (Maybe a) where
+  (<?) name = any (name <?)
+
+instance Binder a => Binder [a] where
   (<?) name = any (name <?)
 
 instance Binder Name where
