@@ -2,6 +2,7 @@ module Surface.Erasure where
 
 import Control.Exception
 import Data.Semigroup
+import Data.Semiring
 
 data Erasure = Erased | Present
   deriving (Bounded, Enum, Eq, Ord, Show)
@@ -32,3 +33,7 @@ instance Semigroup Erasure where
 instance Monoid Erasure where
   mempty = Erased
   mappend = (+)
+
+instance Semiring Erasure where
+  one = Present
+  (><) = (*)
