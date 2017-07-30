@@ -1,6 +1,7 @@
 module Surface.Usage where
 
 import Control.Exception
+import Data.Semigroup
 
 data Usage = Zero | One | Multiple
   deriving (Bounded, Enum, Eq, Ord, Show)
@@ -27,3 +28,6 @@ instance Num Usage where
                 | n == 0 = Zero
                 | n == 1 = One
                 | otherwise = Multiple
+
+instance Semigroup Usage where
+  (<>) = (+)
