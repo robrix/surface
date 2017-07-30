@@ -1,8 +1,9 @@
-{-# LANGUAGE GADTs, ScopedTypeVariables, StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances, GADTs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving #-}
 module Surface.Proof where
 
 import Context
 import Control.Monad hiding (fail)
+import Control.Monad.State.Class
 import Control.Monad.Free.Freer
 import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
@@ -113,21 +114,6 @@ normalize expr = withFrozenCallStack $ Normalize expr `Then` return
 
 whnf :: HasCallStack => Expr -> Proof Expr
 whnf expr = withFrozenCallStack $ WHNF expr `Then` return
-
-
--- State constructors
-
-get :: Proof ProofState
-get = Get `Then` return
-
-gets :: (ProofState -> result) -> Proof result
-gets f = fmap f get
-
-put :: ProofState -> Proof ()
-put s = Put s `Then` return
-
-modify :: (ProofState -> ProofState) -> Proof ()
-modify f = get >>= put . f
 
 
 -- Errors
@@ -684,6 +670,11 @@ contextualizeErrors addContext = iterFreer alg . fmap pure
 
 
 -- Instances
+
+instance MonadState ProofState Proof where
+  get = Get `Then` return
+  put s = Put s `Then` return
+
 
 instance Show1 ProofF where
   liftShowsPrec _ _ d proof = case proof of
