@@ -19,37 +19,37 @@ import Prelude hiding (fail)
 import Surface.Binder
 import Text.Pretty
 
-data ProofF a where
-  CheckModule :: HasCallStack => Module -> ProofF ()
-  CheckDeclaration :: HasCallStack => Module -> Declaration -> ProofF ()
-  CheckConstructor :: HasCallStack => Module -> Declaration -> Constructor -> ProofF ()
+data ProofF a r where
+  CheckModule :: HasCallStack => Module -> ProofF a ()
+  CheckDeclaration :: HasCallStack => Module -> Declaration -> ProofF a ()
+  CheckConstructor :: HasCallStack => Module -> Declaration -> Constructor -> ProofF a ()
 
-  Check :: HasCallStack => Term -> Type -> ProofF ()
-  Infer :: HasCallStack => Term -> ProofF Type
-  IsType :: HasCallStack => Term -> ProofF ()
+  Check :: HasCallStack => Term -> Type -> ProofF a ()
+  Infer :: HasCallStack => Term -> ProofF a Type
+  IsType :: HasCallStack => Term -> ProofF a ()
 
-  AlphaEquivalent :: HasCallStack => Expr -> Expr -> ProofF Bool
-  Equate :: HasCallStack => Expr -> Expr -> ProofF ()
+  AlphaEquivalent :: HasCallStack => Expr -> Expr -> ProofF a Bool
+  Equate :: HasCallStack => Expr -> Expr -> ProofF a ()
 
-  Unify :: HasCallStack => Type -> Type -> ProofF ()
-  Solve :: HasCallStack => Name -> Suffix () Expr -> Type -> ProofF ()
+  Unify :: HasCallStack => Type -> Type -> ProofF a ()
+  Solve :: HasCallStack => Name -> Suffix () Expr -> Type -> ProofF a ()
 
-  Fresh :: HasCallStack => Maybe Expr -> ProofF Name
-  Restore :: HasCallStack => ProofF (Extension () Expr)
-  Replace :: HasCallStack => Suffix () Expr -> ProofF (Extension () Expr)
+  Fresh :: HasCallStack => Maybe Expr -> ProofF a Name
+  Restore :: HasCallStack => ProofF a (Extension () Expr)
+  Replace :: HasCallStack => Suffix () Expr -> ProofF a (Extension () Expr)
 
-  Normalize :: HasCallStack => Expr -> ProofF Expr
-  WHNF :: HasCallStack => Expr -> ProofF Expr
+  Normalize :: HasCallStack => Expr -> ProofF a Expr
+  WHNF :: HasCallStack => Expr -> ProofF a Expr
 
-  Get :: ProofF (ProofState ())
-  Put :: ProofState () -> ProofF ()
+  Get :: ProofF a (ProofState ())
+  Put :: ProofState () -> ProofF a ()
 
-  Error :: [String] -> ProofF a
+  Error :: [String] -> ProofF a r
 
-deriving instance Show a => Show (ProofF a)
-deriving instance Eq a => Eq (ProofF a)
+deriving instance (Show a, Show r) => Show (ProofF a r)
+deriving instance (Eq a, Eq r) => Eq (ProofF a r)
 
-type Proof = Freer ProofF
+type Proof = Freer (ProofF ())
 
 data ProofState s = ProofState
   { proofNextName :: Name
@@ -146,7 +146,7 @@ runStep :: forall a. HasCallStack => Proof a -> ProofState () -> Either [String]
 runStep proof context = case proof of
   Return a -> Right (return a, context)
   Then proof yield -> go proof yield
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState ())
+  where go :: forall x . ProofF () x -> (x -> Proof a) -> Either [String] (Proof a, ProofState ())
         go proof yield = case proof of
           CheckModule module' -> run $ checkModule' module'
           CheckDeclaration m d -> run $ checkDeclaration' m d
@@ -658,7 +658,7 @@ skimContext rest = do
 
 contextualizeErrors :: ([String] -> [String]) -> Proof a -> Proof a
 contextualizeErrors addContext = iterFreer alg . fmap pure
-  where alg :: ProofF x -> (x -> Proof a) -> Proof a
+  where alg :: ProofF () x -> (x -> Proof a) -> Proof a
         alg proof = Then $ case proof of
           Error es -> Error (addContext es)
           other -> other
@@ -675,7 +675,7 @@ instance MonadState (ProofState ()) Proof where
   put s = Put s `Then` return
 
 
-instance Show1 ProofF where
+instance Show1 (ProofF s) where
   liftShowsPrec _ _ d proof = case proof of
     CheckModule module' -> showsUnaryWith showsPrec "CheckModule" d module'
     CheckDeclaration module' declaration -> showsBinaryWith showsPrec showsPrec "CheckDeclaration" d module' declaration
@@ -705,7 +705,7 @@ instance Show1 ProofF where
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 
-instance Pretty1 ProofF where
+instance Pretty1 (ProofF ()) where
   liftPrettyPrec _ _ d proof = case proof of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
@@ -740,7 +740,7 @@ instance Pretty s => Pretty (ProofState s) where
     {-}. showString ", " . prettyPrec 0 (H.keys e)-} . showString " }"
 
 
-instance Eq1 ProofF where
+instance Eq1 (ProofF ()) where
   liftEq _ a b = case (a, b) of
     (CheckModule m1, CheckModule m2) -> m1 == m2
     (CheckDeclaration m1 d1, CheckDeclaration m2 d2) -> m1 == m2 && d1 == d2
