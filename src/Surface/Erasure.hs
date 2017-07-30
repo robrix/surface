@@ -1,6 +1,7 @@
 module Surface.Erasure where
 
 import Control.Exception
+import Data.Semigroup
 
 data Erasure = Erased | Present
   deriving (Bounded, Enum, Eq, Ord, Show)
@@ -24,3 +25,6 @@ instance Num Erasure where
   fromInteger n | n == 0 = Erased
                 | n == 1 = Present
                 | otherwise = throw Underflow
+
+instance Semigroup Erasure where
+  (<>) = (+)
