@@ -199,7 +199,7 @@ checkConstructor' _ decl (Constructor _ sig) = do
   modifyContext (:< Sep)
   env <- getEnvironment
   tyVariables <- traverse (fresh . Just) (domain (declarationType decl))
-  flip (foldr (>-)) (fmap (T . (::: typeT)) (freeVariables sig \\ H.keys env)) $ do
+  flip (foldr (>-)) (T . (::: typeT) <$> freeVariables sig \\ H.keys env) $ do
     isType sig
     equate (codomain sig) (foldl (#) (var (declarationName decl)) (fmap var tyVariables))
   _ <- skimContext []
