@@ -35,8 +35,8 @@ data ProofF a where
   Solve :: HasCallStack => Name -> Suffix () Expr -> Type -> ProofF ()
 
   Fresh :: HasCallStack => Maybe Expr -> ProofF Name
-  Restore :: HasCallStack => ProofF (Extension Expr)
-  Replace :: HasCallStack => Suffix () Expr -> ProofF (Extension Expr)
+  Restore :: HasCallStack => ProofF (Extension () Expr)
+  Replace :: HasCallStack => Suffix () Expr -> ProofF (Extension () Expr)
 
   Normalize :: HasCallStack => Expr -> ProofF Expr
   WHNF :: HasCallStack => Expr -> ProofF Expr
@@ -103,10 +103,10 @@ solve name suffix ty = withFrozenCallStack $ Solve name suffix ty `Then` return
 fresh :: HasCallStack => Maybe Expr -> Proof Name
 fresh declaration = withFrozenCallStack $ Fresh declaration `Then` return
 
-restore :: HasCallStack => Proof (Extension Expr)
+restore :: HasCallStack => Proof (Extension () Expr)
 restore = withFrozenCallStack $ Surface.Proof.Restore `Then` return
 
-replace :: HasCallStack => Suffix () Expr -> Proof (Extension Expr)
+replace :: HasCallStack => Suffix () Expr -> Proof (Extension () Expr)
 replace suffix = withFrozenCallStack $ Surface.Proof.Replace suffix `Then` return
 
 
@@ -446,10 +446,10 @@ fresh' d = do
         , proofContext = proofContext s :< D (m := d) }
   return m
 
-restore' :: HasCallStack => Proof (Extension Expr)
+restore' :: HasCallStack => Proof (Extension () Expr)
 restore' = return Context.Restore
 
-replace' :: HasCallStack => Suffix () Expr -> Proof (Extension Expr)
+replace' :: HasCallStack => Suffix () Expr -> Proof (Extension () Expr)
 replace' = return . Context.Replace
 
 
@@ -604,7 +604,7 @@ specialize ty = case unfix ty of
     specialize b
   _ -> return ty
 
-onTop :: (DefinitionConstraint () Expr -> Proof (Extension Expr)) -> Proof ()
+onTop :: (DefinitionConstraint () Expr -> Proof (Extension () Expr)) -> Proof ()
 onTop f = do
   current <- getContext
   case current of
