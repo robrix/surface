@@ -32,11 +32,11 @@ data ProofF a where
   Equate :: HasCallStack => Expr -> Expr -> ProofF ()
 
   Unify :: HasCallStack => Type -> Type -> ProofF ()
-  Solve :: HasCallStack => Name -> Suffix Expr -> Type -> ProofF ()
+  Solve :: HasCallStack => Name -> Suffix () Expr -> Type -> ProofF ()
 
   Fresh :: HasCallStack => Maybe Expr -> ProofF Name
   Restore :: HasCallStack => ProofF (Extension Expr)
-  Replace :: HasCallStack => Suffix Expr -> ProofF (Extension Expr)
+  Replace :: HasCallStack => Suffix () Expr -> ProofF (Extension Expr)
 
   Normalize :: HasCallStack => Expr -> ProofF Expr
   WHNF :: HasCallStack => Expr -> ProofF Expr
@@ -96,7 +96,7 @@ equate e1 e2 = withFrozenCallStack $ Equate e1 e2 `Then` return
 unify :: HasCallStack => Type -> Type -> Proof ()
 unify t1 t2 = withFrozenCallStack $ Unify t1 t2 `Then` return
 
-solve :: HasCallStack => Name -> Suffix Expr -> Type -> Proof ()
+solve :: HasCallStack => Name -> Suffix () Expr -> Type -> Proof ()
 solve name suffix ty = withFrozenCallStack $ Solve name suffix ty `Then` return
 
 
@@ -106,7 +106,7 @@ fresh declaration = withFrozenCallStack $ Fresh declaration `Then` return
 restore :: HasCallStack => Proof (Extension Expr)
 restore = withFrozenCallStack $ Surface.Proof.Restore `Then` return
 
-replace :: HasCallStack => Suffix Expr -> Proof (Extension Expr)
+replace :: HasCallStack => Suffix () Expr -> Proof (Extension Expr)
 replace suffix = withFrozenCallStack $ Surface.Proof.Replace suffix `Then` return
 
 
@@ -421,7 +421,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ prettyExpr 0 t1 (" with " ++ prettyExpr 0 t2 ""))
 
-solve' :: HasCallStack => Name -> Suffix Expr -> Type -> Proof ()
+solve' :: HasCallStack => Name -> Suffix () Expr -> Type -> Proof ()
 solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
@@ -449,7 +449,7 @@ fresh' d = do
 restore' :: HasCallStack => Proof (Extension Expr)
 restore' = return Context.Restore
 
-replace' :: HasCallStack => Suffix Expr -> Proof (Extension Expr)
+replace' :: HasCallStack => Suffix () Expr -> Proof (Extension Expr)
 replace' = return . Context.Replace
 
 
@@ -635,7 +635,7 @@ constraint >- ma = do
           _ -> error "Missing constraint!"
 
 
-(==>) :: Suffix Expr -> Type -> Proof Type
+(==>) :: Suffix () Expr -> Type -> Proof Type
 []                      ==> ty =                      return ty
 ((a := Nothing) : rest) ==> ty = makePi a typeT <$> rest ==> ty
 ((a := Just v)  : rest) ==> ty = makePi a v     <$> rest ==> ty
@@ -647,7 +647,7 @@ generalizeOver mt = do
   rest <- skimContext []
   rest ==> t
 
-skimContext :: Suffix Expr -> Proof (Suffix Expr)
+skimContext :: Suffix () Expr -> Proof (Suffix () Expr)
 skimContext rest = do
   context :< d <- getContext
   putContext context

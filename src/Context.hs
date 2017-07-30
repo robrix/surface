@@ -21,10 +21,10 @@ data Backward a = Backward a :< a | Nil
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 type Context s a = Backward (Constraint s a)
-type Suffix a = [DefinitionConstraint () a]
+type Suffix s a = [DefinitionConstraint s a]
 
 infixl 8 <><
-(<><) :: Context () a -> Suffix a -> Context () a
+(<><) :: Context s a -> Suffix s a -> Context s a
 context <>< [] = context
 context <>< (entry : rest) = context :< D entry <>< rest
 
@@ -35,7 +35,7 @@ applyContext expr context = case context of
   (rest :< _) -> applyContext expr rest
 
 
-data Extension a = Restore | Replace (Suffix a)
+data Extension a = Restore | Replace (Suffix () a)
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 
