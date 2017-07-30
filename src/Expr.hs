@@ -408,4 +408,4 @@ instance Eq2 ExprF where
   liftEq2 eqN eqA = (maybe False biand .) . zipExprFWith eqN eqA
 
 instance Eq n => Eq1 (ExprF n) where
-  liftEq eq = (maybe False biand .) . zipExprFWith (==) eq
+  liftEq = liftEq2 (==)
