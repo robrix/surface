@@ -28,3 +28,7 @@ instance Num Erasure where
 
 instance Semigroup Erasure where
   (<>) = (+)
+
+instance Monoid Erasure where
+  mempty = Erased
+  mappend = (+)
