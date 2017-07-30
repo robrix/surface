@@ -48,6 +48,11 @@ instance Bifunctor DefinitionConstraint where
 instance Bifunctor TypeConstraint where
   bimap _ g (name ::: ty) = name ::: g ty
 
+instance Bifunctor Constraint where
+  bimap f g (D c) = D (bimap f g c)
+  bimap f g (T c) = T (bimap f g c)
+  bimap _ _ Sep = Sep
+
 
 instance Pretty1 Backward where
   liftPrettyPrec pp pl d = liftPrettyPrec pp pl d . toList
