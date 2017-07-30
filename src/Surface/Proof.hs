@@ -3,8 +3,8 @@ module Surface.Proof where
 
 import Context
 import Control.Monad hiding (fail)
-import Control.Monad.State.Class
 import Control.Monad.Free.Freer
+import Control.Monad.State.Class
 import Data.Foldable (for_, sequenceA_)
 import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
