@@ -25,7 +25,7 @@ runCommand command = case command of
         modules <- result
         return $ do
           m <- toList modules
-          runSteps' (checkModule m) initialState
+          runSteps' (checkModule m :: Proof () ()) initialState
 
 printResult :: Pretty a => Either [String] a -> IO ()
 printResult result = case result of

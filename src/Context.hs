@@ -47,13 +47,14 @@ instance Pretty1 Backward where
 instance Pretty a => Pretty (Backward a) where
   prettyPrec = prettyPrec1
 
-instance Pretty s => Pretty (Constraint s Expr) where
-  prettyPrec d (D ty) = prettyPrec d ty
-  prettyPrec d (T term) = prettyPrec d term
-  prettyPrec _ Sep = showChar ';'
+instance Pretty2 Constraint where
+  liftPrettyPrec2 ppa pla ppr plr d c = case c of
+    D c -> liftPrettyPrec2 ppa pla ppr plr d c
+    T c -> liftPrettyPrec2 ppa pla ppr plr d c
+    Sep -> showChar ';'
 
-instance Pretty s => Pretty (DefinitionConstraint s Expr) where
-  prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyExpr 10) declaration
+instance Pretty2 DefinitionConstraint where
+  liftPrettyPrec2 _ _ ppr _ d (name := def) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showChar '_') (ppr 10) def
 
-instance Pretty s => Pretty (TypeConstraint s Type) where
-  prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyExpr 10 scheme
+instance Pretty2 TypeConstraint where
+  liftPrettyPrec2 _ _ ppr _ d (name ::: ty) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . ppr 10 ty

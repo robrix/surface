@@ -32,17 +32,17 @@ data ProofF a r where
   Equate :: HasCallStack => Expr -> Expr -> ProofF a ()
 
   Unify :: HasCallStack => Type -> Type -> ProofF a ()
-  Solve :: HasCallStack => Name -> Suffix () Expr -> Type -> ProofF a ()
+  Solve :: HasCallStack => Name -> Suffix a Expr -> Type -> ProofF a ()
 
   Fresh :: HasCallStack => Maybe Expr -> ProofF a Name
-  Restore :: HasCallStack => ProofF a (Extension () Expr)
-  Replace :: HasCallStack => Suffix () Expr -> ProofF a (Extension () Expr)
+  Restore :: HasCallStack => ProofF a (Extension a Expr)
+  Replace :: HasCallStack => Suffix a Expr -> ProofF a (Extension a Expr)
 
   Normalize :: HasCallStack => Expr -> ProofF a Expr
   WHNF :: HasCallStack => Expr -> ProofF a Expr
 
-  Get :: ProofF a (ProofState ())
-  Put :: ProofState () -> ProofF a ()
+  Get :: ProofF a (ProofState a)
+  Put :: ProofState a -> ProofF a ()
 
   Error :: [String] -> ProofF a r
 
@@ -96,17 +96,17 @@ equate e1 e2 = withFrozenCallStack $ Equate e1 e2 `Then` return
 unify :: HasCallStack => Type -> Type -> Proof s ()
 unify t1 t2 = withFrozenCallStack $ Unify t1 t2 `Then` return
 
-solve :: HasCallStack => Name -> Suffix () Expr -> Type -> Proof s ()
+solve :: HasCallStack => Name -> Suffix s Expr -> Type -> Proof s ()
 solve name suffix ty = withFrozenCallStack $ Solve name suffix ty `Then` return
 
 
 fresh :: HasCallStack => Maybe Expr -> Proof s Name
 fresh declaration = withFrozenCallStack $ Fresh declaration `Then` return
 
-restore :: HasCallStack => Proof s (Extension () Expr)
+restore :: HasCallStack => Proof s (Extension s Expr)
 restore = withFrozenCallStack $ Surface.Proof.Restore `Then` return
 
-replace :: HasCallStack => Suffix () Expr -> Proof s (Extension () Expr)
+replace :: HasCallStack => Suffix s Expr -> Proof s (Extension s Expr)
 replace suffix = withFrozenCallStack $ Surface.Proof.Replace suffix `Then` return
 
 
@@ -119,34 +119,34 @@ whnf expr = withFrozenCallStack $ WHNF expr `Then` return
 
 -- Proof evaluation
 
-initialState :: ProofState ()
+initialState :: ProofState s
 initialState = ProofState (I 0) Nil H.empty
 
 runProof :: HasCallStack => Proof s a -> Either [String] a
 runProof = flip runAll initialState
 
-runAll :: HasCallStack => Proof s a -> ProofState () -> Either [String] a
+runAll :: HasCallStack => Proof s a -> ProofState s -> Either [String] a
 runAll context proof = case runStep context proof of
   Left errors -> Left errors
   Right (Return a, _) -> Right a
   Right next -> uncurry runAll next
 
-runSteps :: HasCallStack => Proof s a -> ProofState () -> [(Proof s a, ProofState ())]
+runSteps :: HasCallStack => Proof s a -> ProofState s -> [(Proof s a, ProofState s)]
 runSteps proof context = (proof, context) : case runStep proof context of
   Left _ -> []
   Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
-runSteps' :: HasCallStack => Proof s a -> ProofState () -> [(Proof s a, ProofState ())]
+runSteps' :: HasCallStack => Proof s a -> ProofState s -> [(Proof s a, ProofState s)]
 runSteps' = (filter isSignificant .) . runSteps
   where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . fst
 
-runStep :: forall s a. HasCallStack => Proof s a -> ProofState () -> Either [String] (Proof s a, ProofState ())
+runStep :: forall s a. HasCallStack => Proof s a -> ProofState s -> Either [String] (Proof s a, ProofState s)
 runStep proof context = case proof of
   Return a -> Right (return a, context)
   Then proof yield -> go proof yield
-  where go :: forall x . ProofF s x -> (x -> Proof s a) -> Either [String] (Proof s a, ProofState ())
+  where go :: forall x . ProofF s x -> (x -> Proof s a) -> Either [String] (Proof s a, ProofState s)
         go proof yield = case proof of
           CheckModule module' -> run $ checkModule' module'
           CheckDeclaration m d -> run $ checkDeclaration' m d
@@ -173,7 +173,7 @@ runStep proof context = case proof of
           Put context' -> Right (yield (), context')
 
           Error errors -> Left errors
-          where run :: Proof s x -> Either [String] (Proof s a, ProofState ())
+          where run :: Proof s x -> Either [String] (Proof s a, ProofState s)
                 run = Right . flip (,) context . (>>= yield)
 
 
@@ -421,7 +421,7 @@ unify' t1 t2 = unless (t1 == t2) $ case (unfix t1, unfix t2) of
   _ -> cannotUnify
   where cannotUnify = fail ("Cannot unify " ++ prettyExpr 0 t1 (" with " ++ prettyExpr 0 t2 ""))
 
-solve' :: HasCallStack => Name -> Suffix () Expr -> Type -> Proof s ()
+solve' :: HasCallStack => Name -> Suffix s Expr -> Type -> Proof s ()
 solve' name suffix ty = onTop $ \ (n := d) ->
   case (n == name, n <? ty || n <? suffix, d) of
     (True, True, _) -> fail "Occurs check failed."
@@ -446,10 +446,10 @@ fresh' d = do
         , proofContext = proofContext s :< D (m := d) }
   return m
 
-restore' :: HasCallStack => Proof s (Extension () Expr)
+restore' :: HasCallStack => Proof s (Extension s Expr)
 restore' = return Context.Restore
 
-replace' :: HasCallStack => Suffix () Expr -> Proof s (Extension () Expr)
+replace' :: HasCallStack => Suffix s Expr -> Proof s (Extension s Expr)
 replace' = return . Context.Replace
 
 
@@ -543,18 +543,18 @@ whnf' expr = case unfix expr of
 
 -- Conveniences
 
-getContext :: Proof s (Context () Expr)
+getContext :: Proof s (Context s Expr)
 getContext = gets proofContext
 
-putContext :: Context () Expr -> Proof s ()
+putContext :: Context s Expr -> Proof s ()
 putContext context = do
   s <- get
   put s { proofContext = context }
 
-modifyContext :: (Context () Expr -> Context () Expr) -> Proof s ()
+modifyContext :: (Context s Expr -> Context s Expr) -> Proof s ()
 modifyContext f = getContext >>= putContext . f
 
-declare :: DefinitionConstraint () Expr -> Proof s ()
+declare :: DefinitionConstraint s Expr -> Proof s ()
 declare binding = modifyContext (<>< [ binding ])
 
 addBindings :: Declaration -> Proof s ()
@@ -604,7 +604,7 @@ specialize ty = case unfix ty of
     specialize b
   _ -> return ty
 
-onTop :: (DefinitionConstraint () Expr -> Proof s (Extension () Expr)) -> Proof s ()
+onTop :: (DefinitionConstraint s Expr -> Proof s (Extension s Expr)) -> Proof s ()
 onTop f = do
   current <- getContext
   case current of
@@ -620,7 +620,7 @@ onTop f = do
     Nil -> fail "onTop called with empty context."
 
 infixr 3 >-
-(>-) :: Constraint () Expr -> Proof s a -> Proof s a
+(>-) :: Constraint s Expr -> Proof s a -> Proof s a
 constraint >- ma = do
   modifyContext (:< constraint)
   a <- ma
@@ -635,7 +635,7 @@ constraint >- ma = do
           _ -> error "Missing constraint!"
 
 
-(==>) :: Suffix () Expr -> Type -> Proof s Type
+(==>) :: Suffix s Expr -> Type -> Proof s Type
 []                      ==> ty =                      return ty
 ((a := Nothing) : rest) ==> ty = makePi a typeT <$> rest ==> ty
 ((a := Just v)  : rest) ==> ty = makePi a v     <$> rest ==> ty
@@ -647,7 +647,7 @@ generalizeOver mt = do
   rest <- skimContext []
   rest ==> t
 
-skimContext :: Suffix () Expr -> Proof s (Suffix () Expr)
+skimContext :: Suffix s Expr -> Proof s (Suffix s Expr)
 skimContext rest = do
   context :< d <- getContext
   putContext context
@@ -670,7 +670,7 @@ instance MonadFail (Proof s) where
   fail :: HasCallStack => String -> Proof s a
   fail message = Error [ message, prettyCallStack callStack ] `Then` return
 
-instance MonadState (ProofState ()) (Proof s) where
+instance MonadState (ProofState s) (Proof s) where
   get = Get `Then` return
   put s = Put s `Then` return
 
@@ -705,8 +705,9 @@ instance Show1 (ProofF s) where
     Error errors -> showsUnaryWith showsPrec "Error" d errors
 
 
-instance Pretty1 (ProofF s) where
-  liftPrettyPrec _ _ d proof = case proof of
+instance Pretty2 ProofF where
+  liftPrettyPrec2 :: forall a r. (Int -> a -> ShowS) -> ([a] -> ShowS) -> (Int -> r -> ShowS) -> ([r] -> ShowS) -> Int -> ProofF a r -> ShowS
+  liftPrettyPrec2 ppa pla _ _ d proof = case proof of
     CheckModule (Module name _) -> showsUnaryWith (const showString) "checkModule" d name
     CheckDeclaration (Module modName _) decl -> showsUnaryWith (const showString) "checkDeclaration" d (modName ++ "." ++ pretty (declarationName decl))
     CheckConstructor (Module modName _) decl constructor -> showsUnaryWith (const showString) "checkConstructor" d (modName ++ "." ++ pretty (declarationName decl) ++ "." ++ pretty (constructorName constructor))
@@ -719,11 +720,11 @@ instance Pretty1 (ProofF s) where
     Equate e1 e2 -> showsBinaryWith prettyExpr prettyExpr "equate" d e1 e2
 
     Unify t1 t2 -> showsBinaryWith prettyExpr prettyExpr "unify" d t1 t2
-    Solve n s ty -> showsTernaryWith prettyPrec prettyPrec prettyExpr "solve" d n s ty
+    Solve n s ty -> showsTernaryWith prettyPrec prettySuffix prettyExpr "solve" d n s ty
 
     Fresh declaration -> showsUnaryWith (maybe (showString "_") . prettyExpr) "fresh" d declaration
     Surface.Proof.Restore -> showString "restore"
-    Surface.Proof.Replace suffix -> showsUnaryWith prettyPrec "replace" d suffix
+    Surface.Proof.Replace suffix -> showsUnaryWith prettySuffix "replace" d suffix
 
     Normalize expr -> showsUnaryWith prettyExpr "normalize" d expr
     WHNF expr -> showsUnaryWith prettyExpr "whnf" d expr
@@ -732,12 +733,20 @@ instance Pretty1 (ProofF s) where
     Put state -> shows state
 
     Error errors -> liftPrettyPrec prettyPrec prettyList d errors
+    where prettySuffix :: Int -> Suffix a Expr -> ShowS
+          prettySuffix = liftPrettyPrec (liftPrettyPrec2 ppa pla prettyExpr (showListWith (prettyExpr 0))) (liftPrettyList2 ppa pla prettyExpr (showListWith (prettyExpr 0)))
+
+instance Pretty a => Pretty1 (ProofF a) where
+  liftPrettyPrec = liftPrettyPrec2 prettyPrec prettyList
+
+instance Pretty1 ProofState where
+  liftPrettyPrec ppa pla _ (ProofState n c _)
+    = showString "{ " . prettyPrec 0 n
+    . showString ", " . liftPrettyPrec (liftPrettyPrec2 ppa pla prettyExpr (showListWith (prettyExpr 0))) (liftPrettyList2 ppa pla prettyExpr (showListWith (prettyExpr 0))) 0 c
+    {-}. showString ", " . prettyPrec 0 (H.keys e)-} . showString " }"
 
 instance Pretty s => Pretty (ProofState s) where
-  prettyPrec _ (ProofState n c _)
-    = showString "{ " . prettyPrec 0 n
-    . showString ", " . prettyPrec 0 c
-    {-}. showString ", " . prettyPrec 0 (H.keys e)-} . showString " }"
+  prettyPrec = prettyPrec1
 
 
 instance Eq1 (ProofF s) where
