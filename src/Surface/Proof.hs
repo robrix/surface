@@ -620,7 +620,7 @@ onTop f = do
     Nil -> fail "onTop called with empty context."
 
 infixr 3 >-
-(>-) :: Constraint Expr -> Proof a -> Proof a
+(>-) :: Constraint () Expr -> Proof a -> Proof a
 constraint >- ma = do
   modifyContext (:< constraint)
   a <- ma
