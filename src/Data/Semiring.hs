@@ -1,4 +1,8 @@
-module Data.Semiring where
+module Data.Semiring
+( zero
+, Semiring(..)
+, Semigroup(..)
+) where
 
 import Data.Semigroup
 
