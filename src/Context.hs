@@ -7,13 +7,13 @@ import Text.Pretty
 
 data Constraint s a
   = D (DefinitionConstraint a)
-  | T (TypeConstraint a)
+  | T (TypeConstraint s a)
   | Sep
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 data DefinitionConstraint a = Name := Maybe a
   deriving (Eq, Foldable, Functor, Show, Traversable)
-data TypeConstraint a = Name ::: a
+data TypeConstraint s a = Name ::: a
   deriving (Eq, Foldable, Functor, Show, Traversable)
 
 infixl 8 :<
@@ -55,5 +55,5 @@ instance Pretty (Constraint s Expr) where
 instance Pretty (DefinitionConstraint Expr) where
   prettyPrec d (name := declaration) = showParen (d > 9) $ prettyPrec 0 name . showString " := " . maybe (showString "_") (prettyExpr 10) declaration
 
-instance Pretty (TypeConstraint Type) where
+instance Pretty (TypeConstraint s Type) where
   prettyPrec d (name ::: scheme) = showParen (d > 9) $ prettyPrec 10 name . showString " :: " . prettyExpr 10 scheme
