@@ -35,8 +35,8 @@ applyContext expr context = case context of
   (rest :< _) -> applyContext expr rest
 
 
-data Extension = Restore | Replace (Suffix Expr)
-  deriving (Eq, Show)
+data Extension a = Restore | Replace (Suffix a)
+  deriving (Eq, Foldable, Functor, Show, Traversable)
 
 
 -- Instances
