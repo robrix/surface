@@ -41,8 +41,8 @@ data ProofF a where
   Normalize :: HasCallStack => Expr -> ProofF Expr
   WHNF :: HasCallStack => Expr -> ProofF Expr
 
-  Get :: ProofF ProofState
-  Put :: ProofState -> ProofF ()
+  Get :: ProofF (ProofState ())
+  Put :: ProofState () -> ProofF ()
 
   Error :: [String] -> ProofF a
 
@@ -51,9 +51,9 @@ deriving instance Eq a => Eq (ProofF a)
 
 type Proof = Freer ProofF
 
-data ProofState = ProofState
+data ProofState s = ProofState
   { proofNextName :: Name
-  , proofContext :: Context () Expr
+  , proofContext :: Context s Expr
   , proofEnvironment :: Environment }
   deriving (Eq, Show)
 
@@ -119,34 +119,34 @@ whnf expr = withFrozenCallStack $ WHNF expr `Then` return
 
 -- Proof evaluation
 
-initialState :: ProofState
+initialState :: ProofState ()
 initialState = ProofState (I 0) Nil H.empty
 
 runProof :: HasCallStack => Proof a -> Either [String] a
 runProof = flip runAll initialState
 
-runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
+runAll :: HasCallStack => Proof a -> ProofState () -> Either [String] a
 runAll context proof = case runStep context proof of
   Left errors -> Left errors
   Right (Return a, _) -> Right a
   Right next -> uncurry runAll next
 
-runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps :: HasCallStack => Proof a -> ProofState () -> [(Proof a, ProofState ())]
 runSteps proof context = (proof, context) : case runStep proof context of
   Left _ -> []
   Right r@(Return _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
 -- | Like runSteps, but filtering out gets and puts.
-runSteps' :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
+runSteps' :: HasCallStack => Proof a -> ProofState () -> [(Proof a, ProofState ())]
 runSteps' = (filter isSignificant .) . runSteps
   where isSignificant = iterFreer (\ p _ -> case p of { Get -> False ; Put _ -> False ; _ -> True }) . (True <$) . fst
 
-runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
+runStep :: forall a. HasCallStack => Proof a -> ProofState () -> Either [String] (Proof a, ProofState ())
 runStep proof context = case proof of
   Return a -> Right (return a, context)
   Then proof yield -> go proof yield
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
+  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState ())
         go proof yield = case proof of
           CheckModule module' -> run $ checkModule' module'
           CheckDeclaration m d -> run $ checkDeclaration' m d
@@ -173,7 +173,7 @@ runStep proof context = case proof of
           Put context' -> Right (yield (), context')
 
           Error errors -> Left errors
-          where run :: Proof x -> Either [String] (Proof a, ProofState)
+          where run :: Proof x -> Either [String] (Proof a, ProofState ())
                 run = Right . flip (,) context . (>>= yield)
 
 
@@ -670,7 +670,7 @@ instance MonadFail Proof where
   fail :: HasCallStack => String -> Proof a
   fail message = Error [ message, prettyCallStack callStack ] `Then` return
 
-instance MonadState ProofState Proof where
+instance MonadState (ProofState ()) Proof where
   get = Get `Then` return
   put s = Put s `Then` return
 
@@ -733,7 +733,7 @@ instance Pretty1 ProofF where
 
     Error errors -> liftPrettyPrec prettyPrec prettyList d errors
 
-instance Pretty ProofState where
+instance Pretty s => Pretty (ProofState s) where
   prettyPrec _ (ProofState n c _)
     = showString "{ " . prettyPrec 0 n
     . showString ", " . prettyPrec 0 c
