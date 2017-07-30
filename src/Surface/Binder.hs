@@ -20,7 +20,7 @@ instance Binder a => Binder [a] where
 instance Binder Name where
   (<?) = (==)
 
-instance Binder DefinitionConstraint where
+instance Binder a => Binder (DefinitionConstraint a) where
   name <? (_ := m) = name <? m
 
 instance Binder a => Binder (TypeConstraint a) where
