@@ -31,3 +31,7 @@ instance Num Usage where
 
 instance Semigroup Usage where
   (<>) = (+)
+
+instance Monoid Usage where
+  mempty = Zero
+  mappend = (+)
