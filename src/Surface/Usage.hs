@@ -3,7 +3,7 @@ module Surface.Usage where
 import Control.Exception
 
 data Usage = Zero | One | Multiple
-  deriving (Eq, Ord, Show)
+  deriving (Bounded, Enum, Eq, Ord, Show)
 
 instance Num Usage where
   Zero + a = a

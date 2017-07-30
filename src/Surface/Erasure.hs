@@ -3,7 +3,7 @@ module Surface.Erasure where
 import Control.Exception
 
 data Erasure = Erased | Present
-  deriving (Eq, Ord, Show)
+  deriving (Bounded, Enum, Eq, Ord, Show)
 
 instance Num Erasure where
   Erased + a = a
