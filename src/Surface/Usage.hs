@@ -2,6 +2,7 @@ module Surface.Usage where
 
 import Control.Exception
 import Data.Semigroup
+import Data.Semiring
 
 data Usage = Zero | One | Multiple
   deriving (Bounded, Enum, Eq, Ord, Show)
@@ -35,3 +36,7 @@ instance Semigroup Usage where
 instance Monoid Usage where
   mempty = Zero
   mappend = (+)
+
+instance Semiring Usage where
+  one = One
+  (><) = (*)
