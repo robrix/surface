@@ -303,6 +303,10 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 instance Semigroup Type where
   (<>) = (.+.)
 
+instance Monoid Type where
+  mempty = voidT
+  mappend = (<>)
+
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
     Product vs -> Product (map f vs)
