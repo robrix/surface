@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable #-}
+{-# LANGUAGE DeriveAnyClass, DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable, FlexibleInstances #-}
 module Expr where
 
 import Data.Bifoldable
@@ -299,6 +299,9 @@ sfoldMap f = getOption . foldMap (Option . Just . f)
 
 
 -- Instances
+
+instance Semigroup Type where
+  (<>) = (.+.)
 
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
