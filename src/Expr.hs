@@ -8,6 +8,7 @@ import Data.Functor.Foldable hiding (Mu)
 import Data.Hashable (Hashable)
 import Data.List (intersperse, nub, sort, union)
 import Data.Semigroup (Semigroup(..), Max(..), Option(..))
+import Data.Semiring (Semiring(..))
 import GHC.Generics (Generic)
 import Text.Pretty
 
@@ -306,6 +307,10 @@ instance Semigroup Type where
 instance Monoid Type where
   mempty = voidT
   mappend = (<>)
+
+instance Semiring Type where
+  one = unitT
+  (><) = (.*.)
 
 instance Bifunctor ExprF where
   bimap g f expr = case expr of
