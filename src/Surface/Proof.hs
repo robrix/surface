@@ -123,24 +123,18 @@ runProof = flip runAll initialState
 runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
 runAll context proof = case runStep context proof of
   Left errors -> Left errors
-  Right (Left a, _) -> Right a
-  Right (Right (_, next), context) -> runAll next context
+  Right (Val a, _) -> Right a
+  Right next -> uncurry runAll next
 
-data SomeProof where
-  SomeProof :: ProofF a -> SomeProof
-
-instance Pretty SomeProof where
-  prettyPrec d (SomeProof p) = prettyPrec d p
-
-runSteps :: HasCallStack => Proof a -> ProofState -> [(Either a (SomeProof, Proof a), ProofState)]
+runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
 runSteps proof context = case runStep proof context of
   Left _ -> []
-  Right r@(Left _, _) -> [ r ]
-  Right next@(Right (_, proof), context) -> next : runSteps proof context
+  Right r@(Val _, _) -> [ r ]
+  Right next -> next : uncurry runSteps next
 
-runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Either a (SomeProof, Proof a), ProofState)
+runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
 runStep proof context = case proof of
-  Val a -> Right (Left a, context)
+  Val a -> Right (pure a, context)
   E u cont -> case decompose u of
     Right (Fail s) -> Left [s]
     Left u -> case decompose u of
@@ -149,7 +143,7 @@ runStep proof context = case proof of
       Left u -> case decompose u of
         Right proof -> go proof (apply cont)
         Left _ -> Left ["the impossible happened"]
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Either a (SomeProof, Proof a), ProofState)
+  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
         go proof yield = run $ case proof of
           CheckModule module' -> checkModule' module'
           CheckDeclaration m d -> checkDeclaration' m d
@@ -171,8 +165,8 @@ runStep proof context = case proof of
 
           Normalize expr -> normalize' expr
           WHNF expr -> whnf' expr
-          where run :: Proof x -> Either [String] (Either a (SomeProof, Proof a), ProofState)
-                run = Right . (, context) . Right . (SomeProof proof, ) . (>>= yield)
+          where run :: Proof x -> Either [String] (Proof a, ProofState)
+                run = Right . (, context) . (>>= yield)
 
 
 -- Judgement interpreters
