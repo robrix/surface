@@ -1,3 +1,6 @@
 [submodule "vendor/freer-cofreer"]
 	path = vendor/freer-cofreer
 	url = https://github.com/robrix/freer-cofreer.git
+[submodule "vendor/effects"]
+	path = vendor/effects
+	url = https://github.com/joshvera/effects.git

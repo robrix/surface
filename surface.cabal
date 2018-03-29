@@ -29,6 +29,7 @@ library
                      , Text.Pretty
   build-depends:       base >= 4.7 && < 5
                      , bifunctors
+                     , effects
                      , freer-cofreer
                      , hashable
                      , haskeline
