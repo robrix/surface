@@ -2,6 +2,7 @@
 module Text.Pretty where
 
 import Control.Monad.Effect.Fail
+import Control.Monad.Effect.Fresh
 import Control.Monad.Effect.Internal hiding (inj)
 import Control.Monad.Effect.State
 import Control.Monad.Free.Freer
@@ -149,6 +150,9 @@ instance (Pretty1 (Union effs), Pretty a) => Pretty (Eff effs a) where
 
 instance Pretty1 Fail where
   liftPrettyPrec _ _ d (Fail s) = showParen (d > 10) $ showsUnaryWith showsPrec "Fail" d s
+
+instance Pretty1 Fresh where
+  liftPrettyPrec _ _ _ Fresh = showString "Fresh"
 
 instance Pretty s => Pretty1 (State s) where
   liftPrettyPrec _ _ _ Get = showString "Get"
