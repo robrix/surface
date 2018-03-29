@@ -20,10 +20,10 @@ instance Binder a => Binder [a] where
 instance Binder Name where
   (<?) = (==)
 
-instance Binder a => Binder (DefinitionConstraint s a) where
+instance Binder a => Binder (DefinitionConstraint a) where
   name <? (_ := m) = name <? m
 
-instance Binder a => Binder (TypeConstraint s a) where
+instance Binder a => Binder (TypeConstraint a) where
   name <? (_ ::: s) = name <? s
 
 instance Binder1 f => Binder (Fix f) where
@@ -35,7 +35,7 @@ instance Binder1 (ExprF Name) where
     Var v | v == name -> True
     _ -> any (occurs name) expr
 
-instance Binder a => Binder (Constraint s a) where
+instance Binder a => Binder (Constraint a) where
   n <? t = case t of
     D d -> n <? d
     T d -> n <? d
