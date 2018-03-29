@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleInstances, GADTs, InstanceSigs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving, TupleSections #-}
+{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs, InstanceSigs, MultiParamTypeClasses, ScopedTypeVariables, StandaloneDeriving, TupleSections, TypeOperators, UndecidableInstances #-}
 module Surface.Proof where
 
 import Context
@@ -11,7 +11,9 @@ import Data.Functor.Classes
 import Data.Functor.Foldable hiding (Mu, Nil)
 import qualified Data.HashMap.Lazy as H
 import Data.List (intercalate, union, (\\), (!!))
+import Data.Proxy
 import Data.Traversable (for)
+import qualified Data.Union as U
 import Expr
 import GHC.Stack
 import Module
@@ -121,52 +123,56 @@ runProof :: HasCallStack => Proof a -> Either [String] a
 runProof = flip runAll initialState
 
 runAll :: HasCallStack => Proof a -> ProofState -> Either [String] a
-runAll context proof = case runStep context proof of
+runAll proof context = case runEff context proof pure of
   Left errors -> Left errors
   Right (Val a, _) -> Right a
   Right next -> uncurry runAll next
 
 runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
-runSteps proof context = (proof, context) : case runStep proof context of
+runSteps proof context = (proof, context) : case runEff context proof pure of
   Left _ -> []
   Right r@(Val _, _) -> [ r ]
   Right next -> uncurry runSteps next
 
-runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
-runStep proof context = case proof of
-  Val a -> Right (pure a, context)
-  E u cont -> case decompose u of
-    Right (Fail s) -> Left [s]
-    Left u -> case decompose u of
-      Right Get -> runStep (apply cont context) context
-      Right (Put context) -> runStep (apply cont ()) context
-      Left u -> case decompose u of
-        Right proof -> go proof (apply cont)
-        Left _ -> Left ["the impossible happened"]
-  where go :: forall x . ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
-        go proof yield = run $ case proof of
-          CheckModule module' -> checkModule' module'
-          CheckDeclaration m d -> checkDeclaration' m d
-          CheckConstructor m d c -> checkConstructor' m d c
+runEff :: ProofState -> Proof x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
+runEff s (Val a) k = Right (k a, s)
+runEff s (E u c) k = U.apply (Proxy :: Proxy Step) (\ t -> runStep s t (k <=< apply c)) u
 
-          Check term ty -> check' term ty
-          Infer term -> infer' term
-          IsType ty -> isType' ty
+class Step eff where
+  runStep :: ProofState -> eff x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
 
-          AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
-          Equate e1 e2 -> equate' e1 e2
+instance Step Fail where
+  runStep _ (Fail s) _ = Left [s]
 
-          Unify t1 t2 -> unify' t1 t2
-          Solve name suffix ty -> solve' name suffix ty
+instance Step (State ProofState) where
+  runStep s Get k = Right (k s, s)
+  runStep _ (Put s) k = Right (k (), s)
 
-          Fresh declaration -> fresh' declaration
-          Surface.Proof.Restore -> restore'
-          Surface.Proof.Replace suffix -> replace' suffix
+instance Step ProofF where
+  runStep :: forall a x . ProofState -> ProofF x -> (x -> Proof a) -> Either [String] (Proof a, ProofState)
+  runStep context proof yield = run $ case proof of
+    CheckModule module' -> checkModule' module'
+    CheckDeclaration m d -> checkDeclaration' m d
+    CheckConstructor m d c -> checkConstructor' m d c
 
-          Normalize expr -> normalize' expr
-          WHNF expr -> whnf' expr
-          where run :: Proof x -> Either [String] (Proof a, ProofState)
-                run = Right . (, context) . (>>= yield)
+    Check term ty -> check' term ty
+    Infer term -> infer' term
+    IsType ty -> isType' ty
+
+    AlphaEquivalent e1 e2 -> alphaEquivalent' e1 e2
+    Equate e1 e2 -> equate' e1 e2
+
+    Unify t1 t2 -> unify' t1 t2
+    Solve name suffix ty -> solve' name suffix ty
+
+    Fresh declaration -> fresh' declaration
+    Surface.Proof.Restore -> restore'
+    Surface.Proof.Replace suffix -> replace' suffix
+
+    Normalize expr -> normalize' expr
+    WHNF expr -> whnf' expr
+    where run :: Proof x -> Either [String] (Proof a, ProofState)
+          run = Right . (, context) . (>>= yield)
 
 
 -- Judgement interpreters
