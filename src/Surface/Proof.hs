@@ -127,10 +127,10 @@ runAll context proof = case runStep context proof of
   Right next -> uncurry runAll next
 
 runSteps :: HasCallStack => Proof a -> ProofState -> [(Proof a, ProofState)]
-runSteps proof context = case runStep proof context of
+runSteps proof context = (proof, context) : case runStep proof context of
   Left _ -> []
   Right r@(Val _, _) -> [ r ]
-  Right next -> next : uncurry runSteps next
+  Right next -> uncurry runSteps next
 
 runStep :: forall a. HasCallStack => Proof a -> ProofState -> Either [String] (Proof a, ProofState)
 runStep proof context = case proof of
