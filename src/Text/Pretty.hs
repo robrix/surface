@@ -11,6 +11,8 @@ import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
 import Data.List.NonEmpty hiding (intersperse, map, toList)
+import Data.Proxy
+import qualified Data.Union as U
 
 class Pretty t where
   prettyPrec :: Int -> t -> ShowS
@@ -132,13 +134,8 @@ instance Eq a => Eq (PrettyOf a) where
   PrettyOf _ a1 == PrettyOf _ a2 = a1 == a2
 
 
-instance (Pretty1 t, Pretty1 (Union ts)) => Pretty1 (Union (t ': ts)) where
-  liftPrettyPrec pp pl d u = case decompose u of
-    Right t -> liftPrettyPrec pp pl d t
-    Left u' -> liftPrettyPrec pp pl d u'
-
-instance Pretty1 (Union '[]) where
-  liftPrettyPrec _ _ _ _ = id
+instance U.Apply Pretty1 fs => Pretty1 (Union fs) where
+  liftPrettyPrec pp pl d = U.apply (Proxy :: Proxy Pretty1) (liftPrettyPrec pp pl d)
 
 instance Pretty1 (Union effs) => Pretty1 (Eff effs) where
   liftPrettyPrec pp pl = go
