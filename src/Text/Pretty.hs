@@ -79,6 +79,8 @@ instance Pretty Char where
   prettyPrec = showsPrec
   prettyList = showList
 
+instance Pretty Int where prettyPrec = showsPrec
+
 instance Pretty () where
   prettyPrec _ _ = showString "()"
 
