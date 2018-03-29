@@ -4,6 +4,7 @@ module Surface.Proof where
 import Context
 import Control.Monad hiding (fail)
 import Control.Monad.Effect.Fail
+import qualified Control.Monad.Effect.Fresh as Fresh
 import Control.Monad.Effect.Internal hiding (inj)
 import Control.Monad.Effect.State
 import Data.Foldable (for_, sequenceA_)
@@ -46,10 +47,10 @@ data ProofF r where
 deriving instance Show r => Show (ProofF r)
 deriving instance Eq r => Eq (ProofF r)
 
-type Proof = Eff '[ Fail, State ProofState, ProofF ]
+type Proof = Eff '[ Fail, Fresh.Fresh, State ProofState, ProofF ]
 
 data ProofState = ProofState
-  { proofNextName :: Name
+  { proofNextName :: Int
   , proofContext :: Context Expr
   , proofEnvironment :: Environment }
   deriving (Eq, Show)
@@ -117,7 +118,7 @@ whnf expr = send $ withFrozenCallStack $ WHNF expr
 -- Proof evaluation
 
 initialState :: ProofState
-initialState = ProofState (I 0) Nil H.empty
+initialState = ProofState 0 Nil H.empty
 
 runProof :: HasCallStack => Proof a -> Either [String] a
 runProof = flip runAll initialState
@@ -143,6 +144,9 @@ class Step eff where
 
 instance Step Fail where
   runStep _ (Fail s) _ = Left [s]
+
+instance Step Fresh.Fresh where
+  runStep s Fresh.Fresh yield = Right (yield (proofNextName s), s { proofNextName = succ (proofNextName s) })
 
 instance Step (State ProofState) where
   runStep s Get k = Right (k s, s)
@@ -440,10 +444,8 @@ solve' name suffix ty = onTop $ \ (n := d) ->
 
 fresh' :: HasCallStack => Maybe Expr -> Proof Name
 fresh' d = do
-  s <- get
-  let m = proofNextName s
-  put s { proofNextName = succName m
-        , proofContext = proofContext s :< D (m := d) }
+  m <- I <$> Fresh.fresh
+  modify' (\ s -> s { proofContext = proofContext s :< D (m := d) })
   return m
 
 restore' :: HasCallStack => Proof (Extension Expr)
