@@ -1,8 +1,12 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds, FlexibleContexts, FlexibleInstances, GADTs, TypeOperators, UndecidableInstances #-}
 module Text.Pretty where
 
+import Control.Monad.Effect.Fail
+import Control.Monad.Effect.Internal hiding (inj)
+import Control.Monad.Effect.State
 import Control.Monad.Free.Freer
 import Data.Foldable (toList)
+import Data.Functor.Classes
 import Data.Functor.Foldable
 import qualified Data.HashMap.Lazy as H
 import Data.List (intersperse)
@@ -126,3 +130,27 @@ instance Pretty (PrettyOf a) where
 
 instance Eq a => Eq (PrettyOf a) where
   PrettyOf _ a1 == PrettyOf _ a2 = a1 == a2
+
+
+instance (Pretty1 t, Pretty1 (Union ts)) => Pretty1 (Union (t ': ts)) where
+  liftPrettyPrec pp pl d u = case decompose u of
+    Right t -> liftPrettyPrec pp pl d t
+    Left u' -> liftPrettyPrec pp pl d u'
+
+instance Pretty1 (Union '[]) where
+  liftPrettyPrec _ _ _ _ = id
+
+instance Pretty1 (Union effs) => Pretty1 (Eff effs) where
+  liftPrettyPrec pp pl = go
+    where go d (Val a) = pp d a
+          go d (E r t) = liftPrettyPrec (\ i -> go i . apply t) (liftPrettyList pp pl . fmap (apply t)) d r
+
+instance (Pretty1 (Union effs), Pretty a) => Pretty (Eff effs a) where
+  prettyPrec = prettyPrec1
+
+instance Pretty1 Fail where
+  liftPrettyPrec _ _ d (Fail s) = showParen (d > 10) $ showsUnaryWith showsPrec "Fail" d s
+
+instance Pretty s => Pretty1 (State s) where
+  liftPrettyPrec _ _ _ Get = showString "Get"
+  liftPrettyPrec _ _ d (Put s) = showParen (d > 10) $ showsUnaryWith prettyPrec "Put" d s
